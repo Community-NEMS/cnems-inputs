@@ -1,0 +1,171 @@
+[build-system]
+build-backend = "hatchling.build"
+requires = ["hatch-vcs>=0.5", "hatchling>=1.31"]
+
+[project]
+# Not published to PyPI or conda-forge -- installed locally via pixi only -- so this
+# doesn't need the "catalystcoop." namespace prefix that public packages use to avoid
+# collisions on the index.
+name = "cnems_inputs"
+description = "Data pipelines that feed inputs into the Community NEMS project."
+readme = { file = "README.md", content-type = "text/markdown" }
+authors = [{ name = "Catalyst Cooperative", email = "pudl@catalyst.coop" }]
+requires-python = ">=3.14,<3.15"
+dynamic = ["version"]
+license = { file = "LICENSE" }
+# Intentionally empty: this package is never installed outside of the pixi
+# environment defined below, so runtime dependencies are tracked once, as conda
+# packages, under [tool.pixi.dependencies] rather than here too.
+dependencies = []
+
+[tool.hatch.version]
+# Derive the package version from the latest git tag, rather than storing it in the
+# repository and manually updating it.
+source = "vcs"
+
+[tool.pixi.workspace]
+channels = ["conda-forge", "bioconda"]
+platforms = ["linux-aarch64", "osx-arm64", "linux-64", "osx-64", "win-64"]
+
+[tool.pixi.pypi-dependencies]
+# Install this package itself in editable mode. No extras yet -- optional-dependency
+# groups get added here as later PRs bring over the systems that need them (tests,
+# lint, type checking, docs).
+"cnems_inputs" = { path = ".", editable = true }
+
+[tool.pixi.dependencies]
+# Runtime dependencies, sourced from conda-forge rather than PyPI wherever available.
+# This is the single place these are tracked -- see the note on [project.dependencies]
+# above.
+duckdb = ">=1.5.4"
+email-validator = "*"             # pydantic's email-validation support
+frictionless = ">=5.19.0"         # Frictionless data packages and tabular metadata validation
+fsspec = "*"                      # pandas' generic remote-filesystem support
+gcsfs = "*"                       # pandas' GCS support
+openpyxl = "*"                    # pandas' excel support
+pandas = ">=2.3"
+pandera = ">=0.32.1"
+polars = ">=1.42.1"
+python-snappy = "*"               # pandas' compression support
+pyarrow = ">=25.0.0"              # pandas' parquet support
+pydantic = ">=2.13.4"
+pydantic-settings = ">=2.14.2,<3"
+s3fs = "*"                        # pandas' S3 support
+snakemake = ">=9.23.0"            # Lightweight orchestration of data pipelines, used to run the CNEMS ETL
+zstandard = "*"                   # pandas' compression support
+
+# Development tools: pre-commit hooks, linting/formatting, and static analysis. All
+# available on conda-forge, so -- like the runtime dependencies above -- these are
+# tracked once, here, rather than also being listed as PyPI extras.
+actionlint = ">=1.7.12"
+markdownlint-cli2 = ">=0.23.1"
+mdformat = ">=1.0.0"
+mdformat-frontmatter = ">=2.1"
+mdformat-gfm = ">=1.0.0"
+prek = ">=0.4.10"              # Fast Rust-based pre-commit hook runner
+prettier = ">=3.9.3"
+pyrefly = ">=1.1.1"            # Fast Rust-based Python type checker
+ruff = ">=0.15.22"             # A very fast python linter & autofixer
+# So actionlint's embedded shellcheck integration for GitHub Actions `run:` steps
+# actually runs, rather than silently skipping because the binary isn't on PATH.
+shellcheck = ">=0.11.0"
+taplo = ">=0.10.0"
+sqlite = ">=3.53.3,<4"
+
+[tool.ruff]
+# Configurations that apply to both the `format` and `lint` subcommands.
+target-version = "py314"
+line-length = 88
+indent-width = 4
+
+[tool.ruff.format]
+# Configuration specific to the `format` subcommand.
+# We use black compatible formatting.
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
+
+[tool.ruff.lint]
+select = [
+  "A",   # flake8-builtins
+  "B",   # flake8-bugbear
+  "C",   # Limit cyclomatic complexity using mccabe
+  "C4",  # flake8-comprehensions
+  "D",   # pydocstyle errors
+  "E",   # pycodestyle errors
+  "EXE", # executable file issues
+  "F",   # pyflakes
+  "I",   # isort
+  "ICN", # flake8 import conventions
+  "N",   # pep8-naming
+  "NPY", # NumPy specific checks
+  "PD",  # pandas checks
+  "PGH", # pygrep-hooks
+  "PIE", # flake8-pie miscellaneous linting
+  "PTH", # use pathlib
+  "Q",   # flake8-quotes
+  "RET", # check return values
+  "RSE", # unnecessary parenthises on raised exceptions
+  "S",   # flake8-bandit
+  "SIM", # flake8-simplify
+  "UP",  # pyupgrade (use modern python syntax)
+  "W",   # pycodestyle warnings
+]
+ignore = [
+  "D401",   # Require imperative mood in docstrings.
+  "D417",
+  "E501",   # Overlong lines.
+  "PD010",  # Use of df.stack()
+  "PD013",  # Use of df.unstack()
+  "PD015",  # Use of pd.merge() rather than df.merge()
+  "RET504", # Ignore unnecessary assignment before return
+  "S101",   # Use of assert
+]
+extend-select = ["NPY201"] # preview rule to easy migration to Numpy 2.0
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["F401"] # Ignore unused imports
+
+[tool.ruff.lint.pep8-naming]
+# Allow Pydantic's `@validator` decorator to trigger class method treatment.
+classmethod-decorators = ["pydantic.validator", "pydantic.root_validator"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["cnems_inputs"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.mccabe]
+max-complexity = 10
+
+[tool.ruff.lint.flake8-quotes]
+docstring-quotes = "double"
+inline-quotes = "double"
+multiline-quotes = "double"
+
+[tool.pyrefly]
+# Limited to "src" so the pre-commit hook -- which only installs pyrefly itself, not
+# the rest of the dependencies -- can still resolve imports.
+project-includes = ["src"]
+python-version = "3.14"
+
+[tool.pixi.tasks]
+lint-ruff = "ruff check ."
+lint-pyrefly = "pyrefly check src"
+lint = { depends-on = ["lint-ruff", "lint-pyrefly"] }
+
+format-ruff = "ruff format . && ruff check --fix ."
+format-toml = "taplo fmt pyproject.toml"
+format-md = "mdformat README.md .github/ISSUE_TEMPLATE .github/pull_request_template.md"
+format-yaml = "prettier --write '**/*.{yaml,yml}'"
+format = { depends-on = [
+  "format-ruff",
+  "format-toml",
+  "format-md",
+  "format-yaml",
+] }
+
+# Bump the `rev` pins in .pre-commit-config.yaml to their latest tagged versions.
+prek-update = "prek update"
