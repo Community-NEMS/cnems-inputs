@@ -1,5 +1,10 @@
 # cnems-inputs
 
+[![pre-commit.ci status](https://results.pre-commit.ci/badge/github/Community-NEMS/cnems-inputs/main.svg)](https://results.pre-commit.ci/latest/github/Community-NEMS/cnems-inputs/main)
+[![Pixi Badge](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/prefix-dev/pixi/main/assets/badge/v0.json)](https://pixi.sh)
+[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 Data pipelines that feed inputs into the Community NEMS project.
 
 ## Development tooling
