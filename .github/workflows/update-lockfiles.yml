@@ -32,6 +32,10 @@ jobs:
           private-key: ${{ secrets.WORKFLOW_TRIGGERER_PRIVATE_KEY }}
           permission-contents: write
           permission-pull-requests: write
+          # Requesting a team (rather than user) review below needs org-level access
+          # to team membership -- the app itself must also have the organization
+          # "Members" permission (read-only is enough) granted when it's installed.
+          permission-members: read
       - uses: actions/checkout@v7
         with:
           token: ${{ steps.generate-token.outputs.token }}
@@ -61,8 +65,11 @@ jobs:
           base: ${{ github.ref_name }}
           labels: pixi, dependencies
           delete-branch: true
-          # Update this to whichever GitHub user(s) should review these automated PRs.
-          reviewers: zaneselvans
+          # Requests review from the whole team rather than a specific person. Create
+          # this team in the Community-NEMS org (and add reviewers to it) if it
+          # doesn't exist yet -- GitHub has no way to request a review from an entire
+          # organization, only individual users or teams.
+          team-reviewers: maintainers
           add-paths: |
             pixi.lock
             .pre-commit-config.yaml
