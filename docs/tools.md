@@ -204,3 +204,11 @@ We use GitHub Actions to:
 - Refresh `pixi.lock` and the `rev` pins in `.pre-commit-config.yaml` weekly, opening
     a PR with the changes so CI can confirm the updated dependencies still work
     (`update-lockfiles.yml`).
+- Approve and enable auto-merge on PRs opened by `dependabot[bot]` or
+    `pre-commit-ci[bot]`, once their required checks pass, so routine bot-authored
+    updates don't need a human to click merge (`bot-auto-merge.yml`). Both this
+    workflow and `update-lockfiles.yml` authenticate as the same `WORKFLOW_TRIGGERER`
+    GitHub App, rather than minting a separate narrowly-scoped app just for
+    auto-merging -- a deliberate trade of some permission isolation for not having to
+    manage a second app, reasonable for a small repo with a trusted set of
+    maintainers.
