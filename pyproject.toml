@@ -234,7 +234,7 @@ lint = { depends-on = ["lint-ruff", "lint-pyrefly"] }
 
 format-ruff = "ruff format . && ruff check --fix ."
 format-toml = "taplo fmt pyproject.toml zensical.toml"
-format-md = "mdformat README.md docs .github/ISSUE_TEMPLATE .github/pull_request_template.md"
+format-md = "mdformat README.md AGENTS.md docs .github/ISSUE_TEMPLATE .github/pull_request_template.md"
 format-yaml = "prettier --write '**/*.{yaml,yml}'"
 format = { depends-on = [
   "format-ruff",
