@@ -62,6 +62,9 @@ repos:
       - id: mdformat
         additional_dependencies:
           - mdformat-gfm
+          # Without this, mdformat mangles zensical/MkDocs-flavored markdown syntax,
+          # e.g. escaping the "<" in docs/index.md's "--8<--" snippet-include line.
+          - mdformat-mkdocs
           # Without this, mdformat doesn't recognize YAML front matter (used by the
           # issue templates) and reformats its "---" delimiters into thematic breaks,
           # corrupting the front matter and confusing markdownlint.

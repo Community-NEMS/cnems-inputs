@@ -80,6 +80,10 @@ platforms = ["linux-aarch64", "osx-arm64", "linux-64", "osx-64", "win-64"]
 # lint, type checking, docs).
 "cnems_inputs" = { path = ".", editable = true }
 
+# Not on conda-forge, unlike the rest of our development tooling, so it has to come
+# from PyPI instead.
+mdformat-mkdocs = ">=5" # Stops mdformat from mangling zensical/MkDocs markdown syntax
+
 [tool.pixi.dependencies]
 # Runtime dependencies, sourced from conda-forge rather than PyPI wherever available.
 # This is the single place these are tracked -- see the note on [project.dependencies]
@@ -125,6 +129,11 @@ coverage = ">=7.15.2"              # Lets us track what code is being tested
 pytest = ">=9.1.1"                 # Our testing framework
 pytest-console-scripts = ">=1.4.1" # Allow automatic testing of entry point scripts
 pytest-cov = ">=7.1.0"             # Pytest plugin for working with coverage
+
+# Documentation build, also available on conda-forge so it's tracked here alongside
+# the rest of the development tools rather than as a PyPI extra.
+mkdocstrings-python = ">=2.0.5" # Renders API docs from docstrings, used by zensical
+zensical = ">=0.0.51"           # Markdown-based static site generator for docs
 
 [tool.ruff]
 # Configurations that apply to both the `format` and `lint` subcommands.
@@ -224,8 +233,8 @@ lint-pyrefly = "pyrefly check src"
 lint = { depends-on = ["lint-ruff", "lint-pyrefly"] }
 
 format-ruff = "ruff format . && ruff check --fix ."
-format-toml = "taplo fmt pyproject.toml"
-format-md = "mdformat README.md .github/ISSUE_TEMPLATE .github/pull_request_template.md"
+format-toml = "taplo fmt pyproject.toml zensical.toml"
+format-md = "mdformat README.md docs .github/ISSUE_TEMPLATE .github/pull_request_template.md"
 format-yaml = "prettier --write '**/*.{yaml,yml}'"
 format = { depends-on = [
   "format-ruff",
@@ -233,6 +242,9 @@ format = { depends-on = [
   "format-md",
   "format-yaml",
 ] }
+
+docs = "zensical build"
+docs-serve = "zensical serve"
 
 # Bump the `rev` pins in .pre-commit-config.yaml to their latest tagged versions.
 prek-update = "prek update"
