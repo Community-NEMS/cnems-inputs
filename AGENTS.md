@@ -74,9 +74,9 @@ description of what each one does and when to use it.
 - Runtime and development dependencies are tracked in exactly one place: as conda
     packages under `[tool.pixi.dependencies]`, preferred over PyPI wherever a
     conda-forge build exists. Only fall back to `[tool.pixi.pypi-dependencies]` for
-    packages that aren't published to conda-forge (e.g. `mdformat-mkdocs`). Don't add
-    a dependency under `[project.dependencies]` -- that list is intentionally left
-    empty since this package is never installed outside the pixi environment.
+    packages that aren't published to conda-forge or bioconda (e.g. `mdformat-mkdocs`).
+    Don't add a dependency under `[project.dependencies]` -- that list is intentionally
+    left empty since this package is never installed outside the pixi environment.
 
 <!--
 Add anything specific to this codebase that a generic Python style guide wouldn't
