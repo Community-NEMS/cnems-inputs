@@ -1,13 +1,14 @@
-"""Datastore manages file retrieval for PUDL datasets."""
+"""Datastore manages file retrieval for C-NEMS input datasets."""
 
 import hashlib
 import importlib.resources
 import io
 import json
 import re
+import time
 import zipfile
 from collections import defaultdict
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from importlib.metadata import version
 from importlib.resources.abc import Traversable
 from pathlib import Path
@@ -23,12 +24,11 @@ from requests.adapters import HTTPAdapter
 from upath import UPath
 from urllib3.util.retry import Retry
 
-import pudl.logging_helpers
-from pudl.helpers import retry
-from pudl.workspace import resource_cache
-from pudl.workspace.resource_cache import PudlResourceKey, UPathCache
+# from cnems_inputs.datastore import resource_cache
+from cnems_inputs.datastore.resource_cache import LayeredCache, ResourceKey, UPathCache
+from cnems_inputs.logging import get_logger
 
-logger = pudl.logging_helpers.get_logger(__name__)
+logger = get_logger(__name__)
 
 ZenodoDoi = Annotated[
     str,
@@ -37,10 +37,39 @@ ZenodoDoi = Annotated[
     ),
 ]
 
+def retry(
+    func: Callable,
+    retry_on: tuple[type[BaseException], ...],
+    max_retries=5,
+    base_delay_sec=1,
+    **kwargs,
+):
+    """Retry a function with a short sleep between each try.
+
+    Sleeps twice as long before each retry as the last one, e.g. 1/2/4/8/16
+    seconds.
+
+    Args:
+        func: the function to retry
+        retry_on: the errors to catch.
+        base_delay_sec: how much time to sleep for the first retry.
+        kwargs: keyword arguments to pass to the wrapped function. Pass non-kwargs as
+            kwargs too.
+    """
+    for try_count in range(max_retries):
+        delay = 2**try_count * base_delay_sec
+        try:
+            return func(**kwargs)
+        except retry_on as e:
+            logger.info(
+                f"{e}: retry in {delay}s. {try_count}/{max_retries} retries used."
+            )
+            time.sleep(delay)
+    return func(**kwargs)
 
 def get_zenodo_dois_path() -> Traversable:
     """Return the canonical packaged Zenodo DOI settings path."""
-    return importlib.resources.files("pudl.package_data.settings").joinpath(
+    return importlib.resources.files("cnems_inputs.datastore").joinpath(
         "zenodo_dois.yml"
     )
 
@@ -87,8 +116,8 @@ class DatapackageDescriptor:
             total_bytes += res["bytes"]
         return int(total_bytes / 1_000_000)
 
-    def validate_checksum(self, name: str, content: str) -> bool:
-        """Returns True if content matches checksum for given named resource."""
+    def validate_checksum(self, name: str, content: bytes):
+        """Raise if content does not match checksum for given named resource."""
         expected_checksum = self._get_resource_metadata(name)["hash"]
         m = hashlib.md5()  # noqa: S324 Unfortunately md5 is required by Zenodo
         m.update(content)
@@ -110,18 +139,18 @@ class DatapackageDescriptor:
         return all(matches)
 
     def _match_from_partition(
-        self, parts: dict[str, str], k: str, v: str | list[str, str]
+        self, parts: dict[str, str | list], k: str, v: str | list[str]
     ):
         if isinstance(
             parts.get(k), list
         ):  # If partitions are list, match whole list if it contains desired element
-            return any(str(part).lower() == str(v).lower() for part in parts.get(k))
+            return any(str(part).lower() == str(v).lower() for part in parts.get(k)) # type: ignore  # noqa: PGH003
         return str(parts.get(k)).lower() == str(v).lower()
 
     def get_resources(
-        self: Self, name: str = None, **filters: Any
-    ) -> Iterator[PudlResourceKey]:
-        """Returns series of PudlResourceKey identifiers for matching resources.
+        self: Self, name: str | None = None, **filters: Any
+    ) -> Iterator[ResourceKey]:
+        """Returns series of ResourceKey identifiers for matching resources.
 
         Args:
             name: if specified, find resource(s) with this name.
@@ -133,11 +162,11 @@ class DatapackageDescriptor:
             if name and res["name"] != name:
                 continue
             if self._matches(res, **filters):
-                yield PudlResourceKey(
+                yield ResourceKey(
                     dataset=self.dataset, doi=self.doi, name=res["name"]
                 )
 
-    def get_partitions(self, name: str = None) -> dict[str, set[str]]:
+    def get_partitions(self, name: str | None = None) -> dict[str, set[str]]:
         """Return mapping of known partition keys to their allowed known values."""
         partitions: dict[str, set[str]] = defaultdict(set)
         for res in self.datapackage_json["resources"]:
@@ -183,37 +212,10 @@ class DatapackageDescriptor:
 class ZenodoDoiSettings(BaseSettings):
     """Digital Object Identifiers pointing to currently used Zenodo archives."""
 
-    censusdp1tract: ZenodoDoi
-    censuspep: ZenodoDoi
-    eia176: ZenodoDoi
-    eia191: ZenodoDoi
-    eia757a: ZenodoDoi
-    eia860: ZenodoDoi
-    eia860m: ZenodoDoi
-    eia861: ZenodoDoi
-    eia923: ZenodoDoi
-    eia930: ZenodoDoi
-    eiaaeo: ZenodoDoi
-    eiaapi: ZenodoDoi
-    epacamd_eia: ZenodoDoi
-    epacems: ZenodoDoi
-    ferc1: ZenodoDoi
-    ferc2: ZenodoDoi
-    ferc6: ZenodoDoi
-    ferc60: ZenodoDoi
-    ferc714: ZenodoDoi
-    ferceqr: ZenodoDoi
-    ferccid: ZenodoDoi
-    gridpathratoolkit: ZenodoDoi
-    nrelatb: ZenodoDoi
-    phmsagas: ZenodoDoi
-    rus7: ZenodoDoi
-    rus12: ZenodoDoi
-    sec10k: ZenodoDoi
-    vcerare: ZenodoDoi
+    eianems: ZenodoDoi
 
     model_config = SettingsConfigDict(
-        env_prefix="pudl_zenodo_doi_", env_file=".env", extra="ignore"
+        env_prefix="cnems_inputs_zenodo_doi_", env_file=".env", extra="ignore"
     )
 
     def __init__(self, **data: Any):
@@ -241,7 +243,7 @@ class ZenodoDoiSettings(BaseSettings):
         return dict(self)[dataset]
 
     @classmethod
-    def from_yaml(cls, path: str | Path) -> "ZenodoDoiSettings":
+    def from_yaml(cls, path: str | Path) -> ZenodoDoiSettings:
         """Create a ZenodoDoiSettings instance from a YAML file path.
 
         Args:
@@ -287,7 +289,7 @@ class ZenodoFetcher:
         # We add this to note where our project's requests are originating from.
         self.http.headers.update(
             {
-                "User-Agent": f"pudl/{version('catalystcoop.pudl')} (https://github.com/catalyst-cooperative/pudl)"
+                "User-Agent": f"cnems_inputs/{version('cnems-inputs')} (https://github.com/Community-NEMS/cnems-inputs)"
             }
         )
         self._descriptor_cache = {}
@@ -306,6 +308,7 @@ class ZenodoFetcher:
 
     def _get_url(self: Self, doi: ZenodoDoi) -> HttpUrl:
         """Construct a Zenodo depsition URL based on its Zenodo DOI."""
+        # TODO: verify this prefix is still valid for C-NEMS archives
         match = re.search(r"(10\.5072|10\.5281)/zenodo.([\d]+)", doi)
 
         if match is None:
@@ -319,7 +322,7 @@ class ZenodoFetcher:
             api_root = "https://zenodo.org/api"
         else:
             raise ValueError(f"Invalid Zenodo DOI: {doi}")
-        return f"{api_root}/records/{zenodo_id}/files"
+        return f"{api_root}/records/{zenodo_id}/files" # type: ignore  # noqa: PGH003
 
     def _fetch_from_url(self: Self, url: HttpUrl) -> requests.Response:
         logger.info(f"Retrieving {url} from zenodo")
@@ -347,7 +350,7 @@ class ZenodoFetcher:
                 )
         return self._descriptor_cache[doi]
 
-    def get_resource(self: Self, res: PudlResourceKey) -> bytes:
+    def get_resource(self: Self, res: ResourceKey) -> bytes:
         """Given resource key, retrieve contents of the file from zenodo."""
         desc = self.get_descriptor(res.dataset)
         url = desc.get_resource_path(res.name)
@@ -365,12 +368,13 @@ class Datastore:
 
     def __init__(
         self,
-        local_cache_path: str | Path | UPath | None = None,
-        cloud_cache_path: str | UPath | None = "s3://pudl.catalyst.coop/zenodo",
+        local_cache_path: str | Path | UPath | None = "./cache",
+        # TODO: decide if we're doing cloud caches
+        cloud_cache_path: str | UPath | None = None, #"s3://pudl.catalyst.coop/zenodo",
         timeout: float = 15.0,
         zenodo_dois: ZenodoDoiSettings | None = None,
     ):
-        """Datastore manages input data retrieval for PUDL datasets.
+        """Datastore manages input data retrieval for C-NEMS input datasets.
 
         Requires at least one of local_cache_path or cloud_cache_path to be provided.
 
@@ -393,7 +397,7 @@ class Datastore:
             ValueError: if neither local_cache_path nor cloud_cache_path is provided.
             ValueError: if local_cache_path or cloud_cache_path has unsupported scheme.
         """
-        self._cache = resource_cache.LayeredCache()
+        self._cache = LayeredCache()
         self._datapackage_descriptors: dict[str, DatapackageDescriptor] = {}
         # If you want to extract a file to *disk* instead of memory, it helps
         # to have a temporary directory that sticks around until the Datastore
@@ -465,7 +469,7 @@ class Datastore:
         """Fetch datapackage descriptor for dataset either from cache or Zenodo."""
         doi = self._zenodo_fetcher.get_doi(dataset)
         if doi not in self._datapackage_descriptors:
-            res = PudlResourceKey(dataset, doi, "datapackage.json")
+            res = ResourceKey(dataset, doi, "datapackage.json")
             if self._cache.contains(res):
                 self._datapackage_descriptors[doi] = DatapackageDescriptor(
                     json.loads(self._cache.get(res).decode("utf-8")),
@@ -484,7 +488,7 @@ class Datastore:
         cached_only: bool = False,
         skip_optimally_cached: bool = False,
         **filters: Any,
-    ) -> Iterator[tuple[PudlResourceKey, bytes]]:
+    ) -> Iterator[tuple[ResourceKey, bytes]]:
         """Return content of the matching resources.
 
         Args:
@@ -496,7 +500,7 @@ class Datastore:
             metadata["parts"].
 
         Yields:
-            (PudlResourceKey, io.BytesIO) holding content for each matching resource
+            (ResourceKey, io.BytesIO) holding content for each matching resource
         """
         desc = self.get_datapackage_descriptor(dataset)
         for res in desc.get_resources(**filters):
@@ -522,7 +526,7 @@ class Datastore:
                 self._cache.add(res, contents)
                 yield (res, contents)
 
-    def remove_from_cache(self, res: PudlResourceKey) -> None:
+    def remove_from_cache(self, res: ResourceKey) -> None:
         """Remove given resource from the associated cache."""
         self._cache.delete(res)
 
@@ -552,16 +556,16 @@ class Datastore:
             )
             return zipfile.ZipFile(resource)
 
-        return retry(retryable, retry_on=(zipfile.BadZipFile))
+        return retry(retryable, retry_on=(zipfile.BadZipFile,))
 
     def get_zipfile_resources(
         self, dataset: str, **filters: Any
-    ) -> Iterator[tuple[PudlResourceKey, zipfile.ZipFile]]:
+    ) -> Iterator[tuple[ResourceKey, zipfile.ZipFile]]:
         """Iterates over resources that match filters and opens each as ZipFile."""
         for resource_key, content in self.get_resources(dataset, **filters):
             yield (
                 resource_key,
-                retry(zipfile.ZipFile, retry_on=(zipfile.BadZipFile), file=content),
+                retry(zipfile.ZipFile, retry_on=(zipfile.BadZipFile,), file=content),
             )
 
     def get_zipfile_file_names(self, zip_file: zipfile.ZipFile):
@@ -581,7 +585,7 @@ def validate_cache(
         num_invalid = 0
         descriptor = dstore.get_datapackage_descriptor(single_ds)
         for res, content in dstore.get_resources(
-            single_ds, cached_only=True, **partition
+            single_ds, cached_only=True, **partition # type: ignore  # noqa: PGH003
         ):
             try:
                 num_total += 1
@@ -601,16 +605,16 @@ def fetch_resources(
     dstore: Datastore,
     datasets: list[str],
     partition: dict[str, int | str],
-    cloud_cache_path: str,
-    bypass_local_cache: bool,
+    # cloud_cache_path: str,
+    # bypass_local_cache: bool,
 ) -> None:
     """Retrieve all matching resources and store them in the cache."""
     for single_ds in datasets:
         for res, contents in dstore.get_resources(
-            single_ds, skip_optimally_cached=True, **partition
+            single_ds, skip_optimally_cached=True, **partition # type: ignore  # noqa: PGH003
         ):
             logger.info(f"Retrieved {res}.")
             # If the cloud_cache_path is specified and we don't want
             # to bypass the local cache, populate the local cache.
-            if cloud_cache_path and not bypass_local_cache:
-                dstore._cache.add(res, contents)
+            # if cloud_cache_path and not bypass_local_cache:
+            #     dstore._cache.add(res, contents)

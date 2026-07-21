@@ -1,4 +1,4 @@
-"""CLI for managing raw data inputs to the PUDL data processing pipeline."""
+"""CLI for managing raw data inputs to the C-NEMS input data processing pipeline."""
 
 from __future__ import annotations
 
@@ -8,25 +8,25 @@ from typing import TYPE_CHECKING
 
 import click
 
-from pudl.workspace.datastore import ZenodoDoiSettings
+from cnems_inputs.datastore import ZenodoDoiSettings
 
 if TYPE_CHECKING:
-    from pudl.workspace.datastore import Datastore
+    from cnems_inputs.datastore import Datastore
 
 _KNOWN_DATASETS = sorted(ZenodoDoiSettings.model_fields)
 
 
 def _print_partitions(dstore: Datastore, datasets: list[str]) -> None:
     """Print known partition keys and values for each of the datasets."""
-    from pudl.workspace.datastore import ZenodoFetcher  # noqa: PLC0415
+    from cnems_inputs.datastore.datastore import ZenodoFetcher  # noqa: PLC0415
 
     for single_ds in datasets:
         partitions = dstore.get_datapackage_descriptor(single_ds).get_partitions()
 
         print(f"\nPartitions for {single_ds} ({ZenodoFetcher().get_doi(single_ds)}):")
         for partition_key in sorted(partitions):
-            # try-except required because ferc2 has parts with heterogenous types
-            # that therefore can't be sorted: [1, 2, None]
+            # try-except required for datasets with parts having heterogenous types,
+            # since they can't be sorted: [1, 2, None]
             try:
                 parts = sorted(partitions[partition_key])
             except TypeError:
@@ -100,26 +100,27 @@ def _parse_key_values(
     ),
     callback=_parse_key_values,
 )
-@click.option(
-    "--bypass-local-cache",
-    is_flag=True,
-    default=False,
-    help=(
-        "If enabled, locally cached data will not be used. Instead, a new copy will be "
-        "downloaded from Zenodo or the cloud cache if specified."
-    ),
-)
-@click.option(
-    "--cloud-cache-path",
-    type=str,
-    default="s3://pudl.catalyst.coop/zenodo",
-    help=(
-        "Load cached inputs from cloud object storage (S3 or GCS) . This is typically "
-        "much faster and more reliable than downloading from Zenodo directly. By "
-        "default we read from the cache in PUDL's free, public AWS Open Data Registry "
-        "bucket."
-    ),
-)
+# TODO: decide if we want cloud caching
+# @click.option(
+#     "--bypass-local-cache",
+#     is_flag=True,
+#     default=False,
+#     help=(
+#         "If enabled, locally cached data will not be used. Instead, a new copy will be "
+#         "downloaded from Zenodo or the cloud cache if specified."
+#     ),
+# )
+# @click.option(
+#     "--cloud-cache-path",
+#     type=str,
+#     default="s3://???/zenodo",
+#     help=(
+#         "Load cached inputs from cloud object storage (S3 or GCS) . This is typically "
+#         "much faster and more reliable than downloading from Zenodo directly. By "
+#         "default we read from the cache in C-NEMS's free, public AWS Open Data Registry "
+#         "bucket."
+#     ),
+# )
 @click.option(
     "--logfile",
     help="If specified, write logs to this file.",
@@ -142,49 +143,47 @@ def main(
     validate: bool,
     list_partitions: bool,
     partition: dict[str, int | str],
-    cloud_cache_path: str,
+    # TODO: decide if we're doing cloud cache
+    # cloud_cache_path: str,
     bypass_local_cache: bool,
     logfile: pathlib.Path,
     loglevel: str,
 ) -> int:
-    """Manage the raw data inputs to the PUDL data processing pipeline.
+    """Manage the raw data inputs to the C-NEMS input data processing pipeline.
 
-    Download the raw FERC Form 2 data:
+    Download the <placeholder> data:
 
-    pudl_datastore ferc2
+    datastore <placeholder>
 
-    Download the raw FERC Form 2 data only for 2021:
+    Download the <placeholder> data only for 2021:
 
-    pudl_datastore ferc2 --partition year=2021
+    datastore <placeholder> --partition year=2021
 
-    Re-download the raw FERC Form 2 data for 2021 even if you already have it:
+    Re-download the <placeholder> data for 2021 even if you already have it:
 
-    pudl_datastore ferc2 --partition year=2021 --bypass-local-cache
+    datastore <placeholder> --partition year=2021 --bypass-local-cache
 
-    Validate all California EPA CEMS data in the local datastore:
+    Validate all California <placeholder> data in the local datastore:
 
-    pudl_datastore epacems --validate --partition state=ca
+    datastore <placeholder> --validate --partition state=ca
 
-    List the available partitions in the EIA-860 and EIA-923 datasets:
+    List the available partitions in the <place1> and <place2> datasets:
 
-    pudl_datastore eia860 eia923 --list-partitions
+    datastore <place1> <place2> --list-partitions
 
     Download all known datasets (e.g. in automation):
 
-    pudl_datastore --all
+    datastore --all
     """
-    # Deferred to keep --help fast; see pudl/scripts/__init__.py for rationale.
-    import pudl  # noqa: PLC0415
-    from pudl.workspace.datastore import (  # noqa: PLC0415
+    import cnems_inputs.logging
+    from cnems_inputs.datastore.datastore import (  # noqa: PLC0415
         Datastore,
         fetch_resources,
         validate_cache,
     )
-    from pudl.workspace.setup import PudlPaths  # noqa: PLC0415
-
-    logger = pudl.logging_helpers.get_logger(__name__)
-    pudl.logging_helpers.configure_root_logger(
-        logfile=str(logfile) if logfile else None, loglevel=loglevel
+    logger = cnems_inputs.logging.get_logger(__name__)
+    cnems_inputs.logging.configure_root_logger(
+        logfile=str(logfile) if logfile else None, loglevel=loglevel # type: ignore  # noqa: PGH003
     )
 
     if all_datasets and datasets:
@@ -197,10 +196,11 @@ def main(
 
     cache_path = None
     if not bypass_local_cache:
-        cache_path = PudlPaths().pudl_input
+        # TODO: get from environment probably
+        cache_path = "."
 
     dstore = Datastore(
-        cloud_cache_path=cloud_cache_path,
+        # cloud_cache_path=cloud_cache_path,
         local_cache_path=cache_path,
     )
 
@@ -216,8 +216,8 @@ def main(
             dstore=dstore,
             datasets=dataset_list,
             partition=partition,
-            cloud_cache_path=cloud_cache_path,
-            bypass_local_cache=bypass_local_cache,
+            # cloud_cache_path=cloud_cache_path,
+            # bypass_local_cache=bypass_local_cache,
         )
 
     return 0

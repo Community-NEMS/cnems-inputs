@@ -1,10 +1,9 @@
-"""Configure logging for the PUDL package."""
+"""Configure logging for the C-NEMS inputs package."""
 
 import logging
 from typing import Literal
 
 import coloredlogs
-from dagster import get_dagster_logger
 
 DEFAULT_DEPENDENCY_LOGLEVELS: dict[str, int] = {
     "aiobotocore": logging.WARNING,
@@ -20,11 +19,9 @@ DEFAULT_DEPENDENCY_LOGLEVELS: dict[str, int] = {
     "urllib3": logging.INFO,
 }
 
-
 def get_logger(name: str):
-    """Helper function to append 'catalystcoop' to logger name and return logger."""
-    return get_dagster_logger(f"catalystcoop.{name}")
-
+    """Retrieve a cnems_inputs logger for the specified name."""
+    return logging.getLogger(f"cnems_inputs.{name}")
 
 def configure_root_logger(
     logfile: str | None = None,
@@ -33,7 +30,7 @@ def configure_root_logger(
     color_logs: bool = True,
     propagate: bool = False,
 ) -> None:
-    """Configure the root catalystcoop logger.
+    """Configure the root cnems_input logger.
 
     Args:
         logfile: Path to logfile or None.
@@ -42,7 +39,7 @@ def configure_root_logger(
             This allows us to filter excessive logs from dependencies.
         color_logs: Whether to emit ANSI color codes. Defaults to ``True``.
         propagate: Whether to propagate logs to ancestor loggers. Useful for ensuring
-            that pytest has access to PUDL logs during testing.
+            that pytest has access to logs during testing.
     """
     if dependency_loglevels is None:
         dependency_loglevels = dict(DEFAULT_DEPENDENCY_LOGLEVELS)
@@ -51,17 +48,9 @@ def configure_root_logger(
     for dependency_name, dependency_loglevel in dependency_loglevels.items():
         logging.getLogger(dependency_name).setLevel(dependency_loglevel)
 
-    # Normalize upstream ferc_xbrl_extractor logging to flow through our configured
-    # handlers and formatter without requiring changes in that package.
-    ferc_xbrl_logger = logging.getLogger("catalystcoop.ferc_xbrl_extractor")
-    if ferc_xbrl_logger.handlers:
-        ferc_xbrl_logger.handlers.clear()
-    ferc_xbrl_logger.propagate = True
-
     log_format = "%(asctime)s [%(levelname)8s] %(name)s:%(lineno)s %(message)s"
     loggers_to_configure = [
-        get_dagster_logger("catalystcoop"),
-        logging.getLogger("catalystcoop"),
+        logging.getLogger("cnems_inputs"),
     ]
     for logger in loggers_to_configure:
         coloredlogs.install(
@@ -79,6 +68,3 @@ def configure_root_logger(
             logger.addHandler(file_logger)
 
         logger.propagate = propagate
-
-    if propagate:
-        logging.getLogger("dagster").propagate = True

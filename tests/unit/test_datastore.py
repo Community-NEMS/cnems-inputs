@@ -9,8 +9,8 @@ from typing import Any
 import pytest
 import responses
 
-from pudl.workspace import datastore
-from pudl.workspace.resource_cache import PudlResourceKey
+from cnems_inputs.datastore import datastore
+from cnems_inputs.datastore.resource_cache import ResourceKey
 
 
 def _make_resource(name: str, **partitions) -> dict[str, Any]:
@@ -92,28 +92,28 @@ def test_get_resources_filtering():
         _make_resource("baz", group="second", color="blue", rank=5, mood="VeryHappy"),
     )
     assert list(desc.get_resources()) == [
-        PudlResourceKey("data", "doi-123", "foo"),
-        PudlResourceKey("data", "doi-123", "bar"),
-        PudlResourceKey("data", "doi-123", "baz"),
+        ResourceKey("data", "doi-123", "foo"),
+        ResourceKey("data", "doi-123", "bar"),
+        ResourceKey("data", "doi-123", "baz"),
     ]
     # Simple filtering by one attribute.
     assert list(desc.get_resources(group="first")) == [
-        PudlResourceKey("data", "doi-123", "foo"),
-        PudlResourceKey("data", "doi-123", "bar"),
+        ResourceKey("data", "doi-123", "foo"),
+        ResourceKey("data", "doi-123", "bar"),
     ]
     # Filter by two attributes
     assert list(desc.get_resources(group="first", rank=5)) == [
-        PudlResourceKey("data", "doi-123", "bar"),
+        ResourceKey("data", "doi-123", "bar"),
     ]
     # Attributes that do not match anything
     assert list(desc.get_resources(group="second", shape="square")) == []
     # Search attribute values are cast to lowercase strings
     assert list(desc.get_resources(rank="5", mood="VERYhappy")) == [
-        PudlResourceKey("data", "doi-123", "baz"),
+        ResourceKey("data", "doi-123", "baz"),
     ]
     # Test lookup by name
     assert list(desc.get_resources("foo")) == [
-        PudlResourceKey("data", "doi-123", "foo"),
+        ResourceKey("data", "doi-123", "foo"),
     ]
 
 
@@ -160,11 +160,14 @@ class MockableZenodoFetcher(datastore.ZenodoFetcher):
         super().__init__(**kwargs)
         self._descriptor_cache = descriptors
 
+# TODO: replace with an arbitrary real archive once we have real ones in ZenodoDoiSettings
+# TODO: figure out an agnostic way to test the constraints that use this
+TEST_ARCHIVE = "eianems"
 
 class TestZenodoFetcher:
     """Unit tests for ZenodoFetcher class."""
 
-    MOCK_EPACEMS_DEPOSITION = {
+    MOCK_DEPOSITION = {
         "entries": [
             {"key": "random.zip"},
             {
@@ -174,7 +177,7 @@ class TestZenodoFetcher:
         ]
     }
 
-    MOCK_EPACEMS_DATAPACKAGE = {
+    MOCK_DATAPACKAGE = {
         "resources": [
             {
                 "name": "first",
@@ -188,21 +191,21 @@ class TestZenodoFetcher:
             },
         ]
     }
-    PROD_EPACEMS_DOI = datastore.ZenodoDoiSettings().epacems
+    PROD_DOI = getattr(datastore.ZenodoDoiSettings(), TEST_ARCHIVE)
     # last numeric part of doi
-    PROD_EPACEMS_ZEN_ID = re.search(
-        r"^10\.(5072|5281)/zenodo\.(\d+)$", PROD_EPACEMS_DOI
+    PROD_ZEN_ID = re.search(
+        r"^10\.(5072|5281)/zenodo\.(\d+)$", PROD_DOI
     ).group(2)
 
     @pytest.fixture(autouse=True)
     def setup(self):
-        """Constructs mockable Zenodo fetcher based on MOCK_EPACEMS_DATAPACKAGE."""
+        """Constructs mockable Zenodo fetcher based on MOCK_DATAPACKAGE."""
         self.fetcher = MockableZenodoFetcher(
             descriptors={
-                self.PROD_EPACEMS_DOI: datastore.DatapackageDescriptor(
-                    self.MOCK_EPACEMS_DATAPACKAGE,
-                    dataset="epacems",
-                    doi=self.PROD_EPACEMS_DOI,
+                self.PROD_DOI: datastore.DatapackageDescriptor(
+                    self.MOCK_DATAPACKAGE,
+                    dataset=TEST_ARCHIVE,
+                    doi=self.PROD_DOI,
                 )
             }
         )
@@ -239,12 +242,12 @@ class TestZenodoFetcher:
         with pytest.raises(AttributeError):
             self.fetcher.get_doi("unknown")
 
-    def test_doi_of_prod_epacems_matches(self):
-        """Most of the tests assume specific DOI for production epacems dataset.
+    def test_doi_matches(self):
+        """Most of the tests assume specific DOI for production exemplar dataset.
 
         This test verifies that the expected value is in use.
         """
-        assert self.fetcher.get_doi("epacems") == self.PROD_EPACEMS_DOI
+        assert self.fetcher.get_doi(TEST_ARCHIVE) == self.PROD_DOI
 
     @responses.activate
     def test_get_descriptor_http_calls(self):
@@ -252,23 +255,23 @@ class TestZenodoFetcher:
         fetcher = datastore.ZenodoFetcher()
         responses.add(
             responses.GET,
-            f"https://zenodo.org/api/records/{self.PROD_EPACEMS_ZEN_ID}/files",
-            json=self.MOCK_EPACEMS_DEPOSITION,
+            f"https://zenodo.org/api/records/{self.PROD_ZEN_ID}/files",
+            json=self.MOCK_DEPOSITION,
         )
         responses.add(
             responses.GET,
             "http://localhost/my/datapackage.json",
-            json=self.MOCK_EPACEMS_DATAPACKAGE,
+            json=self.MOCK_DATAPACKAGE,
         )
-        desc = fetcher.get_descriptor("epacems")
-        assert desc.datapackage_json == self.MOCK_EPACEMS_DATAPACKAGE
+        desc = fetcher.get_descriptor(TEST_ARCHIVE)
+        assert desc.datapackage_json == self.MOCK_DATAPACKAGE
 
     @responses.activate
     def test_get_resource(self):
         """Test that get_resource() calls expected http request and returns content."""
         responses.add(responses.GET, "http://localhost/first", body="blah")
         res = self.fetcher.get_resource(
-            PudlResourceKey("epacems", self.PROD_EPACEMS_DOI, "first")
+            ResourceKey(TEST_ARCHIVE, self.PROD_DOI, "first")
         )
         assert res == b"blah"
 
@@ -276,13 +279,13 @@ class TestZenodoFetcher:
     def test_get_resource_with_invalid_checksum(self):
         """Test that resource with bad checksum raises ChecksumMismatchError."""
         responses.add(responses.GET, "http://localhost/first", body="wrongContent")
-        res = PudlResourceKey("epacems", self.PROD_EPACEMS_DOI, "first")
+        res = ResourceKey(TEST_ARCHIVE, self.PROD_DOI, "first")
         with pytest.raises(datastore.ChecksumMismatchError):
             self.fetcher.get_resource(res)
 
     def test_get_resource_with_nonexistent_resource_fails(self):
         """If resource does not exist, get_resource() throws KeyError."""
-        res = PudlResourceKey("epacems", self.PROD_EPACEMS_DOI, "nonexistent")
+        res = ResourceKey(TEST_ARCHIVE, self.PROD_DOI, "nonexistent")
         with pytest.raises(KeyError):
             self.fetcher.get_resource(res)
 
@@ -330,11 +333,11 @@ def test_get_zipfile_resources_eventual_success(mocker):
         return_value=iter(
             [
                 (
-                    PudlResourceKey("test_dataset", "test_doi", "test_name_0"),
+                    ResourceKey("test_dataset", "test_doi", "test_name_0"),
                     zipfile_bytes,
                 ),
                 (
-                    PudlResourceKey("test_dataset", "test_doi", "test_name_1"),
+                    ResourceKey("test_dataset", "test_doi", "test_name_1"),
                     zipfile_bytes,
                 ),
             ]
@@ -356,6 +359,3 @@ def test_get_zipfile_resources_eventual_success(mocker):
     for _key, observed_zipfile in observed_zipfiles:
         with observed_zipfile.open("file_name") as test_file:
             assert test_file.read().decode(encoding="utf-8") == file_contents
-
-
-# TODO: add unit tests for Datasource class as well

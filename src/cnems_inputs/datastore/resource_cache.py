@@ -11,12 +11,12 @@ import google.auth
 import google.auth.exceptions
 from upath import UPath
 
-import pudl.logging_helpers
+import cnems_inputs.logging
 
-logger = pudl.logging_helpers.get_logger(__name__)
+logger = cnems_inputs.logging.get_logger(__name__)
 
 
-class PudlResourceKey(NamedTuple):
+class ResourceKey(NamedTuple):
     """Uniquely identifies a specific resource."""
 
     dataset: str
@@ -24,7 +24,7 @@ class PudlResourceKey(NamedTuple):
     name: str
 
     def __repr__(self) -> str:
-        """Returns string representation of PudlResourceKey."""
+        """Returns string representation of ResourceKey."""
         return f"Resource({self.dataset}/{self.doi}/{self.name})"
 
     def get_local_path(self) -> Path:
@@ -45,19 +45,19 @@ class AbstractCache(ABC):
         return self._read_only
 
     @abstractmethod
-    def get(self, resource: PudlResourceKey) -> bytes:
+    def get(self, resource: ResourceKey) -> bytes:
         """Retrieves content of given resource or throws KeyError."""
 
     @abstractmethod
-    def add(self, resource: PudlResourceKey, content: bytes) -> None:
+    def add(self, resource: ResourceKey, content: bytes) -> None:
         """Adds resource to the cache and sets the content."""
 
     @abstractmethod
-    def delete(self, resource: PudlResourceKey) -> None:
+    def delete(self, resource: ResourceKey) -> None:
         """Removes the resource from cache."""
 
     @abstractmethod
-    def contains(self, resource: PudlResourceKey) -> bool:
+    def contains(self, resource: ResourceKey) -> bool:
         """Returns True if the resource is present in the cache."""
 
 
@@ -161,7 +161,7 @@ class UPathCache(AbstractCache):
         # For local filesystem, no special credentials needed
         return storage_options
 
-    def _resource_path(self, resource: PudlResourceKey) -> UPath:
+    def _resource_path(self, resource: ResourceKey) -> UPath:
         """Get the UPath for a given resource.
 
         Args:
@@ -180,7 +180,7 @@ class UPathCache(AbstractCache):
             return self._storage_options.get("token") == "anon"
         return False
 
-    def get(self, resource: PudlResourceKey) -> bytes:
+    def get(self, resource: ResourceKey) -> bytes:
         """Retrieves value associated with given resource.
 
         Args:
@@ -201,7 +201,7 @@ class UPathCache(AbstractCache):
         except FileNotFoundError as e:
             raise KeyError(f"{resource} not found at {path}") from e
 
-    def add(self, resource: PudlResourceKey, content: bytes):
+    def add(self, resource: ResourceKey, content: bytes):
         """Adds (or updates) resource to the cache with given content.
 
         Args:
@@ -234,7 +234,7 @@ class UPathCache(AbstractCache):
                 "but they may not give you write permissions for this object."
             ) from e
 
-    def delete(self, resource: PudlResourceKey):
+    def delete(self, resource: ResourceKey):
         """Deletes resource from the cache.
 
         Args:
@@ -262,7 +262,7 @@ class UPathCache(AbstractCache):
                 "but they may not give you write permissions for this object."
             ) from e
 
-    def contains(self, resource: PudlResourceKey) -> bool:
+    def contains(self, resource: ResourceKey) -> bool:
         """Returns True if resource is present in the cache.
 
         Args:
@@ -306,7 +306,7 @@ class LayeredCache(AbstractCache):
         """Returns number of caching layers that are in this LayeredCache."""
         return len(self._caches)
 
-    def get(self, resource: PudlResourceKey) -> bytes:
+    def get(self, resource: ResourceKey) -> bytes:
         """Returns content of a given resource.
 
         When a resource is found in a distant cache layer, it is automatically populated
@@ -344,7 +344,7 @@ class LayeredCache(AbstractCache):
         logger.debug(f"get:{resource} not found in the layered cache.")
         raise KeyError(f"{resource} not found in the layered cache")
 
-    def add(self, resource: PudlResourceKey, content):
+    def add(self, resource: ResourceKey, content):
         """Adds (or replaces) resource into the cache with given content."""
         if self.is_read_only():
             logger.warning(f"Read only cache: ignoring set({resource})")
@@ -362,7 +362,7 @@ class LayeredCache(AbstractCache):
             cache_layer.add(resource, content)
             logger.debug(f"Added {resource} to cache layer {cache_layer})")
 
-    def delete(self, resource: PudlResourceKey):
+    def delete(self, resource: ResourceKey):
         """Removes resource from the cache if the cache is not in the read_only mode."""
         if self.is_read_only():
             logger.warning(f"Read only cache: not removing {resource}")
@@ -372,7 +372,7 @@ class LayeredCache(AbstractCache):
                 continue
             cache_layer.delete(resource)
 
-    def contains(self, resource: PudlResourceKey) -> bool:
+    def contains(self, resource: ResourceKey) -> bool:
         """Returns True if resource is present in the cache."""
         for i, cache in enumerate(self._caches):
             if cache.contains(resource):
@@ -381,7 +381,7 @@ class LayeredCache(AbstractCache):
         logger.debug(f"contains: {resource} not found in layered cache.")
         return False
 
-    def is_optimally_cached(self, resource: PudlResourceKey) -> bool:
+    def is_optimally_cached(self, resource: ResourceKey) -> bool:
         """Return True if resource is contained in the closest write-enabled layer."""
         for cache_layer in self._caches:
             if cache_layer.is_read_only():

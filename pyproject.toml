@@ -22,6 +22,7 @@ dependencies = []
 # Placeholder entry point demonstrating the pattern -- named after the dummy module
 # it comes from until real console scripts replace it.
 dummy = "cnems_inputs.cli:main"
+datastore = "cnems_inputs.datastore.runner:main"
 
 [tool.hatch.version]
 # Derive the package version from the latest git tag, rather than storing it in the
@@ -125,6 +126,15 @@ coverage = ">=7.15.2"              # Lets us track what code is being tested
 pytest = ">=9.1.1"                 # Our testing framework
 pytest-console-scripts = ">=1.4.1" # Allow automatic testing of entry point scripts
 pytest-cov = ">=7.1.0"             # Pytest plugin for working with coverage
+requests = ">=2.34.2,<3"
+pyyaml = ">=6.0.3,<7"
+urllib3 = ">=2.7.0,<3"
+coloredlogs = ">=15.0.1,<16"
+click = ">=8.4.2,<9"
+universal-pathlib = ">=0.3.10,<0.4"
+boto3 = ">=1.40.70,<2"
+responses = ">=0.26.2,<0.27"
+pytest-mock = ">=3.15.1,<4"
 
 [tool.ruff]
 # Configurations that apply to both the `format` and `lint` subcommands.
