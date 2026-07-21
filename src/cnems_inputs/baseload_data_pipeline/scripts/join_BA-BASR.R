@@ -4,7 +4,7 @@
 ### Description: All inputs from previous steps pulled together, merged and
 ###              uploaded to a geopackage containing BAs, BASRs, and county
 ###              assignments
-###              
+###
 ### - Inputs
 ###   * EIA_BA-County.csv
 ###   * EIA_BASR-County.csv
@@ -20,7 +20,7 @@
 #####
 ### Set-up: Loading packages (included in Conda environment)
 #####
-libraries <- c("tidyverse", "data.table", "tigris", "sf", 
+libraries <- c("tidyverse", "data.table", "tigris", "sf",
                "readxl", "here")
 invisible(lapply(libraries, library, character.only = TRUE))
 
@@ -69,7 +69,7 @@ fwrite(dt.ba_basr_merge,
 
 ### Merge BA-BASR crosswalk to county shapefile for each year
 f_countymerge <- function(i.year){
-  
+
   ### Load County File and calculate area
   sf.cnty <- st_read(here("inputs", "shapefiles", "cb_2019_us_county_5m.shp")) %>%
   # sf.cnty <- tigris::counties(cb = TRUE,
@@ -78,7 +78,7 @@ f_countymerge <- function(i.year){
     mutate(FIPS_cnty = GEOID) %>%
     mutate(Area_m2  = as.numeric(round(st_area(.),0))) %>%
     select(FIPS_cnty, Area_m2)
-  
+
   ### Merge data from ba-basr to county file for the year
   sf.ba_basr_merge <- copy(sf.cnty) %>%
     inner_join(dt.ba_basr_merge[Year == i.year],

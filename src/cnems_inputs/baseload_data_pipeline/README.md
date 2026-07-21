@@ -9,16 +9,17 @@
 
 ## Introduction
 
-One of the objectives of BlueSky is to **“select data formats, tools, and procedures for a data management framework to organize, pre-process, and post-process data”.** Modeling teams at EIA work with a variety of programming languages, workflow structures, and data sources. Additionally, the range of available data, licensing agreements, complexity of tasks, and developer preferences make workflow standardization difficult. 
+One of the objectives of BlueSky is to **“select data formats, tools, and procedures for a data management framework to organize, pre-process, and post-process data”.** Modeling teams at EIA work with a variety of programming languages, workflow structures, and data sources. Additionally, the range of available data, licensing agreements, complexity of tasks, and developer preferences make workflow standardization difficult.
 
 We wish to find a balance between replicability and module-specific, use-case flexibility. To this end, we have explored various options for data management software and tools to create more replicable, organized, and flexible workflows, motivated by a few guiding questions:
+
 - How do we make these processing steps more tractable for new/existing team members?
 - To what extent can we make pre-processing steps replicable for internal/external users?
 - How portable can our newly organized workflows be into the future?
 - Can we aid/augment existing skills and programming language preferences?
 
-
 ### What is this data pipeline repository?
+
 This repository contains a working, EIA-case specific example of the use of Snakemake, an open source data workflow management tool. The workflow constructs geospatial crosswalks between different spatial scales (e.g. counties and electricity balancing authorities), downloads electricity demand data and runs a regression to fit it to publicly available, station-level weather data. Ultimately, this data is used for the BaseLoad.csv file in the residential inputs.
 
 Note this is only an example of a workflow, and has not been implemented for the entire prototype.
@@ -35,29 +36,31 @@ This document should provide everything needed for general testing of this Snake
 
 ## Overview of baseload data pipeline
 
-This directory contains data sourcing scripts for the `BaseLoad.csv` input file used within the residential model. This project sources data from the National Oceanic and Atmospheric Administration's (NOAA) weather station data and electricity demand data from EIA's [Hourly Electric Grid Monitor](https://www.eia.gov/electricity/gridmonitor/dashboard/electric_overview/US48/US48). We also use population data from the U.S. Census. 
+This directory contains data sourcing scripts for the `BaseLoad.csv` input file used within the residential model. This project sources data from the National Oceanic and Atmospheric Administration's (NOAA) weather station data and electricity demand data from EIA's [Hourly Electric Grid Monitor](https://www.eia.gov/electricity/gridmonitor/dashboard/electric_overview/US48/US48). We also use population data from the U.S. Census.
 
 Weather data is downloaded, cleaned, and aggregated into individual US counties. Balancing Authorities (BA) and sub-regional BAs (SR-BA) electricity demand data is downloaded and cleaned. A regression model fits the 2019-2022 weather data to electricity demand data for each region. Demand is predicted for additional weather years (defaulted to 1990-2018). A demand profile is generated for each BA/BA-SR by averaging across all years. The BA/BA-SR demand profiles are mapped to the prototype regions to produce the `BaseLoad.csv` input file for the prototype.
 
 #### Mappings
 
 The mapping scripts make and join data to generate the regional assignments used through out the rest of the project and are used to create the `NOAA_ISD_Stations.csv`, `EIA_County-ISD.csv`, and `EIA_BA-BASR-County.csv` files as well as other itermediate files. These scripts include:
- - `make_BA.R`
- - `make_BASR.R`
- - `join_BA-county.R`
- - `join_BASR-county.R`
- - `join_BA-BASR.R`
- - `join_BA-noaa.R`
 
-The `NOAA_ISD_Stations.csv` contains the list of NOAA stations, `EIA_County-ISD.csv` identifies the "n" number of closest weather stations for each county, and `EIA_BA-BASR-County.csv` assigns counties to the BA/BA-SR regions. 
+- `make_BA.R`
+- `make_BASR.R`
+- `join_BA-county.R`
+- `join_BASR-county.R`
+- `join_BA-BASR.R`
+- `join_BA-noaa.R`
+
+The `NOAA_ISD_Stations.csv` contains the list of NOAA stations, `EIA_County-ISD.csv` identifies the "n" number of closest weather stations for each county, and `EIA_BA-BASR-County.csv` assigns counties to the BA/BA-SR regions.
 
 #### NOAA weather data
 
-The `make_noaa.py` script constructs the NOAA weather data and county-BA crosswalk table definitions for SQL and downloads the NOAA data for each county from NOAA's [National Centers for Environmental Information data platform](https://www.ncei.noaa.gov/data/global-hourly/access).  
+The `make_noaa.py` script constructs the NOAA weather data and county-BA crosswalk table definitions for SQL and downloads the NOAA data for each county from NOAA's [National Centers for Environmental Information data platform](https://www.ncei.noaa.gov/data/global-hourly/access).
 
 Then, the `clean_noaa.py` script aggregates the county-level data to a BA-level weather series using weighted averages of county variables, with the weights determined by county population.
 
 #### EIA930 data
+
 The `create_inputs.py` script downloads the necessary EIA930 files from EIA's [Hourly Electric Grid Monitor](https://www.eia.gov/electricity/gridmonitor/dashboard/electric_overview/US48/US48).
 
 The `system_shape.py` script cleans the EIA930 data to combine all EIA930 files, fill in missing data, and remove extreme outliers.
@@ -66,18 +69,20 @@ The `system_shape.py` script cleans the EIA930 data to combine all EIA930 files,
 
 The `weather.R` script combined hourly NOAA weather data (from 1990-2022) and hourly EIA930 electricity demand data (from 2019-2022) to fit a regression on actual demand data, predict historical load data based on weather data, and take the average hourly demand over predicted and actual demand values.
 
-The weather data used for the regression consisted of: 
-- the heating degree hour*, 
-- the cooling degree hour* (both of these were interacted with a dummy variable specifying whether it was a weekday or a weekend day), 
-- the previous day's heating degree day*, 
-- the previous day's cooling degree day*,
+The weather data used for the regression consisted of:
+
+- the heating degree hour\*,
+- the cooling degree hour\* (both of these were interacted with a dummy variable specifying whether it was a weekday or a weekend day),
+- the previous day's heating degree day\*,
+- the previous day's cooling degree day\*,
 - a three-hour rolling average relative humidity,
-- cold wind speed*,
-- and hot wind speed*.
+- cold wind speed\*,
+- and hot wind speed\*.
 
 \* The heating/cooling degree cutoff (also determining hot vs cold wind) is 65 degrees F.
 
 Other non-weather data used for the regression:
+
 - day of week
 - hour of day
 - year
@@ -86,11 +91,11 @@ Other non-weather data used for the regression:
 
 The `agg_EMMregions.py` script takes the load predictions generated by the weather.R script and creates the final BaseLoad.csv file. It takes the BA/BA-SR load predictions and shares out the hourly demands by county. It then sums up the county-level load predictions up to the prototype regions defined in `cw_r.csv`.
 
-
 ## What is Snakemake?
 
 ### Overview
-Snakemake is an open-source workflow management tool to create reproducible and scalable data analyses. Users write workflows in a *snakefile* detailing a series of interlinking workflow *rules*  based on file inputs and outputs via a human-readable, python-based configuration language. 
+
+Snakemake is an open-source workflow management tool to create reproducible and scalable data analyses. Users write workflows in a *snakefile* detailing a series of interlinking workflow *rules* based on file inputs and outputs via a human-readable, python-based configuration language.
 
 Users operate and execute the snakefile using a Conda-enabled terminal. It is designed to be highly compatible with Conda, and this document will illustrate how to integrate a conda-enabled terminal into VSCode.
 
@@ -102,25 +107,25 @@ Snakemake examines the interrelationships between rules and checks whether a rul
 
 **Snakemake is also useful if certain rules need to be run at different timings, or if certain potions of the workflow need to be run.** For instance, if a computationally intensive task needs executed only once, Snakemake will not rerun that rule even if the user targets a "downstream" rule because the outputs already exist.
 
-Finally, **Snakemake makes feeding arguments to scripts easy**, even if the scripts are in different programming languages, which makes the construction of flexible, function-like workflows easier. Because Snakemake is pythonic, the user can create python "objects" in a snakefile (or a config file for Snakemake) that are accessible to the scripts specified in each rule. 
+Finally, **Snakemake makes feeding arguments to scripts easy**, even if the scripts are in different programming languages, which makes the construction of flexible, function-like workflows easier. Because Snakemake is pythonic, the user can create python "objects" in a snakefile (or a config file for Snakemake) that are accessible to the scripts specified in each rule.
 
 **In general, Snakemake is great when...**
 
-* Your workflow can be decomposed into a bunch of steps that are interdependent, but can run separately
-* These steps all need to be run/rerun at different cadences
-* You have multiple programming languages in the workflow
-* Each step requires inputs from previous steps, and things go wrong if they are not present
-* The workflow is best thought of as a function (e.g. the same workflow is repeated over again for different datasets, years, methods, etc.)
+- Your workflow can be decomposed into a bunch of steps that are interdependent, but can run separately
+- These steps all need to be run/rerun at different cadences
+- You have multiple programming languages in the workflow
+- Each step requires inputs from previous steps, and things go wrong if they are not present
+- The workflow is best thought of as a function (e.g. the same workflow is repeated over again for different datasets, years, methods, etc.)
 
 ## EIA Use Case -- Working with Snakemake
 
 ### Checking Installation
 
-All software necessary for working with Snakemake is contained within the *bsky* Conda environment. 
+All software necessary for working with Snakemake is contained within the *bsky* Conda environment.
 
-For help creating the environment, you can navigate to the main README located in the root directory of the *Bluesky_Prototype* repo and see the *Usage* section. 
+For help creating the environment, you can navigate to the main README located in the root directory of the *Bluesky_Prototype* repo and see the *Usage* section.
 
-Once you've created *bsky*, with an open Conda-enabled terminal, activate the environment; 
+Once you've created *bsky*, with an open Conda-enabled terminal, activate the environment;
 
 ```bash
 conda activate bsky
@@ -143,13 +148,15 @@ The control file for Snakemake is called a Snakefile, and the first step in any 
 ### Building and Testing Workflows
 
 #### Configurations
-The `config.yaml` file contains the settings for this pipeline project. In order to run the project, you will have to update the `db_directory` parameter to point to your personal directory. 
 
-Before running the entire snakemake project, you may consider running a smaller version of the project by setting the NOAA start year to "2019" and the number of stations to "2". With these test settings in place, one should still expect the project to run overnight.  
+The `config.yaml` file contains the settings for this pipeline project. In order to run the project, you will have to update the `db_directory` parameter to point to your personal directory.
 
-The other configurations should not be changed. Future versions of this project will allow for more flexibility in the input configurations. 
+Before running the entire snakemake project, you may consider running a smaller version of the project by setting the NOAA start year to "2019" and the number of stations to "2". With these test settings in place, one should still expect the project to run overnight.
+
+The other configurations should not be changed. Future versions of this project will allow for more flexibility in the input configurations.
 
 #### Snakemake
+
 The *Rule* is the building block of Snakemake workflows. It specifies input files, executables that transform inputs into outputs, output files, and other items such as log files, rule-specific Conda environments, and parameters.
 
 At its most basic, a *Rule* is composed of a name, input files, output files, and an executable. This can be a script (e.g. script.py or script.R) or Python code. Here is an example of a rule from this data pipeline.
@@ -173,13 +180,14 @@ Let's build a workflow using this single *Rule*; in your terminal, dry-run just 
 snakemake -np outputs/shapefiles/EIA_BA.gpkg
 ```
 
-By using the -np command, we build the workflow without executing the provided script. In essence, we are examining what would need to run to obtain an up-to-date version of the desired output. 
+By using the -np command, we build the workflow without executing the provided script. In essence, we are examining what would need to run to obtain an up-to-date version of the desired output.
 
 Snakemake constructs the workflow contained in the Snakefile and examines whether it should run each *Rule* to construct the output based on whether:
-* The output files exist
-* The output files are older than the input files
-* The output files are older than the executable (e.g. the script)
-* Whether the rules have changed since last execution
+
+- The output files exist
+- The output files are older than the input files
+- The output files are older than the executable (e.g. the script)
+- Whether the rules have changed since last execution
 
 The terminal should show you the "jobs" required to create the output file *EIA_BA.gpkg*. The *Snakefile* shows the other *Rules* which depend on this output file.
 
@@ -204,7 +212,7 @@ rule join_BA_County:
         "scripts/s_BA-County_Join.R"
 ```
 
-The rule `join_BA_county` spatially joins BAs to U.S. counties and requires `EIA_BA.gpkg` as an input, meaning that this rule is dependent upon the execution of a rule upstream. 
+The rule `join_BA_county` spatially joins BAs to U.S. counties and requires `EIA_BA.gpkg` as an input, meaning that this rule is dependent upon the execution of a rule upstream.
 
 We can see this via the scheduled jobs by executing a dry-run and targeting `EIA_BA-County.csv`...
 
@@ -216,7 +224,7 @@ Now, the output in the terminal should show two jobs scheduled, as the rule `mak
 
 ![Example of workflow dependencies](images/ExampleOutput.png)
 
-Note the `Params:` attribute of the `join_BA_County` *Rule*. When the executable provided for a *Rule* is a script, all arguments in the *Rule* are available in the scripts being executed. For example, when running ```scripts/s_eia930_tables.py``` in the *Rule* `make_EIA930`, this instance of Python has access to `Params:`
+Note the `Params:` attribute of the `join_BA_County` *Rule*. When the executable provided for a *Rule* is a script, all arguments in the *Rule* are available in the scripts being executed. For example, when running `scripts/s_eia930_tables.py` in the *Rule* `make_EIA930`, this instance of Python has access to `Params:`
 
 ```python
 sm_dbloc = snakemake.params["db_loc"]
@@ -230,13 +238,13 @@ Similarly, for R, for the *Rule* `join_BA_County`, this is available in list for
 v.years.sm <- snakemake@params$years_sm
 ```
 
-In other words, **Snakemake allows you to clearly elucidate arguments fed into executables within the *Rule* definitions**, as well as built workflows that include wildcards for inputs and outputs. This is a powerful tool for reproducibility and scalability. 
+In other words, **Snakemake allows you to clearly elucidate arguments fed into executables within the *Rule* definitions**, as well as built workflows that include wildcards for inputs and outputs. This is a powerful tool for reproducibility and scalability.
 
-Additionally, rather than a script, one can specify Python directly as follows using the ```run:``` attribute in place of ```script:```. Alternatively, one can specify shell commands as the executable via ```shell:```
+Additionally, rather than a script, one can specify Python directly as follows using the `run:` attribute in place of `script:`. Alternatively, one can specify shell commands as the executable via `shell:`
 
 ### Vizualizations
 
-Let's vizualize the first portion of the workflow. To vizualize the Directed Acyclic Graph (DAG), run the following command. Note that one can also add the ```-f``` tag to force-run the DAG.
+Let's vizualize the first portion of the workflow. To vizualize the Directed Acyclic Graph (DAG), run the following command. Note that one can also add the `-f` tag to force-run the DAG.
 
 ```bash
 snakemake --dag "outputs/crosswalks/EIA_County-ISD.csv" | dot -Tpng > "images/dag_location.png"
@@ -258,7 +266,7 @@ snakemake --cores [n_cores] "[filename]" -f
 snakemake --cores [n_cores] --forceall
 ```
 
-The ```-f``` tag forces the run even if the output file exists and passes other checks for runs.
+The `-f` tag forces the run even if the output file exists and passes other checks for runs.
 
 Let's fully execute the first *Rule* of the workflow and vizualize the DAG after execution. Run the following command:
 

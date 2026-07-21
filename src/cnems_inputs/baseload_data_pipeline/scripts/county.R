@@ -1,8 +1,8 @@
 ############################################################################
 ### Demand Profiles -- County-Level Data Collection
 ### Description: This file collects county level population estimates from a
-###              a variety of sources to append to system shapes database for 
-###              purposes of aggregating weather up to 
+###              a variety of sources to append to system shapes database for
+###              purposes of aggregating weather up to
 ### Date: 12-27-23
 ############################################################################
 
@@ -41,7 +41,7 @@ f.dirs <- function(i.str.dirname){
 }
 invisible(map(v.dir, f.dirs))
 
-##### 
+#####
 ### Load 2023 population estimates
 #####
 dt.fips <- fips_codes %>% as.data.table()
@@ -53,7 +53,7 @@ f_newpop <- function(i.year, i.st){
       variables = "B01001_001",
       year = i.year
     )
-    
+
     ### Output population data only
     dt <- data.table("FIPS_cnty" = pop.dt$GEOID,
                      "population" = pop.dt$estimate,

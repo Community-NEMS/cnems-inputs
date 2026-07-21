@@ -1,14 +1,14 @@
 ############################################################################
 ### s_BA-County_Join: Spatial join between BA and county files
 ###
-### Description: This script loads and joins together the BA shapefile and 
-###              yearly county shapefiles, assigning counties to BAs until 
+### Description: This script loads and joins together the BA shapefile and
+###              yearly county shapefiles, assigning counties to BAs until
 ###              all counties are assigned a BA (in the contiguous 48 states)
 ###              via assignment rules applied to spatial overlaps. This is done
-###              via the f_ba_make function below for each year fed to this 
+###              via the f_ba_make function below for each year fed to this
 ###              script from snakemake. This is run for each year to deal with
 ###              changes in county definitions over time (e.g. Connecticut)
-###              
+###
 ### - Inputs
 ###   * EIA_BA_Details.csv
 ###   * EIA_BASR-Details.csv
@@ -22,7 +22,7 @@
 #####
 ### Set-up: Loading packages (included in Conda environment)
 #####
-libraries <- c("tidyverse", "data.table", "tigris", "sf", 
+libraries <- c("tidyverse", "data.table", "tigris", "sf",
                "readxl", "here")
 invisible(lapply(libraries, library, character.only = TRUE))
 
@@ -42,14 +42,14 @@ v.years.sm <- snakemake@params$years_sm
 #####
 
 f_ba_make <- function(i.year){
-  
+
   #####
   ### Load shapefiles
   #####
-  
+
   ### Set CRS
   v.crs  <- "ESRI:102008"
-  
+
   ### Load Counties (from API), set CRS, and calculate county size
   sf.county <- st_read(here("inputs", "shapefiles", "cb_2019_us_county_5m.shp")) %>%
   # sf.county  <- tigris::counties(cb = TRUE,
@@ -58,17 +58,17 @@ f_ba_make <- function(i.year){
     mutate(FIPS_cnty    = GEOID)               %>%
     mutate(Area_m2  = as.numeric(round(st_area(.),0))) %>%
     select(FIPS_cnty, Area_m2)
-  
+
   ### Load Balancing Authority
   sf.ba <- st_read(here("outputs", "shapefiles", "EIA_BA.gpkg"),
                    layer = "BA")
-  
+
   #####
   ### Load all details files
   #####
   dt.ba_detail <- fread(here("outputs", "crosswalks", "EIA_BA_Details.csv"))
   dt.basr_detail <- fread(here("outputs", "crosswalks", "EIA_BASR-Details.csv"))
-  
+
   ################################################################################
   ### Note: Intersect BA boundaries w/ counties
   ### Assignment Rules:
@@ -77,7 +77,7 @@ f_ba_make <- function(i.year){
   #   - if no BA assignment, assign to largest
   #   - if BA goes unassigned, assign to county w/ largest
   ################################################################################
-  
+
   #####
   ### Intersect county and ba shapefiles; create indicators for each assignment rule
   ###   - Intersect county and BA
@@ -106,11 +106,11 @@ f_ba_make <- function(i.year){
     .[,Assign := ifelse((Rule1 == 1) | (Rule1 == 0 & Rule2 == 1),
                         1,
                         0)] %>%
-    .[,c("FIPS_cnty", "FIPS_st", "Region_Name", 
-         "BA_Code", "BA_Share", 
+    .[,c("FIPS_cnty", "FIPS_st", "Region_Name",
+         "BA_Code", "BA_Share",
          "Rule1", "Rule2", "Assign")] %>%
     .[,Rule3 := 0]
-  
+
   #####
   ### Check 1: Every BA that passes filter is assigned; for each, find assign
   #####
@@ -125,7 +125,7 @@ f_ba_make <- function(i.year){
         by = "BA_Code"] %>%
       .[(BA_Code %in% v.diff) & Rule3 == 1, Assign := 1]
   }
-  
+
   #####
   ### Check 2: Check that all counties are assigned for all years
   #####
@@ -134,7 +134,7 @@ f_ba_make <- function(i.year){
     .[,county_code := str_c(state_code, county_code)] %>%
     setnames(c("Abbv_st", "FIPS_st", "Name_st", "FIPS_cnty")) %>%
     unique()
-  
+
   v.fips <- unique(sf.county$FIPS_cnty)
   v.fips_assign <- unique(sf.ba_cnty_assign[Assign == 1]$FIPS_cnty)
   dt.diff <- setdiff(v.fips, v.fips_assign) %>%
@@ -143,11 +143,11 @@ f_ba_make <- function(i.year){
     merge(dt.fips,
           by = "FIPS_cnty",
           all.x = TRUE)
-  
+
   #####
   ### Write merged data to file
   #####
-  
+
   ### Assign counties to BA and write assignment crosswalk
   sf.ba_cnty_assign <- sf.ba_cnty_assign %>%
     .[Assign == 1] %>%
@@ -155,12 +155,12 @@ f_ba_make <- function(i.year){
     .[!(`BA_Code` == "ISNE" & (FIPS_st == 36))] %>%
     .[!(`BA_Code` == "MISO" & (FIPS_cnty == "20167"))] %>%
     .[,c("FIPS_cnty", "Region_Name", "BA_Code")]
-  
+
   ### Creating VEA/CISO directly due to issues w/ shapefile
   sf.vea_add = data.table("FIPS_cnty" = c("32023", "32009"),
                           "Region_Name" = c("California", "California"),
                           "BA_Code" = c("CISO", "CISO"))
-  
+
   sf.ba_cnty_assign <- rbindlist(list(sf.ba_cnty_assign, sf.vea_add)) %>%
     .[,Year := i.year]
   return(sf.ba_cnty_assign)

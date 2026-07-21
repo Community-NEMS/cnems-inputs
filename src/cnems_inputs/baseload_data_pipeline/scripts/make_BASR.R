@@ -8,12 +8,12 @@
 ###              where we do not have data, we recode certain BASRs into new
 ###              codes. We write this crosswalk to file.
 ###
-###              Then, the script loads our internal BASR shapefile and fixes 
-###              any invalid geometries before reclassifying and cleaning 
-###              to make the shapefile consistent with the EIA930 codes. 
+###              Then, the script loads our internal BASR shapefile and fixes
+###              any invalid geometries before reclassifying and cleaning
+###              to make the shapefile consistent with the EIA930 codes.
 ###              The recoded data tables are merged to the shapefile and are
 ###              saved as a gpkg file collection.
-###              
+###
 ### - Inputs
 ###   * EIA930_Reference_Tables.xlsx
 ###   * RTO_Regions.shp
@@ -27,7 +27,7 @@
 #####
 ### Set-up: Loading packages (included in Conda environment)
 #####
-libraries <- c("tidyverse", "data.table", "tigris", "sf", 
+libraries <- c("tidyverse", "data.table", "tigris", "sf",
                "readxl", "here")
 invisible(lapply(libraries, library, character.only = TRUE))
 
@@ -56,7 +56,7 @@ invisible(map(v.dir, f.dirs))
 iso_sr.dt <- read_excel(here("inputs", "EIA930", "EIA930_Reference_Tables.xlsx"),
                         sheet = "BA Subregions") %>%
   as.data.table() %>%
-  setnames(c("BA Code", "BA Name", "BA Subregion Code", "BA Subregion Name", 
+  setnames(c("BA Code", "BA Name", "BA Subregion Code", "BA Subregion Name",
              "Active Subregion", "Activation Date", "Retirement Date"),
            c("BA_Code", "BA_Name", "BASR_Original", "BASR_Name",
              "BASR_Active", "BASR_ActiveDate", "BASR_RetireDate")) %>%

@@ -20,7 +20,7 @@
 #####
 ### Set-up: Loading packages (included in Conda environment)
 #####
-libraries <- c("tidyverse", "data.table", "tigris", "sf", 
+libraries <- c("tidyverse", "data.table", "tigris", "sf",
                "readxl", "here")
 invisible(lapply(libraries, library, character.only = TRUE))
 
@@ -54,7 +54,7 @@ v.crs  <- "ESRI:102008"
 iso_ba.dt <- read_excel(here("inputs", "EIA930", "EIA930_Reference_Tables.xlsx"),
                         sheet = "BAs") %>%
   as.data.table() %>%
-  setnames(c("BA Code", "BA Name", "Region/Country Name", "Demand by BA Subregion", 
+  setnames(c("BA Code", "BA Name", "Region/Country Name", "Demand by BA Subregion",
              "Active BA", "Activation Date", "Retirement Date"),
            c("BA_Code", "BA_Name", "Region_Name", "Demand_by_BASR",
              "BA_Active", "BA_ActiveDate", "BA_RetireDate")) %>%
@@ -93,4 +93,3 @@ st_write(sf.ba,
          here("outputs", "shapefiles", "EIA_BA.gpkg"),
          layer = "BA",
          delete_dsn = TRUE)
-

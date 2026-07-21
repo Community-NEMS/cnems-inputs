@@ -11,12 +11,9 @@ In main(), we construct the new database, download the raw NOAA data, and then c
 to the database
 """
 
-import aiohttp
 import asyncio
-import pandas as pd
-import numpy as np
-import os
 import concurrent.futures
+import os
 
 # import datetime
 # import time
@@ -24,11 +21,23 @@ import re
 from functools import partial
 from io import StringIO
 
+import aiohttp
+import numpy as np
+import pandas as pd
+
 # from collections import OrderedDict
-from sqlalchemy import and_, delete
-from sqlalchemy import create_engine, MetaData, Table, Column, Integer, String, ForeignKey
-from sqlalchemy.orm import sessionmaker, declarative_base, relationship, Mapped, mapped_column
-from typing import Optional, List
+from sqlalchemy import (
+    ForeignKey,
+    and_,
+    create_engine,
+)
+from sqlalchemy.orm import (
+    Mapped,
+    declarative_base,
+    mapped_column,
+    relationship,
+    sessionmaker,
+)
 
 #####
 ### Read inputs from snakemake
@@ -38,7 +47,7 @@ l_years = snakemake.params[1]
 l_deletedb = snakemake.params[2]
 l_delobs = snakemake.params[3]
 
-l_dbloc_full = f'{l_dbloc}/noaa_db.db'
+l_dbloc_full = f"{l_dbloc}/noaa_db.db"
 
 # l_dbloc = ""
 # l_years = [x for x in range(2019, 2023)]
@@ -56,7 +65,7 @@ Base = declarative_base()
 
 
 class isd_station(Base):
-    __tablename__ = 'isd_stations'
+    __tablename__ = "isd_stations"
 
     station_id: Mapped[str] = mapped_column(primary_key=True)
     station_name: Mapped[str]
@@ -65,60 +74,60 @@ class isd_station(Base):
     date_dl = Mapped[str]
     USAF: Mapped[str]
     WBAN: Mapped[str]
-    CTRY: Mapped[Optional[str]]
-    ST: Mapped[Optional[str]]
-    CALL: Mapped[Optional[str]]
-    LAT: Mapped[Optional[str]]
-    LON: Mapped[Optional[str]]
-    ELEV: Mapped[Optional[str]]
-    county: Mapped[Optional['county_isd']] = relationship(back_populates='stations')
+    CTRY: Mapped[str | None]
+    ST: Mapped[str | None]
+    CALL: Mapped[str | None]
+    LAT: Mapped[str | None]
+    LON: Mapped[str | None]
+    ELEV: Mapped[str | None]
+    county: Mapped[county_isd | None] = relationship(back_populates="stations")
 
 
 class county_isd(Base):
-    __tablename__ = 'county_isds'
+    __tablename__ = "county_isds"
 
     id: Mapped[int] = mapped_column(primary_key=True)
     FIPS_cnty: Mapped[str]
     Year: Mapped[int]
-    station_id: Mapped[str] = mapped_column(ForeignKey('isd_stations.station_id'))
+    station_id: Mapped[str] = mapped_column(ForeignKey("isd_stations.station_id"))
     distance_km: Mapped[int]
-    stations: Mapped[List['isd_station']] = relationship(back_populates='county')
+    stations: Mapped[list[isd_station]] = relationship(back_populates="county")
 
 
 class ba_county(Base):
-    __tablename__ = 'ba_counties'
+    __tablename__ = "ba_counties"
 
     id: Mapped[int] = mapped_column(primary_key=True)
     FIPS_cnty: Mapped[str]
     Region_Name: Mapped[str]
     BA_Code: Mapped[str]
     Year: Mapped[int]
-    BASR_Code: Mapped[Optional[str]]
+    BASR_Code: Mapped[str | None]
     FIPS_st: Mapped[str]
     BA_BASR_Code: Mapped[str]
 
 
 class county_noaa(Base):
-    __tablename__ = 'counties_noaa'
+    __tablename__ = "counties_noaa"
 
     id: Mapped[int] = mapped_column(primary_key=True)
     year: Mapped[int]
     month: Mapped[int]
     day: Mapped[int]
     hour: Mapped[int]
-    tmp_air_celsius_10: Mapped[Optional[int]]
-    tmp_dew_celsius_10: Mapped[Optional[int]]
-    wind_dir_degrees: Mapped[Optional[int]]
-    wind_spd_m_per_sec_10: Mapped[Optional[int]]
+    tmp_air_celsius_10: Mapped[int | None]
+    tmp_dew_celsius_10: Mapped[int | None]
+    wind_dir_degrees: Mapped[int | None]
+    wind_spd_m_per_sec_10: Mapped[int | None]
     FIPS_cnty: Mapped[str]
 
 
 class county(Base):
-    __tablename__ = 'counties'
+    __tablename__ = "counties"
 
     id: Mapped[int] = mapped_column(primary_key=True)
     FIPS_cnty: Mapped[str]
-    population: Mapped[Optional[int]]
+    population: Mapped[int | None]
     year: Mapped[int]
 
 
@@ -138,21 +147,23 @@ def check_db_exists(i_dbloc=l_dbloc, i_deletedb=l_deletedb):
     i_deletedb : boolean, optional
         Indicator to delete database, by default sm_deletedb
 
-    Returns
+    Returns:
     -------
     l_exist : boolean
         Indicator for whether the database exists after running the function
     """
-    l_exist = os.path.isfile(f'{i_dbloc}/noaa_db.db')
+    l_exist = os.path.isfile(f"{i_dbloc}/noaa_db.db")
     if l_exist:
         if i_deletedb:
             try:
-                os.remove(f'{i_dbloc}/noaa_db.db')
+                os.remove(f"{i_dbloc}/noaa_db.db")
                 l_exist = False
             except Exception as e:
-                print(f'Unable to delete db file; check if connection open elsewhere: {e}')
+                print(
+                    f"Unable to delete db file; check if connection open elsewhere: {e}"
+                )
         else:
-            print('noaa_db already exists. Opting to continue without deleting file.')
+            print("noaa_db already exists. Opting to continue without deleting file.")
     else:
         print("noaa_db.db doesn't exist. Create without deleting")
     return l_exist
@@ -168,28 +179,38 @@ def load_crosswalks():
     3) County to BA/BASR Crosswalk
     4) County Details (population)
 
-    Returns
+    Returns:
     -------
     d_cw : dictionary
         A dictionary of data frames that should be loaded into the database
     """
-    df_stations = pd.read_csv(os.path.join('outputs', 'noaa', 'NOAA_ISD_Stations.csv'))
+    df_stations = pd.read_csv(os.path.join("outputs", "noaa", "NOAA_ISD_Stations.csv"))
 
-    df_station_cnty = pd.read_csv(os.path.join('outputs', 'crosswalks', 'EIA_County-ISD.csv'))
-    df_station_cnty['FIPS_cnty'] = [str(x).rjust(5, '0') for x in df_station_cnty['FIPS_cnty']]
+    df_station_cnty = pd.read_csv(
+        os.path.join("outputs", "crosswalks", "EIA_County-ISD.csv")
+    )
+    df_station_cnty["FIPS_cnty"] = [
+        str(x).rjust(5, "0") for x in df_station_cnty["FIPS_cnty"]
+    ]
 
-    df_ba_basr_cnty = pd.read_csv(os.path.join('outputs', 'crosswalks', 'EIA_BA-BASR-County.csv'))
-    df_ba_basr_cnty['FIPS_cnty'] = [str(x).rjust(5, '0') for x in df_ba_basr_cnty['FIPS_cnty']]
-    df_ba_basr_cnty['FIPS_st'] = [str(x).rjust(2, '0') for x in df_ba_basr_cnty['FIPS_st']]
+    df_ba_basr_cnty = pd.read_csv(
+        os.path.join("outputs", "crosswalks", "EIA_BA-BASR-County.csv")
+    )
+    df_ba_basr_cnty["FIPS_cnty"] = [
+        str(x).rjust(5, "0") for x in df_ba_basr_cnty["FIPS_cnty"]
+    ]
+    df_ba_basr_cnty["FIPS_st"] = [
+        str(x).rjust(2, "0") for x in df_ba_basr_cnty["FIPS_st"]
+    ]
 
-    df_county = pd.read_csv(os.path.join('outputs', 'census', 'County_Population.csv'))
-    df_county['FIPS_cnty'] = [str(x).rjust(5, '0') for x in df_county['FIPS_cnty']]
+    df_county = pd.read_csv(os.path.join("outputs", "census", "County_Population.csv"))
+    df_county["FIPS_cnty"] = [str(x).rjust(5, "0") for x in df_county["FIPS_cnty"]]
 
     d_cw = {
-        'df_isd_station': df_stations,
-        'df_county_isd': df_station_cnty,
-        'df_ba_county': df_ba_basr_cnty,
-        'df_county': df_county,
+        "df_isd_station": df_stations,
+        "df_county_isd": df_station_cnty,
+        "df_ba_county": df_ba_basr_cnty,
+        "df_county": df_county,
     }
     return d_cw
 
@@ -216,7 +237,7 @@ def upload_crosswalks(session, tablenames, d_tables, d_cw):
             session.query(d_tables[tablename]).delete()
             session.commit()
 
-        df = d_cw[f'df_{tablename}'].to_dict(orient='records')
+        df = d_cw[f"df_{tablename}"].to_dict(orient="records")
         session.bulk_insert_mappings(d_tables[tablename], df)
         session.commit()
 
@@ -238,7 +259,7 @@ def check_year_exists(i_year, session, i_dbloc=l_dbloc, i_delobs=l_delobs):
     i_deletedb : boolean, optional
         Indicator to delete database, by default sm_deletedb
 
-    Returns
+    Returns:
     -------
     exist : boolean
         Indicator for whether the database exists after running the function
@@ -260,8 +281,6 @@ def check_year_exists(i_year, session, i_dbloc=l_dbloc, i_delobs=l_delobs):
 def check_cnty_exists(i_fips_cnty, i_year, session, i_dbloc=l_dbloc, i_delobs=l_delobs):
     """check_cnty_exists
 
-
-
     Parameters
     ----------
     i_fips_cnty : string
@@ -275,7 +294,7 @@ def check_cnty_exists(i_fips_cnty, i_year, session, i_dbloc=l_dbloc, i_delobs=l_
     i_deletedb : boolean, optional
         Indicator to delete database, by default sm_deletedb
 
-    Returns
+    Returns:
     -------
     exist : boolean
         Indicator for whether the database exists after running the function
@@ -291,14 +310,15 @@ def check_cnty_exists(i_fips_cnty, i_year, session, i_dbloc=l_dbloc, i_delobs=l_
             exist = False
         else:
             if i_delobs:
-                session.query(county_noaa).filter(and_(county_noaa.year == i_year)).delete()
+                session.query(county_noaa).filter(
+                    and_(county_noaa.year == i_year)
+                ).delete()
                 session.commit()
                 exist = False
             else:
                 exist = True
         return exist
-    else:
-        return False
+    return False
 
 
 def check_cnty_exists_csv(i_fips_cnty, i_year, i_dbloc=l_dbloc, i_delobs=l_delobs):
@@ -316,24 +336,22 @@ def check_cnty_exists_csv(i_fips_cnty, i_year, i_dbloc=l_dbloc, i_delobs=l_delob
     i_deletedb : boolean, optional
         Indicator to delete database, by default sm_deletedb
 
-    Returns
+    Returns:
     -------
     boolean
         Indicator for whether the database exists after running the function
     """
     ### Check if csv exists
-    l_path = f'{l_dbloc}/FIPS-NOAA/FIPS-NOAA_{i_fips_cnty}-{i_year}.csv'
+    l_path = f"{l_dbloc}/FIPS-NOAA/FIPS-NOAA_{i_fips_cnty}-{i_year}.csv"
     if os.path.exists(l_path):
         if i_delobs:
             os.remove(l_path)
-            print(f'Due to switch, deleted {i_fips_cnty} for {i_year}')
+            print(f"Due to switch, deleted {i_fips_cnty} for {i_year}")
             return False
-        else:
-            print(f'{i_fips_cnty} for {i_year} already exists; switch indicates keep.')
-            return True
-    else:
-        print(f"{i_fips_cnty} for {i_year} doesn't exist. Creating new csv")
-        return False
+        print(f"{i_fips_cnty} for {i_year} already exists; switch indicates keep.")
+        return True
+    print(f"{i_fips_cnty} for {i_year} doesn't exist. Creating new csv")
+    return False
 
 
 async def download_station_data(session, year, station_id):
@@ -349,24 +367,23 @@ async def download_station_data(session, year, station_id):
     station_id : string
         NOAA-ISD station ID
 
-    Returns
+    Returns:
     -------
     text, year, station_id
         Returns response to GET request, the input year, and the station id
     """
-    url = f'https://www.ncei.noaa.gov/data/global-hourly/access/{year}/{station_id}.csv'
+    url = f"https://www.ncei.noaa.gov/data/global-hourly/access/{year}/{station_id}.csv"
     try:
         async with session.get(url) as response:
             if response.status == 200:
                 text = await response.text()
                 return text, year, station_id
-            else:
-                print(
-                    f'Error: Unable to download data for station {station_id} in year {year}. HTTP status: {response.status}'
-                )
-                return None, year, station_id
+            print(
+                f"Error: Unable to download data for station {station_id} in year {year}. HTTP status: {response.status}"
+            )
+            return None, year, station_id
     except Exception as e:
-        print(f'Error downloading data for station {station_id} in year {year}: {e}')
+        print(f"Error downloading data for station {station_id} in year {year}: {e}")
         return None, year, station_id
 
 
@@ -383,7 +400,7 @@ async def process_station_group(year, station_ids, delay=0.5):
     delay : float, optional
         Delay download requests, by default 0.5
 
-    Returns
+    Returns:
     -------
     Asyncio.Future
         Gathered responses from all download clients
@@ -396,7 +413,7 @@ async def process_station_group(year, station_ids, delay=0.5):
                 task = download_station_data(a_session, year, station_id)
                 tasks.append(task)
             except Exception as e:
-                print(f'Error downloading stations via asyncio for {station_id}: {e}')
+                print(f"Error downloading stations via asyncio for {station_id}: {e}")
         return await asyncio.gather(*tasks)
 
 
@@ -409,18 +426,17 @@ def read_station_data(t_raw):
     t_raw : tuple
         Collection of outputs from download functions
 
-    Returns
+    Returns:
     -------
     dict
         A dictionary indexed by station id w/ values corresponding to the station level data
     """
     if t_raw[0] is None:
         return None
-    else:
-        df = pd.read_csv(StringIO(t_raw[0]), low_memory=False)
-        df['year'] = t_raw[1]
-        df['station_id'] = t_raw[2]
-        return {t_raw[2]: df}
+    df = pd.read_csv(StringIO(t_raw[0]), low_memory=False)
+    df["year"] = t_raw[1]
+    df["station_id"] = t_raw[2]
+    return {t_raw[2]: df}
 
 
 def create_county_series(i_fips_cnty, i_year, i_engine_loc=l_dbloc_full):
@@ -438,13 +454,13 @@ def create_county_series(i_fips_cnty, i_year, i_engine_loc=l_dbloc_full):
     i_engine_loc : string, optional
         Location of database file, constructed with snakemake input
 
-    Returns
+    Returns:
     -------
     """
-    print(f'Starting session for {i_fips_cnty} and {i_year}')
+    print(f"Starting session for {i_fips_cnty} and {i_year}")
     ### Check i_engine_loc for validity
     if os.path.exists(os.path.dirname(i_engine_loc)):
-        engine = create_engine(f'sqlite:///{i_engine_loc}')
+        engine = create_engine(f"sqlite:///{i_engine_loc}")
     else:
         raise ValueError(
             f"File location {l_dbloc_full} isn't valid; respecify db location and rerun"
@@ -462,7 +478,7 @@ def create_county_series(i_fips_cnty, i_year, i_engine_loc=l_dbloc_full):
     d_items = [[t for t in s.__dict__.items()] for s in stations]
     df_station_id = [{k: v for k, v in t} for t in d_items]
     df_station_id = pd.DataFrame(df_station_id)
-    station_ids = df_station_id['station_id']
+    station_ids = df_station_id["station_id"]
 
     ### Check if county data exists; option to delete observations and overwrite
     data_exist = check_cnty_exists_csv(i_fips_cnty, i_year)
@@ -472,24 +488,29 @@ def create_county_series(i_fips_cnty, i_year, i_engine_loc=l_dbloc_full):
             try:
                 results = asyncio.run(process_station_group(i_year, station_ids))
             except Exception as e:
-                print(f'Error downloading stations via asyncio for {i_fips_cnty}: {e}')
+                print(f"Error downloading stations via asyncio for {i_fips_cnty}: {e}")
 
             ### Cleaning each downloaded station dataset
             l_df_stations_raw = [x for x in map(read_station_data, results)]
             l_df_stations_raw = [x for x in l_df_stations_raw if x is not None]
             d_df_stations_raw = {k: v for d in l_df_stations_raw for k, v in d.items()}
             d_varlist = {
-                'WND': [
-                    'wind_dir_degrees',
-                    'wind_dir_qual',
-                    'wind_type',
-                    'wind_spd_m_per_sec_10',
-                    'wind_spd_qual',
+                "WND": [
+                    "wind_dir_degrees",
+                    "wind_dir_qual",
+                    "wind_type",
+                    "wind_spd_m_per_sec_10",
+                    "wind_spd_qual",
                 ],
-                'TMP': ['tmp_air_celsius_10', 'tmp_air_qual'],
-                'DEW': ['tmp_dew_celsius_10', 'tmp_dew_qual'],
-                'AA1': ['lprec_period_hrs', 'lprec_depth_mm', 'lprec_cond', 'lprec_qual'],
-                'AL1': ['snow_period_hrs', 'snow_dim_cm', 'snow_cond', 'snow_qual'],
+                "TMP": ["tmp_air_celsius_10", "tmp_air_qual"],
+                "DEW": ["tmp_dew_celsius_10", "tmp_dew_qual"],
+                "AA1": [
+                    "lprec_period_hrs",
+                    "lprec_depth_mm",
+                    "lprec_cond",
+                    "lprec_qual",
+                ],
+                "AL1": ["snow_period_hrs", "snow_dim_cm", "snow_cond", "snow_qual"],
             }
 
             def clean_vars(i_varname, i_d_df=d_df_stations_raw, i_d_varlist=d_varlist):
@@ -506,7 +527,7 @@ def create_county_series(i_fips_cnty, i_year, i_engine_loc=l_dbloc_full):
                 i_d_varlist : list
                     List of variables
 
-                Returns
+                Returns:
                 -------
                 dict_varsplit : dict
                     Dictionary of variables split from original raw columns from NOAA data
@@ -518,26 +539,31 @@ def create_county_series(i_fips_cnty, i_year, i_engine_loc=l_dbloc_full):
                             df = i_d_df[key]
                             try:
                                 if i_varname in df.columns:
-                                    var = [str(x).split(',') for x in df[i_varname]]
+                                    var = [str(x).split(",") for x in df[i_varname]]
                                     var = [list(x) for x in zip(*var)]
                                     dict_df = {
-                                        d_varlist[i_varname][i]: var[i] for i in range(len(var))
+                                        d_varlist[i_varname][i]: var[i]
+                                        for i in range(len(var))
                                     }
                                     dict_varsplit[key] = dict_df
                                 else:
-                                    dict_varsplit[key] = ''
+                                    dict_varsplit[key] = ""
                             except Exception as e:
-                                print(f'{key} is causing issues w/ collapsing {i_varname}: {e}')
+                                print(
+                                    f"{key} is causing issues w/ collapsing {i_varname}: {e}"
+                                )
                     else:
                         print(
-                            f'{i_varname} not assigned variables in varlist. Check d_varlist for splits'
+                            f"{i_varname} not assigned variables in varlist. Check d_varlist for splits"
                         )
                         dict_varsplit = {}
                     return dict_varsplit
                 except Exception as e:
                     return print(f"{i_varname} doesn't work: {e}")
 
-            d_clean_vars = [x for x in map(clean_vars, d_varlist.keys()) if x is not False]
+            d_clean_vars = [
+                x for x in map(clean_vars, d_varlist.keys()) if x is not False
+            ]
             # d_clean_vars = [x for x in d_clean_vars if x != False]
 
             ### Create dataframes of station data with slected variables
@@ -556,16 +582,16 @@ def create_county_series(i_fips_cnty, i_year, i_engine_loc=l_dbloc_full):
                 i_d_df_stations_raw : dict, optional
                     Dictionary of raw station data, by default d_df_stations_raw
 
-                Returns
+                Returns:
                 -------
                 df_full : dataframe
                     Dataframe of processed station data for station_id
                 """
                 ### Merge together into single data frame
                 df = i_d_df_stations_raw[i_station_id]
-                df_base = df[['station_id', 'year', 'DATE']]
+                df_base = df[["station_id", "year", "DATE"]]
                 l_df = [x[i_station_id] for x in l_dict]
-                l_df = [pd.DataFrame.from_dict(x) for x in l_df if x != '']
+                l_df = [pd.DataFrame.from_dict(x) for x in l_df if x != ""]
                 df_concat = pd.concat(l_df, axis=1)
                 df_full = pd.concat([df_base, df_concat], axis=1)
                 return df_full
@@ -596,7 +622,7 @@ def create_county_series(i_fips_cnty, i_year, i_engine_loc=l_dbloc_full):
                 fips_cnty : string, optional
                     FIPS code for county, by default i_fips_cnty
 
-                Returns
+                Returns:
                 -------
                 df_full : dataframe
                     Dataframe with all stations assigned to fips_cnty
@@ -606,17 +632,19 @@ def create_county_series(i_fips_cnty, i_year, i_engine_loc=l_dbloc_full):
 
                 ### Clean Station Data
                 df_full = df_full.merge(
-                    i_df_station_id[['station_id', 'distance_km']], on=['station_id'], how='left'
+                    i_df_station_id[["station_id", "distance_km"]],
+                    on=["station_id"],
+                    how="left",
                 )
-                df_full['invDist'] = round(1 / df_full['distance_km'], 5)
+                df_full["invDist"] = round(1 / df_full["distance_km"], 5)
 
                 ### Time and date/set index
-                l_time = ['year', 'month', 'day', 'hour']
-                df_full['DATE'] = pd.to_datetime(df_full['DATE'])
-                df_full['year'] = df_full['DATE'].dt.year
-                df_full['month'] = df_full['DATE'].dt.month
-                df_full['day'] = df_full['DATE'].dt.day
-                df_full['hour'] = df_full['DATE'].dt.hour
+                l_time = ["year", "month", "day", "hour"]
+                df_full["DATE"] = pd.to_datetime(df_full["DATE"])
+                df_full["year"] = df_full["DATE"].dt.year
+                df_full["month"] = df_full["DATE"].dt.month
+                df_full["day"] = df_full["DATE"].dt.day
+                df_full["hour"] = df_full["DATE"].dt.hour
                 df_full.set_index(keys=l_time, inplace=True)
 
                 ### For each variable, check if in columns, if so, cleaning steps
@@ -624,89 +652,109 @@ def create_county_series(i_fips_cnty, i_year, i_engine_loc=l_dbloc_full):
 
                 ### Air Temperature
                 try:
-                    df_full['tmp_air_celsius_10'] = [int(x) for x in df_full['tmp_air_celsius_10']]
-                    df_full.loc[(df_full['tmp_air_celsius_10'] == 9999), 'tmp_air_celsius_10'] = (
-                        np.nan
-                    )
+                    df_full["tmp_air_celsius_10"] = [
+                        int(x) for x in df_full["tmp_air_celsius_10"]
+                    ]
                     df_full.loc[
-                        (df_full['tmp_air_qual'].isin(l_qualfail)), 'tmp_air_celsius_10'
+                        (df_full["tmp_air_celsius_10"] == 9999), "tmp_air_celsius_10"
+                    ] = np.nan
+                    df_full.loc[
+                        (df_full["tmp_air_qual"].isin(l_qualfail)), "tmp_air_celsius_10"
                     ] = np.nan
                 except Exception as e:
                     print(
-                        f'Error cleaning variables in {fips_cnty} for tmp_air_celsius in year {year}: {e}'
+                        f"Error cleaning variables in {fips_cnty} for tmp_air_celsius in year {year}: {e}"
                     )
 
                 ### Dew point temperature
                 try:
-                    df_full['tmp_dew_celsius_10'] = [int(x) for x in df_full['tmp_dew_celsius_10']]
-                    df_full.loc[(df_full['tmp_dew_celsius_10'] == 9999), 'tmp_dew_celsius_10'] = (
-                        np.nan
-                    )
+                    df_full["tmp_dew_celsius_10"] = [
+                        int(x) for x in df_full["tmp_dew_celsius_10"]
+                    ]
                     df_full.loc[
-                        (df_full['tmp_dew_qual'].isin(l_qualfail)), 'tmp_dew_celsius_10'
+                        (df_full["tmp_dew_celsius_10"] == 9999), "tmp_dew_celsius_10"
+                    ] = np.nan
+                    df_full.loc[
+                        (df_full["tmp_dew_qual"].isin(l_qualfail)), "tmp_dew_celsius_10"
                     ] = np.nan
                 except Exception as e:
                     print(
-                        f'Error cleaning variables in {fips_cnty} for tmp_dew_celsius in year {year}: {e}'
+                        f"Error cleaning variables in {fips_cnty} for tmp_dew_celsius in year {year}: {e}"
                     )
 
                 ### Wind Speed
                 try:
-                    df_full['wind_spd_m_per_sec_10'] = [
-                        int(x) for x in df_full['wind_spd_m_per_sec_10']
+                    df_full["wind_spd_m_per_sec_10"] = [
+                        int(x) for x in df_full["wind_spd_m_per_sec_10"]
                     ]
                     df_full.loc[
-                        (df_full['wind_spd_m_per_sec_10'] == 9999), 'wind_spd_m_per_sec_10'
+                        (df_full["wind_spd_m_per_sec_10"] == 9999),
+                        "wind_spd_m_per_sec_10",
                     ] = np.nan
                     df_full.loc[
-                        (df_full['wind_spd_qual'].isin(l_qualfail)), 'wind_spd_m_per_sec_10'
+                        (df_full["wind_spd_qual"].isin(l_qualfail)),
+                        "wind_spd_m_per_sec_10",
                     ] = np.nan
                 except Exception as e:
                     print(
-                        f'Error cleaning variables in {fips_cnty} for wind_spd_m_per_sec in year {year}: {e}'
+                        f"Error cleaning variables in {fips_cnty} for wind_spd_m_per_sec in year {year}: {e}"
                     )
 
                 ### Wind Direction
                 try:
-                    df_full['wind_dir_degrees'] = [int(x) for x in df_full['wind_dir_degrees']]
-                    df_full.loc[(df_full['wind_dir_degrees'] == 999), 'wind_dir_degrees'] = np.nan
-                    df_full.loc[(df_full['wind_dir_qual'].isin(l_qualfail)), 'wind_dir_degrees'] = (
-                        np.nan
-                    )
+                    df_full["wind_dir_degrees"] = [
+                        int(x) for x in df_full["wind_dir_degrees"]
+                    ]
+                    df_full.loc[
+                        (df_full["wind_dir_degrees"] == 999), "wind_dir_degrees"
+                    ] = np.nan
+                    df_full.loc[
+                        (df_full["wind_dir_qual"].isin(l_qualfail)), "wind_dir_degrees"
+                    ] = np.nan
                 except Exception as e:
                     print(
-                        f'Error cleaning variables in {fips_cnty} for wind_dir_degrees in year {year}: {e}'
+                        f"Error cleaning variables in {fips_cnty} for wind_dir_degrees in year {year}: {e}"
                     )
 
                 ### Liquid Precip (CLEAN LATER WHEN NEEDED)
                 try:
-                    df_full['lprec_period_hrs'] = [float(x) for x in df_full['lprec_period_hrs']]
-                    df_full['lprec_depth_mm'] = [float(x) / 10 for x in df_full['lprec_depth_mm']]
+                    df_full["lprec_period_hrs"] = [
+                        float(x) for x in df_full["lprec_period_hrs"]
+                    ]
+                    df_full["lprec_depth_mm"] = [
+                        float(x) / 10 for x in df_full["lprec_depth_mm"]
+                    ]
                 except Exception as e:
-                    print(f'Error cleaning variables in {fips_cnty} for lprec in year {year}: {e}')
+                    print(
+                        f"Error cleaning variables in {fips_cnty} for lprec in year {year}: {e}"
+                    )
 
                 ### Snow Precip (CLEAN LATER WHEN NEEDED)
                 try:
-                    df_full['snow_period_hrs'] = [float(x) for x in df_full['snow_period_hrs']]
-                    df_full['snow_dim_cm'] = [float(x) for x in df_full['snow_dim_cm']]
+                    df_full["snow_period_hrs"] = [
+                        float(x) for x in df_full["snow_period_hrs"]
+                    ]
+                    df_full["snow_dim_cm"] = [float(x) for x in df_full["snow_dim_cm"]]
                 except Exception as e:
-                    print(f'Error cleaning variables in {fips_cnty} for snow in year {year}: {e}')
+                    print(
+                        f"Error cleaning variables in {fips_cnty} for snow in year {year}: {e}"
+                    )
 
                 return df_full
 
             df_station_full = clean_full_stations(l_df_full)
 
             ### Create county data from the full stations data frame
-            l_time = ['year', 'month', 'day', 'hour']
+            l_time = ["year", "month", "day", "hour"]
             w_col = [
-                'tmp_air_celsius_10',
-                'tmp_dew_celsius_10',
-                'wind_dir_degrees',
-                'wind_spd_m_per_sec_10',
+                "tmp_air_celsius_10",
+                "tmp_dew_celsius_10",
+                "wind_dir_degrees",
+                "wind_spd_m_per_sec_10",
             ]
 
             def countyCollapse(varname):
-                """countyCollapse
+                """CountyCollapse
                 Collapse stations into county-level weather data by averaging within timesteps and weighting by distance to county centroid
 
                 _extended_summary_
@@ -716,7 +764,7 @@ def create_county_series(i_fips_cnty, i_year, i_engine_loc=l_dbloc_full):
                 varname : string
                     Name of the variable averaged over stations
 
-                Returns
+                Returns:
                 -------
                 dataframe
                     Dataframe indexed by time that contains collapsed weather variable at county scale
@@ -725,18 +773,24 @@ def create_county_series(i_fips_cnty, i_year, i_engine_loc=l_dbloc_full):
                 df_collapse = df_station_full[~np.isnan(df_station_full[varname])]
 
                 ### Sum total inverse distance by timestep
-                df_sum = df_collapse.groupby(by=l_time)['invDist'].sum()
-                df_sum.name = 'invDist_sum'
+                df_sum = df_collapse.groupby(by=l_time)["invDist"].sum()
+                df_sum.name = "invDist_sum"
 
                 ### Join sum to collapsed dataframe to create weights
                 df_collapse = df_collapse.join(df_sum, on=l_time)
 
                 ### Divide distance by sum to create weight for specific timestep for station
-                df_collapse['weight'] = df_collapse['invDist'] / df_collapse['invDist_sum']
-                df_collapse['var_contribution'] = df_collapse['weight'] * df_collapse[varname]
+                df_collapse["weight"] = (
+                    df_collapse["invDist"] / df_collapse["invDist_sum"]
+                )
+                df_collapse["var_contribution"] = (
+                    df_collapse["weight"] * df_collapse[varname]
+                )
 
                 ### Sum "contributions" to weighted sum. Replace missing values
-                df_var = df_collapse.groupby(by=l_time)['var_contribution'].sum().round(0)
+                df_var = (
+                    df_collapse.groupby(by=l_time)["var_contribution"].sum().round(0)
+                )
                 df_var.loc[pd.isna(df_var)] = 9999
                 df_var = df_var.astype(int)
                 df_var.name = varname
@@ -744,19 +798,21 @@ def create_county_series(i_fips_cnty, i_year, i_engine_loc=l_dbloc_full):
 
             ### Concat variables together
             l_out = pd.concat([x for x in map(countyCollapse, w_col)], axis=1)
-            l_out['FIPS_cnty'] = i_fips_cnty
+            l_out["FIPS_cnty"] = i_fips_cnty
             l_out.reset_index(drop=False, inplace=True)
 
             ### Write to csv
-            l_out.to_csv(f'{l_dbloc}/FIPS-NOAA/FIPS-NOAA_{i_fips_cnty}-{i_year}.csv')
-            return print(f'Download for {i_fips_cnty} in {i_year} completed. Written to csv.')
+            l_out.to_csv(f"{l_dbloc}/FIPS-NOAA/FIPS-NOAA_{i_fips_cnty}-{i_year}.csv")
+            return print(
+                f"Download for {i_fips_cnty} in {i_year} completed. Written to csv."
+            )
         except Exception as e:
             return print(
-                f'Download for {i_fips_cnty} in {i_year} failed. Check session/url for issues: {e}'
+                f"Download for {i_fips_cnty} in {i_year} failed. Check session/url for issues: {e}"
             )
     else:
         return print(
-            f'Data for county {i_fips_cnty} in {i_year} already exists. Set exists to false if desired download/overwrite'
+            f"Data for county {i_fips_cnty} in {i_year} already exists. Set exists to false if desired download/overwrite"
         )
 
 
@@ -773,7 +829,7 @@ def upload_county_series(i_year, Session, l_dbloc=l_dbloc):
     l_dbloc : string, optional
         Location of database file, by default l_dbloc
 
-    Returns
+    Returns:
     -------
     """
     ### Create Session for specific process
@@ -781,18 +837,22 @@ def upload_county_series(i_year, Session, l_dbloc=l_dbloc):
 
     ### Find all files saved for input year
     l_files_year = [
-        x for x in os.listdir(f'{l_dbloc}/FIPS-NOAA') if re.search(f'-{i_year}', x) is not None
+        x
+        for x in os.listdir(f"{l_dbloc}/FIPS-NOAA")
+        if re.search(f"-{i_year}", x) is not None
     ]
 
     ### Append all files into single dataframe
-    df_year = pd.concat([pd.read_csv(f'{l_dbloc}/FIPS-NOAA/{x}') for x in l_files_year])
-    df_year['FIPS_cnty'] = [str(x).rjust(5, '0') for x in df_year['FIPS_cnty']]
+    df_year = pd.concat([pd.read_csv(f"{l_dbloc}/FIPS-NOAA/{x}") for x in l_files_year])
+    df_year["FIPS_cnty"] = [str(x).rjust(5, "0") for x in df_year["FIPS_cnty"]]
 
     ### Check if year uploaded
     data_exist = check_year_exists(i_year, session_func)
 
     ### Load each csv and impute
-    def upload_csv(i_fips_cnty, i_year=i_year, session_func=session_func, df_year=df_year):
+    def upload_csv(
+        i_fips_cnty, i_year=i_year, session_func=session_func, df_year=df_year
+    ):
         """upload_csv
         Filters df_year for input county and uploads weather data to the db file at db_loc
 
@@ -807,20 +867,22 @@ def upload_county_series(i_year, Session, l_dbloc=l_dbloc):
         df_year : dataframe, optional
             dataframe containing all counties in year, by default df_year
 
-        Returns
+        Returns:
         -------
         string, int
             FIPS code and indicator for successful upload
         """
-        df_year_fil = df_year[df_year['FIPS_cnty'] == i_fips_cnty]
+        df_year_fil = df_year[df_year["FIPS_cnty"] == i_fips_cnty]
         try:
-            session_func.bulk_insert_mappings(county_noaa, df_year_fil.to_dict(orient='records'))
+            session_func.bulk_insert_mappings(
+                county_noaa, df_year_fil.to_dict(orient="records")
+            )
             session_func.commit()
-            print(f'Writing {i_fips_cnty} for {i_year} to db file successful')
+            print(f"Writing {i_fips_cnty} for {i_year} to db file successful")
             return (i_fips_cnty, 0)
         except Exception as e:
             print(
-                f'Writing {i_fips_cnty} for {i_year} to db file failed; likely collision issue: {e}'
+                f"Writing {i_fips_cnty} for {i_year} to db file failed; likely collision issue: {e}"
             )
             return (i_fips_cnty, 1)
 
@@ -829,7 +891,6 @@ def upload_county_series(i_year, Session, l_dbloc=l_dbloc):
 
 def main():
     """Prepare connect to raw noaa data"""
-
     #####
     ### Step 1: Setting up reference tables
     #####
@@ -838,15 +899,15 @@ def main():
     db_exist = check_db_exists()
 
     ### Create engine and session
-    engine = create_engine(f'sqlite:///{l_dbloc}/noaa_db.db')
+    engine = create_engine(f"sqlite:///{l_dbloc}/noaa_db.db")
     Session = sessionmaker(bind=engine)
     session = Session()
-    l_tablenames = ['isd_station', 'county_isd', 'ba_county', 'county']
+    l_tablenames = ["isd_station", "county_isd", "ba_county", "county"]
     dict_tables = {
-        'isd_station': isd_station,
-        'county_isd': county_isd,
-        'ba_county': ba_county,
-        'county': county,
+        "isd_station": isd_station,
+        "county_isd": county_isd,
+        "ba_county": ba_county,
+        "county": county,
     }
 
     ### Create tables if db doesn't exist
@@ -858,30 +919,36 @@ def main():
     #####
     ### Step 2: Create county series from downloaded station data
     #####
-    if not os.path.exists(f'{l_dbloc}/FIPS-NOAA'):
-        os.mkdir(f'{l_dbloc}/FIPS-NOAA')
+    if not os.path.exists(f"{l_dbloc}/FIPS-NOAA"):
+        os.mkdir(f"{l_dbloc}/FIPS-NOAA")
 
     ### Create input dataframe (e.g. county/year combinations)
-    l_inp = [list(x) for x in zip(*session.query(county_isd.FIPS_cnty, county_isd.Year).all())]
-    df_inp = pd.DataFrame({'FIPS_cnty': l_inp[0], 'Year': l_inp[1]}).drop_duplicates()
+    l_inp = [
+        list(x)
+        for x in zip(*session.query(county_isd.FIPS_cnty, county_isd.Year).all())
+    ]
+    df_inp = pd.DataFrame({"FIPS_cnty": l_inp[0], "Year": l_inp[1]}).drop_duplicates()
 
     ### Find counties already run in csv files
-    file_list = os.listdir(f'{l_dbloc}/FIPS-NOAA')
-    df_run = pd.DataFrame({'files': file_list})
+    file_list = os.listdir(f"{l_dbloc}/FIPS-NOAA")
+    df_run = pd.DataFrame({"files": file_list})
 
     if df_run.shape[0] > 0:
-        df_run['FIPS_cnty'] = df_run['files'].str.extract(r'(\d{5})')
-        df_run['Year'] = df_run['files'].str.extract(r'(\d{4}(?=\.))')
-        df_run['Year'] = pd.to_numeric(df_run['Year'])
-        df_run['run'] = 1
+        df_run["FIPS_cnty"] = df_run["files"].str.extract(r"(\d{5})")
+        df_run["Year"] = df_run["files"].str.extract(r"(\d{4}(?=\.))")
+        df_run["Year"] = pd.to_numeric(df_run["Year"])
+        df_run["run"] = 1
 
-        df_inp = pd.merge(df_inp, df_run, how='left', on=['FIPS_cnty', 'Year'])
-        df_inp = df_inp[df_inp['run'] != 1]
+        df_inp = pd.merge(df_inp, df_run, how="left", on=["FIPS_cnty", "Year"])
+        df_inp = df_inp[df_inp["run"] != 1]
 
     ### Create county series
     with concurrent.futures.ThreadPoolExecutor() as executor:
         results = [
-            x for x in executor.map(create_county_series, df_inp['FIPS_cnty'], df_inp['Year'])
+            x
+            for x in executor.map(
+                create_county_series, df_inp["FIPS_cnty"], df_inp["Year"]
+            )
         ]
 
     ### Upload all data
@@ -889,5 +956,5 @@ def main():
     results_upload = [x for x in map(upload_county_series_p, l_years)]
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

@@ -2,7 +2,7 @@
 ### Snakemake control file for Illustrative Example in Integration Repo
 ### Date: 8/7/24
 ### Description: This file describes the order of operation for generating the spatial data
-###              and constructing first, a county-level weather data series and then a 
+###              and constructing first, a county-level weather data series and then a
 ###              balancing authority (subregion) level dataset describing electricity demand
 ###              as reported by the EIA930 survey. One can enter the scripts reported within
 ###              each rule to examine the granular details of cleaning/merging/downloading; see
@@ -90,7 +90,7 @@ rule join_BA_ISD:
     script:
         "scripts/join_BA-noaa.R"
 
-# This rule "county_population" generates the County_Population.csv, but this requires a census key 
+# This rule "county_population" generates the County_Population.csv, but this requires a census key
 # we're provided a copy of the CSV in inputs, in case users are having trouble accessing census keys
 """
 rule county_population:
@@ -138,7 +138,7 @@ rule clean_noaa:
 
 rule download_930:
     output:
-        expand("inputs/EIA930/EIA930_Balance_{y}.csv", y=YEARS_930), 
+        expand("inputs/EIA930/EIA930_Balance_{y}.csv", y=YEARS_930),
         expand("inputs/EIA930/EIA930_Subregion_{y}.csv", y=SR_YEARS),
     params:
         years_sm = YEARS_930,
@@ -147,7 +147,7 @@ rule download_930:
 
 rule clean_930:
     input:
-        expand("inputs/EIA930/EIA930_Balance_{y}.csv", y = YEARS_930),     
+        expand("inputs/EIA930/EIA930_Balance_{y}.csv", y = YEARS_930),
         expand("inputs/EIA930/EIA930_Subregion_{y}.csv", y = SR_YEARS),
     output:
         "outputs/LoadCleaned.csv"

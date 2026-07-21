@@ -115,7 +115,7 @@ dt.ba_basr <- fread(here("outputs", "crosswalks", "EIA_BA-BASR-County.csv")) %>%
 ### Create function for calculating distances and finding nearest station
 #####
 f_findnearest_year <- function(i.year){
-  
+
   ### Load county shapefile for each year; calculate centroid
   sf.county <- st_read(here("inputs", "shapefiles", "cb_2019_us_county_5m.shp")) %>%
   # sf.county = tigris::counties(cb = TRUE,
@@ -125,7 +125,7 @@ f_findnearest_year <- function(i.year){
     dplyr::select(FIPS_cnty)                   %>%
     filter(FIPS_cnty %in% dt.ba_basr$FIPS_cnty) %>%
     st_centroid()
-  
+
   #####
   ### Create function that, for each county, finds nearest stations
   #####
@@ -134,10 +134,10 @@ f_findnearest_year <- function(i.year){
                             i.n_stations = v.n_stations.sm,
                             i.sf.county = sf.county,
                             i.sf.station = sf.station){
-    
+
     ### Calculate distance to centroids
     dist.v <- as.numeric(st_distance(i.sf.station, i.sf.county[i,]))/1000
-    
+
     ### Create data table and sort by distance
     dt <- data.table("station_id" = i.sf.station$station_id,
                      "date_start" = i.sf.station$date_start,
@@ -145,9 +145,9 @@ f_findnearest_year <- function(i.year){
                      "distance_km" = dist.v) %>%
       setorder(distance_km) %>%
       .[,FIPS_cnty := i.sf.county[i,]$FIPS_cnty]
-    
+
     ### Create output dataset with n_station number of stations for county
-    dt_y <- copy(dt[date_start <= mdy(paste0("01/01/", i2.year)) & 
+    dt_y <- copy(dt[date_start <= mdy(paste0("01/01/", i2.year)) &
                     date_end >= mdy(paste0("12/31/", i2.year))]) %>%
       .[1:i.n_stations] %>%
       .[,Year := i2.year] %>%
@@ -157,7 +157,7 @@ f_findnearest_year <- function(i.year){
   dt.int_year = rbindlist(map(1:dim(sf.county)[1], f_findnearest))
 }
 dt.int <- map(v.years.sm, f_findnearest_year) %>% rbindlist()
-  
+
 ### Merge intersected counties to station dataset
 dt.int_m <- merge(dt.int,
                   dt.station[,c("station_id", "USAF", "WBAN", "LAT", "LON",

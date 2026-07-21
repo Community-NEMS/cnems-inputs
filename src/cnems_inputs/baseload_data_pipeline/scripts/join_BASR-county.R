@@ -1,11 +1,11 @@
 ############################################################################
 ### s_BASR-County_Join.R: Load and clean raw BASR shapefile from OES
 ###
-### Description: This script loads and joins together the BASR shapefile and 
-###              yearly county shapefiles, assigning counties to BASRs until 
+### Description: This script loads and joins together the BASR shapefile and
+###              yearly county shapefiles, assigning counties to BASRs until
 ###              all counties that are assigned a BA (in the contiguous 48 states)
 ###              with BASRs also have a BASR assigned to them. This is done
-###              via the f_basr_make function below for each year fed to this 
+###              via the f_basr_make function below for each year fed to this
 ###              script from snakemake. This is run for each year to deal with
 ###              changes in county definitions over time (e.g. Connecticut).
 ###              After the intersection, we correct based on state boundaries
@@ -13,7 +13,7 @@
 ###              To fix a handful of issues with this merge, we use a previous
 ###              hand-constructed version of the BASR to county crosswalk and
 ###              merge this to the spatially joined county-BASR data table.
-###              
+###
 ### - Inputs
 ###   * EIA_BA-County.csv
 ###   * EIA_BA-SubregionToCounty.csv
@@ -28,7 +28,7 @@
 #####
 ### Set-up: Loading packages (included in Conda environment)
 #####
-libraries <- c("tidyverse", "data.table", "tigris", "sf", 
+libraries <- c("tidyverse", "data.table", "tigris", "sf",
                "readxl", "here")
 invisible(lapply(libraries, library, character.only = TRUE))
 
@@ -61,7 +61,7 @@ v.crs  <- "ESRI:102008"
 ### Create function for spatial join and run for snakemake-defined years
 #####
 f_basr_make <- function(i.year){
-  
+
   ### Load Counties (from API), set CRS, and calculate county size
   sf.ba_cnty  <- st_read(here("inputs", "shapefiles", "cb_2019_us_county_5m.shp")) %>%
   # sf.ba_cnty  <- tigris::counties(cb = TRUE,
@@ -72,7 +72,7 @@ f_basr_make <- function(i.year){
     select(FIPS_cnty, Area_m2) %>%
     inner_join(dt.ba_cw[(BA_Code %in% v.basr_avail) & Year == i.year],
                by = "FIPS_cnty")
-  
+
   ################################################################################
   ### Note: Intersect BASR boundaries w/ counties
   ### Assignment Rules:
@@ -106,9 +106,9 @@ f_basr_make <- function(i.year){
                         0)] %>%
     .[Assign == 1] %>%
     .[,c("FIPS_cnty", "BA_Code", "BASR_Code")]
-  
+
   #####
-  ### Fix missing assignments, first w/ state based classifications, then w/ 
+  ### Fix missing assignments, first w/ state based classifications, then w/
   ### specific classifications to ensure all counties assigned to BA have BASR tag
   #####
   dt.basr_cnty_fix <- left_join(sf.ba_cnty, dt.basr_cnty,
@@ -125,15 +125,15 @@ f_basr_make <- function(i.year){
       `BASR_Code` := "UPPR"] %>%
     .[`BA_Code` == "SWPP" & (FIPS_st == "31"),
       `BASR_Code` := "UPPR"]  %>%
-    .[is.na(`BASR_Code`) & `BA_Code` == "MISO" & (FIPS_st == "05" | FIPS_st == "22" | FIPS_st == "28" | FIPS_st == "48"), 
+    .[is.na(`BASR_Code`) & `BA_Code` == "MISO" & (FIPS_st == "05" | FIPS_st == "22" | FIPS_st == "28" | FIPS_st == "48"),
       `BASR_Code` := "8910"] %>%
-    .[is.na(`BASR_Code`) & `BA_Code` == "MISO" & (FIPS_st == "19" | FIPS_st == "29"), 
+    .[is.na(`BASR_Code`) & `BA_Code` == "MISO" & (FIPS_st == "19" | FIPS_st == "29"),
       `BASR_Code` := "0035"] %>%
-    .[is.na(`BASR_Code`) & `BA_Code` == "MISO" & (FIPS_st == "27" | FIPS_st == "46" | FIPS_st == "38" | FIPS_st == "30"), 
+    .[is.na(`BASR_Code`) & `BA_Code` == "MISO" & (FIPS_st == "27" | FIPS_st == "46" | FIPS_st == "38" | FIPS_st == "30"),
       `BASR_Code` := "0001"] %>%
-    .[is.na(`BASR_Code`) & `BA_Code` == "MISO" & (FIPS_st == "21" | FIPS_st == "18"), 
+    .[is.na(`BASR_Code`) & `BA_Code` == "MISO" & (FIPS_st == "21" | FIPS_st == "18"),
       `BASR_Code` := "0006"] %>%
-    .[is.na(`BASR_Code`) & `BA_Code` == "MISO" & (FIPS_st == "17"), 
+    .[is.na(`BASR_Code`) & `BA_Code` == "MISO" & (FIPS_st == "17"),
       `BASR_Code` := "0004"] %>%
     .[is.na(`BASR_Code`) & `BA_Code` == "PJM" & (FIPS_st == "18"),
       `BASR_Code` := "AEP"] %>%
@@ -141,7 +141,7 @@ f_basr_make <- function(i.year){
       `BASR_Code` := "AEP"] %>%
     .[is.na(`BASR_Code`) & `BA_Code` == "PJM" & (FIPS_st == "37"),
       `BASR_Code` := "DOM"]
-  
+
   ### Note: Specific corrections (from a previous attempt)
   dt.basr_corrections <- fread(here("inputs", "shapefiles", "EIA_BA-SubregionToCounty.csv")) %>%
     .[,`BA_Code` := unlist(lapply(MATCH, function(x) str_sub(x,
@@ -157,14 +157,14 @@ f_basr_make <- function(i.year){
     .[,FIPS_cnty := str_c(str_pad(STATEFP, 2, side = "left", pad = "0"),
                           str_pad(COUNTYFP, 3, side = "left", pad = "0"))] %>%
     .[,.(FIPS_cnty, BASR_Code, BA_Code)]
-  
+
   ### Merge hand corrected counties w/ intersections
   dt.basr_cnty_na <- dt.basr_cnty_fix[is.na(BASR_Code)] %>%
     .[,!c("BASR_Code")] %>%
     merge(dt.basr_corrections,
           all.x = TRUE,
           by = c("FIPS_cnty", "BA_Code"))
-  
+
   ### Merge together all assignments into single file; drop unassigned
   dt.basr_cnty_full <- rbind(dt.basr_cnty_fix[!(Index %in% dt.basr_cnty_na$Index)], dt.basr_cnty_na) %>%
     .[!is.na(BASR_Code)] %>%

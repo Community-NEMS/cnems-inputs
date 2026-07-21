@@ -1,7 +1,7 @@
 #####
 ### Set-up: Loading packages (included in Conda environment)
 #####
-libraries <- c("chron","data.table", "lmtest", "fBasics", "readxl", 
+libraries <- c("chron","data.table", "lmtest", "fBasics", "readxl",
                "lubridate","caret")
 invisible(lapply(libraries, library, character.only = TRUE))
 
@@ -51,12 +51,12 @@ region_names = region_names[!grepl('Snakemake|Merged',region_names)]
 #####
 # run demand fit and prediction
 #####
-# 
+#
 # The weather data used for the regression consisted of:
-# the heating degree hour*, 
+# the heating degree hour*,
 # the cooling degree hour*
-# (both of these were interacted with a dummy variable specifying whether it was a weekday or a weekend day), 
-# the previous day's heating degree day*, 
+# (both of these were interacted with a dummy variable specifying whether it was a weekday or a weekend day),
+# the previous day's heating degree day*,
 # the previous day's cooling degree day*,
 # a three-hour rolling average relative humidity,
 # cold wind speed*,
@@ -72,18 +72,18 @@ dem_reg_all = data.table()
 for (region_name in region_names){
   print(region_name)
   all_files_reg = list.files(path = base_dir, pattern=paste0(region_name,'_'))
-  
+
   # if not fitting or predicting, pull from already intermediate fit files
   if (!fit_data & !pred_data){
     weektype = 1
     tmp_load = data.table()
     for (month in seq(1,12)){
         file_save_csv = paste0(write_to_dir,region_name,'_',month,'_',weektype,'_predict.csv')
-        
+
         if (file.exists(file_save_csv)){
           tmp_load1 = data.table(read.csv(file_save_csv))
           tmp_load = rbind(tmp_load,tmp_load1)
-          
+
           rm(tmp_load1)
           gc()
         } else{
@@ -100,7 +100,7 @@ for (region_name in region_names){
   if (exists('tmp_load')){
     # aggregate into new regions
     dem_reg = agg_data_reg(region_name,tmp_load,dem3)
-    
+
     rm(tmp_load)
     gc()
     dem_reg_all = rbind(dem_reg_all,dem_reg)
