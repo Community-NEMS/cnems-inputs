@@ -16,9 +16,9 @@ jobs:
     name: Auto-merge passing bot PRs
     runs-on: ubuntu-latest
     if: >-
-      github.actor == 'dependabot[bot]' ||
-      github.actor == 'pre-commit-ci[bot]' ||
-      github.actor == 'cnems-workflow-triggerer[bot]'
+      github.event.pull_request.user.login == 'dependabot[bot]' ||
+      github.event.pull_request.user.login == 'pre-commit-ci[bot]' ||
+      github.event.pull_request.user.login == 'cnems-workflow-triggerer[bot]'
     steps:
       # Reuses the same GitHub App as update-lockfiles.yml, rather than minting a
       # separate narrowly-scoped app for auto-merge, since it already has the
