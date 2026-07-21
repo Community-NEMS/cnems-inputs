@@ -19,9 +19,11 @@ DEFAULT_DEPENDENCY_LOGLEVELS: dict[str, int] = {
     "urllib3": logging.INFO,
 }
 
+
 def get_logger(name: str):
     """Retrieve a cnems_inputs logger for the specified name."""
     return logging.getLogger(f"cnems_inputs.{name}")
+
 
 def configure_root_logger(
     logfile: str | None = None,

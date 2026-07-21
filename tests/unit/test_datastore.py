@@ -160,9 +160,11 @@ class MockableZenodoFetcher(datastore.ZenodoFetcher):
         super().__init__(**kwargs)
         self._descriptor_cache = descriptors
 
+
 # TODO: replace with an arbitrary real archive once we have real ones in ZenodoDoiSettings
 # TODO: figure out an agnostic way to test the constraints that use this
 TEST_ARCHIVE = "eianems"
+
 
 class TestZenodoFetcher:
     """Unit tests for ZenodoFetcher class."""
@@ -193,9 +195,7 @@ class TestZenodoFetcher:
     }
     PROD_DOI = getattr(datastore.ZenodoDoiSettings(), TEST_ARCHIVE)
     # last numeric part of doi
-    PROD_ZEN_ID = re.search(
-        r"^10\.(5072|5281)/zenodo\.(\d+)$", PROD_DOI
-    ).group(2)
+    PROD_ZEN_ID = re.search(r"^10\.(5072|5281)/zenodo\.(\d+)$", PROD_DOI).group(2)
 
     @pytest.fixture(autouse=True)
     def setup(self):

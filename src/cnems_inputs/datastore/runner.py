@@ -181,9 +181,11 @@ def main(
         fetch_resources,
         validate_cache,
     )
+
     logger = cnems_inputs.logging.get_logger(__name__)
     cnems_inputs.logging.configure_root_logger(
-        logfile=str(logfile) if logfile else None, loglevel=loglevel # type: ignore  # noqa: PGH003
+        logfile=str(logfile) if logfile else None,
+        loglevel=loglevel,  # type: ignore  # noqa: PGH003
     )
 
     if all_datasets and datasets:

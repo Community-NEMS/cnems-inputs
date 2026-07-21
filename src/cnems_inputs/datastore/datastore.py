@@ -37,6 +37,7 @@ ZenodoDoi = Annotated[
     ),
 ]
 
+
 def retry(
     func: Callable,
     retry_on: tuple[type[BaseException], ...],
@@ -66,6 +67,7 @@ def retry(
             )
             time.sleep(delay)
     return func(**kwargs)
+
 
 def get_zenodo_dois_path() -> Traversable:
     """Return the canonical packaged Zenodo DOI settings path."""
@@ -144,7 +146,7 @@ class DatapackageDescriptor:
         if isinstance(
             parts.get(k), list
         ):  # If partitions are list, match whole list if it contains desired element
-            return any(str(part).lower() == str(v).lower() for part in parts.get(k)) # type: ignore  # noqa: PGH003
+            return any(str(part).lower() == str(v).lower() for part in parts.get(k))  # type: ignore  # noqa: PGH003
         return str(parts.get(k)).lower() == str(v).lower()
 
     def get_resources(
@@ -162,9 +164,7 @@ class DatapackageDescriptor:
             if name and res["name"] != name:
                 continue
             if self._matches(res, **filters):
-                yield ResourceKey(
-                    dataset=self.dataset, doi=self.doi, name=res["name"]
-                )
+                yield ResourceKey(dataset=self.dataset, doi=self.doi, name=res["name"])
 
     def get_partitions(self, name: str | None = None) -> dict[str, set[str]]:
         """Return mapping of known partition keys to their allowed known values."""
@@ -322,7 +322,7 @@ class ZenodoFetcher:
             api_root = "https://zenodo.org/api"
         else:
             raise ValueError(f"Invalid Zenodo DOI: {doi}")
-        return f"{api_root}/records/{zenodo_id}/files" # type: ignore  # noqa: PGH003
+        return f"{api_root}/records/{zenodo_id}/files"  # type: ignore  # noqa: PGH003
 
     def _fetch_from_url(self: Self, url: HttpUrl) -> requests.Response:
         logger.info(f"Retrieving {url} from zenodo")
@@ -370,7 +370,9 @@ class Datastore:
         self,
         local_cache_path: str | Path | UPath | None = "./cache",
         # TODO: decide if we're doing cloud caches
-        cloud_cache_path: str | UPath | None = None, #"s3://pudl.catalyst.coop/zenodo",
+        cloud_cache_path: str
+        | UPath
+        | None = None,  # "s3://pudl.catalyst.coop/zenodo",
         timeout: float = 15.0,
         zenodo_dois: ZenodoDoiSettings | None = None,
     ):
@@ -585,7 +587,9 @@ def validate_cache(
         num_invalid = 0
         descriptor = dstore.get_datapackage_descriptor(single_ds)
         for res, content in dstore.get_resources(
-            single_ds, cached_only=True, **partition # type: ignore  # noqa: PGH003
+            single_ds,
+            cached_only=True,
+            **partition,  # type: ignore  # noqa: PGH003
         ):
             try:
                 num_total += 1
@@ -611,7 +615,9 @@ def fetch_resources(
     """Retrieve all matching resources and store them in the cache."""
     for single_ds in datasets:
         for res, contents in dstore.get_resources(
-            single_ds, skip_optimally_cached=True, **partition # type: ignore  # noqa: PGH003
+            single_ds,
+            skip_optimally_cached=True,
+            **partition,  # type: ignore  # noqa: PGH003
         ):
             logger.info(f"Retrieved {res}.")
             # If the cloud_cache_path is specified and we don't want

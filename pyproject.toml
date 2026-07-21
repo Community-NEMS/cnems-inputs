@@ -122,10 +122,10 @@ sqlite = ">=3.53.3,<4"
 
 # Testing and coverage tracking, also available on conda-forge so they're tracked
 # here alongside the rest of the development tools rather than as PyPI extras.
-coverage = ">=7.15.2"              # Lets us track what code is being tested
-pytest = ">=9.1.1"                 # Our testing framework
-pytest-console-scripts = ">=1.4.1" # Allow automatic testing of entry point scripts
-pytest-cov = ">=7.1.0"             # Pytest plugin for working with coverage
+coverage = ">=7.15.2"               # Lets us track what code is being tested
+pytest = ">=9.1.1"                  # Our testing framework
+pytest-console-scripts = ">=1.4.1"  # Allow automatic testing of entry point scripts
+pytest-cov = ">=7.1.0"              # Pytest plugin for working with coverage
 requests = ">=2.34.2,<3"
 pyyaml = ">=6.0.3,<7"
 urllib3 = ">=2.7.0,<3"
