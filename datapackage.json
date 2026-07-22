@@ -1,6 +1,60 @@
 {
   "resources": [
     {
+      "name": "baseelecprice",
+      "type": "table",
+      "path": "BaseElecPrice.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv",
+      "encoding": "utf-8",
+      "schema": {
+        "fields": [
+          {
+            "name": "region",
+            "type": "integer"
+          },
+          {
+            "name": "year",
+            "type": "integer"
+          },
+          {
+            "name": "hour",
+            "type": "integer"
+          },
+          {
+            "name": "price_wt",
+            "type": "number"
+          }
+        ]
+      }
+    },
+    {
+      "name": "baseload",
+      "type": "table",
+      "path": "BaseLoad.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv",
+      "encoding": "utf-8",
+      "schema": {
+        "fields": [
+          {
+            "name": "region",
+            "type": "integer"
+          },
+          {
+            "name": "hour",
+            "type": "integer"
+          },
+          {
+            "name": "Load",
+            "type": "number"
+          }
+        ]
+      }
+    },
+    {
       "name": "batteryefficiency",
       "type": "table",
       "path": "BatteryEfficiency.csv",
@@ -111,6 +165,77 @@
           },
           {
             "name": "CapFactorVRE",
+            "type": "number"
+          }
+        ]
+      }
+    },
+    {
+      "name": "endusebaseshares",
+      "type": "table",
+      "path": "EnduseBaseShares.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv",
+      "encoding": "utf-8",
+      "schema": {
+        "fields": [
+          {
+            "name": "enduse_cat",
+            "type": "string"
+          },
+          {
+            "name": "base_year_share",
+            "type": "number"
+          }
+        ]
+      }
+    },
+    {
+      "name": "endusescalar",
+      "type": "table",
+      "path": "EnduseScalar.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv",
+      "encoding": "utf-8",
+      "schema": {
+        "fields": [
+          {
+            "name": "year",
+            "type": "integer"
+          },
+          {
+            "name": "enduse_cat",
+            "type": "string"
+          },
+          {
+            "name": "increment_annual",
+            "type": "number"
+          }
+        ]
+      }
+    },
+    {
+      "name": "enduseshapes",
+      "type": "table",
+      "path": "EnduseShapes.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv",
+      "encoding": "utf-8",
+      "schema": {
+        "fields": [
+          {
+            "name": "hour",
+            "type": "integer"
+          },
+          {
+            "name": "enduse_cat",
+            "type": "string"
+          },
+          {
+            "name": "share",
             "type": "number"
           }
         ]
@@ -244,6 +369,27 @@
           },
           {
             "name": "LearningRate",
+            "type": "number"
+          }
+        ]
+      }
+    },
+    {
+      "name": "loadscalar",
+      "type": "table",
+      "path": "LoadScalar.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv",
+      "encoding": "utf-8",
+      "schema": {
+        "fields": [
+          {
+            "name": "year",
+            "type": "integer"
+          },
+          {
+            "name": "scalar",
             "type": "number"
           }
         ]
@@ -573,6 +719,35 @@
           {
             "name": "T_gen",
             "type": "string"
+          }
+        ]
+      }
+    },
+    {
+      "name": "testprices",
+      "type": "table",
+      "path": "testPrices.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv",
+      "encoding": "utf-8",
+      "schema": {
+        "fields": [
+          {
+            "name": "region",
+            "type": "integer"
+          },
+          {
+            "name": "year",
+            "type": "integer"
+          },
+          {
+            "name": "hour",
+            "type": "integer"
+          },
+          {
+            "name": "Dual",
+            "type": "number"
           }
         ]
       }
