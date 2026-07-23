@@ -157,7 +157,7 @@ look right so you can fix it.
     Markdown-based static site generator from the Material for MkDocs team.
 - Standalone docs files are stored under the `docs/` directory as Markdown, and the
     Zensical configuration lives in `zensical.toml` at the top of the repository.
-- The top level documentation page (`docs/index.md`) simply embeds this `README.md`
+- The top level documentation page (`docs/index.md`) simply embeds the repo's `README.md`
     verbatim using Zensical's `pymdownx.snippets` syntax (`--8<-- "README.md"`);
     `docs/license.md` embeds `LICENSE` the same way. `docs/release_notes.md` is a
     standalone Markdown file.
