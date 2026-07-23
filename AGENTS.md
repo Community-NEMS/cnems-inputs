@@ -93,7 +93,7 @@ design docs that explain *why* the codebase looks the way it does.
 - Run the full suite with `pixi run test`. To iterate quickly on a single test file
     or `-k` expression while debugging, `pixi run pytest <args>` works too, but always
     confirm with the full `pixi run test` before calling something done -- it also
-    reports whether combined coverage still clears the `fail_under = 90` threshold set
+    reports whether combined coverage still clears the `fail_under` threshold set
     in `[tool.coverage.report]`.
 - New behavior needs a test. Bug fixes should add a regression test that fails
     without the fix.
