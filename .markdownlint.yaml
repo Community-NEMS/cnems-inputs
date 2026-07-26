@@ -1,0 +1,9 @@
+# Configuration for markdownlint-cli2: https://github.com/DavidAnson/markdownlint-cli2
+---
+# Line length is handled by mdformat/prettier line wrapping, not worth enforcing here.
+MD013: false
+# Don't treat a `title:` key in YAML front matter as an implicit top-level heading --
+# GitHub issue templates use `title:` for the default issue title, which otherwise
+# collides with this rule's Jekyll-style front-matter-title heuristic.
+MD025:
+  front_matter_title: ""
