@@ -85,21 +85,21 @@ mdformat-mkdocs = ">=5" # Stops mdformat from mangling zensical/MkDocs markdown 
 # Runtime dependencies, sourced from conda-forge rather than PyPI wherever available.
 # This is the single place these are tracked -- see the note on [project.dependencies]
 # above.
-duckdb = ">=1.5.4"
+duckdb = ">=1.5.5,<2"
 email-validator = "*"             # pydantic's email-validation support
-frictionless = ">=5.19.0"         # Frictionless data packages and tabular metadata validation
+frictionless = ">=5.19.0,<6"      # Frictionless data packages and tabular metadata validation
 fsspec = "*"                      # pandas' generic remote-filesystem support
 gcsfs = "*"                       # pandas' GCS support
 openpyxl = "*"                    # pandas' excel support
-pandas = ">=2.3"
+pandas = ">=3,<4"
 pandera = ">=0.32.1"
-polars = ">=1.42.1"
+polars = ">=1.43,<2"
 python-snappy = "*"               # pandas' compression support
 pyarrow = ">=25.0.0"              # pandas' parquet support
-pydantic = ">=2.13.4"
+pydantic = ">=2.13.4,<3"
 pydantic-settings = ">=2.14.2,<3"
 s3fs = "*"                        # pandas' S3 support
-snakemake = ">=9.23.0"            # Lightweight orchestration of data pipelines, used to run the CNEMS ETL
+snakemake = ">=9.24.0"            # Lightweight orchestration of data pipelines, used to run the CNEMS ETL
 zstandard = "*"                   # pandas' compression support
 
 # Development tools: pre-commit hooks, linting/formatting, and static analysis. All
@@ -113,7 +113,7 @@ mdformat-gfm = ">=1.0.0"
 prek = ">=0.4.10"              # Fast Rust-based pre-commit hook runner
 prettier = ">=3.9.3"
 pyrefly = ">=1.1.1"            # Fast Rust-based Python type checker
-ruff = ">=0.15.22"             # A very fast python linter & autofixer
+ruff = ">=0.16"                # A very fast python linter & autofixer
 # So actionlint's embedded shellcheck integration for GitHub Actions `run:` steps
 # actually runs, rather than silently skipping because the binary isn't on PATH.
 shellcheck = ">=0.11.0"
