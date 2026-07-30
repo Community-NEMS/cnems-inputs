@@ -17,8 +17,7 @@ jobs:
     runs-on: ubuntu-latest
     if: >-
       github.event.pull_request.user.login == 'dependabot[bot]' ||
-      github.event.pull_request.user.login == 'pre-commit-ci[bot]' ||
-      github.event.pull_request.user.login == 'cnems-workflow-triggerer[bot]'
+      github.event.pull_request.user.login == 'pre-commit-ci[bot]'
     steps:
       # Reuses the same GitHub App as update-lockfiles.yml, rather than minting a
       # separate narrowly-scoped app for auto-merge, since it already has the
@@ -32,6 +31,8 @@ jobs:
         with:
           app-id: ${{ secrets.WORKFLOW_TRIGGERER_APP_ID }}
           private-key: ${{ secrets.WORKFLOW_TRIGGERER_PRIVATE_KEY }}
+          permission-contents: write
+          permission-pull-requests: write
 
       - name: Approve and enable auto-merge
         # `gh pr merge --auto` just flags the PR for GitHub to merge on its own once
