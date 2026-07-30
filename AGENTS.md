@@ -42,7 +42,7 @@ so agents use the same invocations CI does:
     Doesn't modify files.
 - `pixi run format` -- automatically reformat code and other files with `ruff`,
     `taplo`, `mdformat`, and `prettier`. Run this before committing.
-- `pixi run docs` -- build the documentation with `zensical` into `site/`.
+- `pixi run docs-build` -- build the documentation with `zensical` into `site/`.
 - `pixi run docs-serve` -- serve the documentation locally with live reload.
 - `pixi run prek-update` -- bump the hook `rev` pins in `.pre-commit-config.yaml` to
     their latest versions. Run automatically, alongside `pixi update` for
