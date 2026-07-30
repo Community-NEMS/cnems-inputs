@@ -6,6 +6,7 @@ updates:
     directory: "/"
     target-branch: "main"
     schedule:
+      # TODO: back off to weekly once we're sure this works
       interval: "daily"
     groups:
       github-actions:

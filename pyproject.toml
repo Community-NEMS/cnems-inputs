@@ -3,9 +3,6 @@ build-backend = "hatchling.build"
 requires = ["hatch-vcs>=0.5", "hatchling>=1.31"]
 
 [project]
-# Not published to PyPI or conda-forge -- installed locally via pixi only -- so this
-# doesn't need the "catalystcoop." namespace prefix that public packages use to avoid
-# collisions on the index.
 name = "cnems_inputs"
 description = "Data pipelines that feed inputs into the Community NEMS project."
 readme = { file = "README.md", content-type = "text/markdown" }
