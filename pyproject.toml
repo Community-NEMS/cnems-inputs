@@ -216,13 +216,10 @@ python-version = "3.14"
 [tool.pixi.tasks]
 # Testing
 test-erase = { cmd = "coverage erase", description = "Wipe previously recorded coverage data before the test suites run." }
-test-unit = { cmd = "pytest --cov=cnems_inputs --cov-append --cov-report=xml --cov-fail-under=0 --doctest-modules src/cnems_inputs tests/unit", depends-on = [
-  "test-erase",
-], description = "Run unit tests (and doctests) with coverage instrumentation." }
-test-integration = { cmd = "pytest --cov=cnems_inputs --cov-append --cov-report=xml --cov-fail-under=0 tests/integration", depends-on = [
-  "test-erase",
-], description = "Run integration tests with coverage instrumentation." }
+test-unit = { cmd = "pytest --cov=cnems_inputs --cov-append --cov-report=xml --cov-fail-under=0 --doctest-modules src/cnems_inputs tests/unit", description = "Run unit tests (and doctests) with coverage instrumentation." }
+test-integration = { cmd = "pytest --cov=cnems_inputs --cov-append --cov-report=xml --cov-fail-under=0 tests/integration", description = "Run integration tests with coverage instrumentation." }
 test = { cmd = "coverage report --sort=cover", depends-on = [
+  "test-erase",
   "test-unit",
   "test-integration",
 ], description = "Run all tests and report combined coverage, failing if it's below the configured threshold." }
@@ -248,7 +245,8 @@ format = { depends-on = [
 ], description = "Run all formatters, modifying files in place." }
 
 # Documentation
-docs = { cmd = "zensical build", description = "Build the documentation with Zensical into site/." }
+docs-clean = { cmd = "rm -rf site/*", cwd = "./", description = "Remove all built documentation under site/." }
+docs-build = { cmd = "zensical build", description = "Build the documentation with Zensical into site/." }
 docs-serve = { cmd = "zensical serve", description = "Serve the documentation locally, rebuilding on changes." }
 
 # Pre-commit hook configuration
