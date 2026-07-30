@@ -32,7 +32,7 @@ can be reviewed on its own. Here's what's here so far and how it works.
     - `pixi run lint` -- run `ruff` and `pyrefly` to catch errors and style issues.
     - `pixi run format` -- automatically reformat the code and other files using
         `ruff`, `taplo`, `mdformat`, and `prettier`.
-    - `pixi run docs` -- build the documentation with `zensical`.
+    - `pixi run docs-build` -- build the documentation with `zensical`.
 - There's a single `default` pixi environment that contains everything needed for
     local development.
 - Runtime dependencies (`pandas`, `pyarrow`, `duckdb`, etc.) and development tools
@@ -166,8 +166,8 @@ look right so you can fix it.
     `[project.plugins.mkdocstrings...]` in `zensical.toml`, currently a preliminary
     Zensical integration). Add a `::: module.path` line there for any new module that
     should show up in the API reference -- it isn't generated automatically.
-- Build the docs with `pixi run docs`, which wipes the previously generated `site/`
-    directory and rebuilds everything from scratch, or preview them locally with
+- Build the docs with `pixi run docs-build`, which wipes the previously generated
+    `site/` directory and rebuilds everything from scratch, or preview them locally with
     `pixi run docs-serve`.
 - There's no custom branding (logo, favicon, social links) configured yet -- the site
     uses Zensical's defaults until Community-NEMS has its own to add.
