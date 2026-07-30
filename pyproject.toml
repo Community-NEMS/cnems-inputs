@@ -26,7 +26,7 @@ dummy = "cnems_inputs.cli:main"
 source = "vcs"
 
 [tool.pytest]
-testpaths = ["."]
+testpaths = ["tests"]
 filterwarnings = [
   # Examples of how to filter out pytest warnings from dependencies
   # "ignore:distutils Version classes are deprecated:DeprecationWarning",
@@ -36,6 +36,8 @@ log_format = "%(asctime)s [%(levelname)8s] %(name)s:%(lineno)s %(message)s"
 log_date_format = "%Y-%m-%d %H:%M:%S"
 log_cli = true
 log_cli_level = "DEBUG"
+# We don't have any doctests right now, but if we did this would configure
+# how those docstrings are interpreted.
 doctest_optionflags = [
   "NORMALIZE_WHITESPACE",
   "IGNORE_EXCEPTION_DETAIL",
@@ -214,40 +216,74 @@ project-includes = ["src"]
 python-version = "3.14"
 
 [tool.pixi.tasks]
+
 # Testing
-test-erase = { cmd = "coverage erase", description = "Wipe previously recorded coverage data before the test suites run." }
-test-unit = { cmd = "pytest --cov=cnems_inputs --cov-append --cov-report=xml --cov-fail-under=0 --doctest-modules src/cnems_inputs tests/unit", description = "Run unit tests (and doctests) with coverage instrumentation." }
-test-integration = { cmd = "pytest --cov=cnems_inputs --cov-append --cov-report=xml --cov-fail-under=0 tests/integration", description = "Run integration tests with coverage instrumentation." }
-test = { cmd = "coverage report --sort=cover", depends-on = [
-  "test-erase",
-  "test-unit",
-  "test-integration",
-], description = "Run all tests and report combined coverage, failing if it's below the configured threshold." }
+[tool.pixi.tasks.test-erase]
+cmd = "coverage erase"
+description = "Wipe previously recorded coverage data before the test suites run."
+
+[tool.pixi.tasks.test-unit]
+cmd = "pytest --cov=cnems_inputs --cov-append --cov-report=xml --cov-fail-under=0 --doctest-modules src/cnems_inputs tests/unit"
+description = "Run unit tests (and doctests) with coverage instrumentation."
+
+[tool.pixi.tasks.test-integration]
+cmd = "pytest --cov=cnems_inputs --cov-append --cov-report=xml --cov-fail-under=0 tests/integration"
+description = "Run integration tests with coverage instrumentation."
+
+[tool.pixi.tasks.test]
+cmd = "coverage report --sort=cover"
+depends-on = ["test-erase", "test-unit", "test-integration"]
+description = "Run all tests and report combined coverage, failing if it's below the configured threshold."
 
 # Linting
-lint-ruff = { cmd = "ruff check .", description = "Check code style and correctness with ruff, without modifying files." }
-lint-pyrefly = { cmd = "pyrefly check src", description = "Type check the code with pyrefly." }
-lint = { depends-on = [
-  "lint-ruff",
-  "lint-pyrefly",
-], description = "Run all linters and type checks, without modifying files." }
+[tool.pixi.tasks.lint-ruff]
+cmd = "ruff check ."
+description = "Check code style and correctness with ruff, without modifying files."
+
+[tool.pixi.tasks.lint-pyrefly]
+cmd = "pyrefly check src"
+description = "Type check the code with pyrefly."
+
+[tool.pixi.tasks.lint]
+depends-on = ["lint-ruff", "lint-pyrefly"]
+description = "Run all linters and type checks, without modifying files."
 
 # Formatting
-format-ruff = { cmd = "ruff format . && ruff check --fix .", description = "Reformat code and auto-fix lint issues with ruff." }
-format-toml = { cmd = "taplo fmt pyproject.toml zensical.toml", description = "Reformat TOML files with taplo." }
-format-md = { cmd = "mdformat README.md AGENTS.md docs .github/ISSUE_TEMPLATE .github/pull_request_template.md", description = "Reformat Markdown files with mdformat." }
-format-yaml = { cmd = "prettier --write '**/*.{yaml,yml}'", description = "Reformat YAML files with prettier." }
-format = { depends-on = [
-  "format-ruff",
-  "format-toml",
-  "format-md",
-  "format-yaml",
-], description = "Run all formatters, modifying files in place." }
+[tool.pixi.tasks.format-ruff]
+cmd = "ruff format . && ruff check --fix ."
+description = "Reformat code and auto-fix lint issues with ruff."
+
+[tool.pixi.tasks.format-toml]
+cmd = "taplo fmt pyproject.toml zensical.toml"
+description = "Reformat TOML files with taplo."
+
+[tool.pixi.tasks.format-md]
+cmd = "mdformat README.md AGENTS.md docs .github/ISSUE_TEMPLATE .github/pull_request_template.md"
+description = "Reformat Markdown files with mdformat."
+
+[tool.pixi.tasks.format-yaml]
+cmd = "prettier --write '**/*.{yaml,yml}'"
+description = "Reformat YAML files with prettier."
+
+[tool.pixi.tasks.format]
+depends-on = ["format-ruff", "format-toml", "format-md", "format-yaml"]
+description = "Run all formatters, modifying files in place."
 
 # Documentation
-docs-clean = { cmd = "rm -rf site/*", cwd = "./", description = "Remove all built documentation under site/." }
-docs-build = { cmd = "zensical build", description = "Build the documentation with Zensical into site/." }
-docs-serve = { cmd = "zensical serve", description = "Serve the documentation locally, rebuilding on changes." }
+[tool.pixi.tasks.docs-clean]
+cmd = "rm -rf site/*"
+cwd = "./"
+description = "Remove all built documentation under site/."
+
+[tool.pixi.tasks.docs-build]
+cmd = "zensical build"
+description = "Build the documentation with Zensical into site/."
+
+[tool.pixi.tasks.docs-serve]
+cmd = "zensical serve"
+description = "Serve the documentation locally, rebuilding on changes."
 
 # Pre-commit hook configuration
-prek-update = { cmd = "prek update", description = "Bump `rev` pins for hooks in .pre-commit-config.yaml to their latest versions." }
+[tool.pixi.tasks.prek-update]
+cmd = "prek update"
+description = "Bump `rev` pins for hooks in .pre-commit-config.yaml to their latest versions."
