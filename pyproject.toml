@@ -206,13 +206,10 @@ python-version = "3.14"
 
 [tool.pixi.tasks]
 test-erase = "coverage erase"
-test-unit = { cmd = "pytest --cov=cnems_inputs --cov-append --cov-report=xml --cov-fail-under=0 --doctest-modules src/cnems_inputs tests/unit", depends-on = [
-  "test-erase",
-] }
-test-integration = { cmd = "pytest --cov=cnems_inputs --cov-append --cov-report=xml --cov-fail-under=0 tests/integration", depends-on = [
-  "test-erase",
-] }
+test-unit = { cmd = "pytest --cov=cnems_inputs --cov-append --cov-report=xml --cov-fail-under=0 --doctest-modules src/cnems_inputs tests/unit" }
+test-integration = { cmd = "pytest --cov=cnems_inputs --cov-append --cov-report=xml --cov-fail-under=0 tests/integration" }
 test = { cmd = "coverage report --sort=cover", depends-on = [
+  "test-erase",
   "test-unit",
   "test-integration",
 ] }
