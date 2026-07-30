@@ -42,7 +42,7 @@ so agents use the same invocations CI does:
     Doesn't modify files.
 - `pixi run format` -- automatically reformat code and other files with `ruff`,
     `taplo`, `mdformat`, and `prettier`. Run this before committing.
-- `pixi run docs` -- build the documentation with `zensical` into `site/`.
+- `pixi run docs-build` -- build the documentation with `zensical` into `site/`.
 - `pixi run docs-serve` -- serve the documentation locally with live reload.
 - `pixi run prek-update` -- bump the hook `rev` pins in `.pre-commit-config.yaml` to
     their latest versions. Run automatically, alongside `pixi update` for
@@ -93,7 +93,7 @@ design docs that explain *why* the codebase looks the way it does.
 - Run the full suite with `pixi run test`. To iterate quickly on a single test file
     or `-k` expression while debugging, `pixi run pytest <args>` works too, but always
     confirm with the full `pixi run test` before calling something done -- it also
-    reports whether combined coverage still clears the `fail_under = 90` threshold set
+    reports whether combined coverage still clears the `fail_under` threshold set
     in `[tool.coverage.report]`.
 - New behavior needs a test. Bug fixes should add a regression test that fails
     without the fix.

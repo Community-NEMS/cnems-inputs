@@ -3,9 +3,6 @@ build-backend = "hatchling.build"
 requires = ["hatch-vcs>=0.5", "hatchling>=1.31"]
 
 [project]
-# Not published to PyPI or conda-forge -- installed locally via pixi only -- so this
-# doesn't need the "catalystcoop." namespace prefix that public packages use to avoid
-# collisions on the index.
 name = "cnems_inputs"
 description = "Data pipelines that feed inputs into the Community NEMS project."
 readme = { file = "README.md", content-type = "text/markdown" }
@@ -29,7 +26,7 @@ dummy = "cnems_inputs.cli:main"
 source = "vcs"
 
 [tool.pytest]
-testpaths = ["."]
+testpaths = ["tests"]
 filterwarnings = [
   # Examples of how to filter out pytest warnings from dependencies
   # "ignore:distutils Version classes are deprecated:DeprecationWarning",
@@ -39,6 +36,8 @@ log_format = "%(asctime)s [%(levelname)8s] %(name)s:%(lineno)s %(message)s"
 log_date_format = "%Y-%m-%d %H:%M:%S"
 log_cli = true
 log_cli_level = "DEBUG"
+# We don't have any doctests right now, but if we did this would configure
+# how those docstrings are interpreted.
 doctest_optionflags = [
   "NORMALIZE_WHITESPACE",
   "IGNORE_EXCEPTION_DETAIL",
@@ -88,22 +87,23 @@ mdformat-mkdocs = ">=5" # Stops mdformat from mangling zensical/MkDocs markdown 
 # Runtime dependencies, sourced from conda-forge rather than PyPI wherever available.
 # This is the single place these are tracked -- see the note on [project.dependencies]
 # above.
-duckdb = ">=1.5.4"
+duckdb = ">=1.5.5,<2"
 email-validator = "*"             # pydantic's email-validation support
 frictionless = ">=5.19.0,<6"      # Frictionless data packages and tabular metadata validation
 fsspec = "*"                      # pandas' generic remote-filesystem support
 gcsfs = "*"                       # pandas' GCS support
 openpyxl = "*"                    # pandas' excel support
-pandas = ">=2.3"
+pandas = ">=3,<4"
 pandera = ">=0.32.1"
-polars = ">=1.42.1"
+polars = ">=1.43,<2"
 python-snappy = "*"               # pandas' compression support
 pyarrow = ">=25.0.0"              # pandas' parquet support
-pydantic = ">=2.13.4"
+pydantic = ">=2.13.4,<3"
 pydantic-settings = ">=2.14.2,<3"
 s3fs = "*"                        # pandas' S3 support
-snakemake = ">=9.23.0"            # Lightweight orchestration of data pipelines, used to run the CNEMS ETL
+snakemake = ">=9.24.0"            # Lightweight orchestration of data pipelines, used to run the CNEMS ETL
 zstandard = "*"                   # pandas' compression support
+pixi-pycharm = "*"                # support for pixi in PyCharm IDE (temporary?)
 
 # Development tools: pre-commit hooks, linting/formatting, and static analysis. All
 # available on conda-forge, so -- like the runtime dependencies above -- these are
@@ -116,7 +116,7 @@ mdformat-gfm = ">=1.0.0"
 prek = ">=0.4.10"              # Fast Rust-based pre-commit hook runner
 prettier = ">=3.9.3"
 pyrefly = ">=1.1.1"            # Fast Rust-based Python type checker
-ruff = ">=0.15.22"             # A very fast python linter & autofixer
+ruff = ">=0.16"                # A very fast python linter & autofixer
 # So actionlint's embedded shellcheck integration for GitHub Actions `run:` steps
 # actually runs, rather than silently skipping because the binary isn't on PATH.
 shellcheck = ">=0.11.0"
@@ -220,37 +220,74 @@ python-version = "3.14"
 FOM = "FOM"
 
 [tool.pixi.tasks]
-test-erase = { cmd = "coverage erase", description = "Wipe previously recorded coverage data before the test suites run." }
-test-unit = { cmd = "pytest --cov=cnems_inputs --cov-append --cov-report=xml --cov-fail-under=0 --doctest-modules src/cnems_inputs tests/unit", depends-on = [
-  "test-erase",
-], description = "Run unit tests (and doctests) with coverage instrumentation." }
-test-integration = { cmd = "pytest --cov=cnems_inputs --cov-append --cov-report=xml --cov-fail-under=0 tests/integration", depends-on = [
-  "test-erase",
-], description = "Run integration tests with coverage instrumentation." }
-test = { cmd = "coverage report --sort=cover", depends-on = [
-  "test-unit",
-  "test-integration",
-], description = "Run all tests and report combined coverage, failing if it's below the configured threshold." }
 
-lint-ruff = { cmd = "ruff check .", description = "Check code style and correctness with ruff, without modifying files." }
-lint-pyrefly = { cmd = "pyrefly check src", description = "Type check the code with pyrefly." }
-lint = { depends-on = [
-  "lint-ruff",
-  "lint-pyrefly",
-], description = "Run all linters and type checks, without modifying files." }
+# Testing
+[tool.pixi.tasks.test-erase]
+cmd = "coverage erase"
+description = "Wipe previously recorded coverage data before the test suites run."
 
-format-ruff = { cmd = "ruff format . && ruff check --fix .", description = "Reformat code and auto-fix lint issues with ruff." }
-format-toml = { cmd = "taplo fmt pyproject.toml zensical.toml", description = "Reformat TOML files with taplo." }
-format-md = { cmd = "mdformat README.md AGENTS.md docs .github/ISSUE_TEMPLATE .github/pull_request_template.md", description = "Reformat Markdown files with mdformat." }
-format-yaml = { cmd = "prettier --write '**/*.{yaml,yml}'", description = "Reformat YAML files with prettier." }
-format = { depends-on = [
-  "format-ruff",
-  "format-toml",
-  "format-md",
-  "format-yaml",
-], description = "Run all formatters, modifying files in place." }
+[tool.pixi.tasks.test-unit]
+cmd = "pytest --cov=cnems_inputs --cov-append --cov-report=xml --cov-fail-under=0 --doctest-modules src/cnems_inputs tests/unit"
+description = "Run unit tests (and doctests) with coverage instrumentation."
 
-docs = { cmd = "zensical build", description = "Build the documentation with Zensical into site/." }
-docs-serve = { cmd = "zensical serve", description = "Serve the documentation locally, rebuilding on changes." }
+[tool.pixi.tasks.test-integration]
+cmd = "pytest --cov=cnems_inputs --cov-append --cov-report=xml --cov-fail-under=0 tests/integration"
+description = "Run integration tests with coverage instrumentation."
 
-prek-update = { cmd = "prek update", description = "Bump the `rev` pins in .pre-commit-config.yaml to their latest tagged versions. Used by .github/workflows/update-lockfiles.yml; see also `pixi update` for refreshing pixi.lock itself." }
+[tool.pixi.tasks.test]
+cmd = "coverage report --sort=cover"
+depends-on = ["test-erase", "test-unit", "test-integration"]
+description = "Run all tests and report combined coverage, failing if it's below the configured threshold."
+
+# Linting
+[tool.pixi.tasks.lint-ruff]
+cmd = "ruff check ."
+description = "Check code style and correctness with ruff, without modifying files."
+
+[tool.pixi.tasks.lint-pyrefly]
+cmd = "pyrefly check src"
+description = "Type check the code with pyrefly."
+
+[tool.pixi.tasks.lint]
+depends-on = ["lint-ruff", "lint-pyrefly"]
+description = "Run all linters and type checks, without modifying files."
+
+# Formatting
+[tool.pixi.tasks.format-ruff]
+cmd = "ruff format . && ruff check --fix ."
+description = "Reformat code and auto-fix lint issues with ruff."
+
+[tool.pixi.tasks.format-toml]
+cmd = "taplo fmt pyproject.toml zensical.toml"
+description = "Reformat TOML files with taplo."
+
+[tool.pixi.tasks.format-md]
+cmd = "mdformat README.md AGENTS.md docs .github/ISSUE_TEMPLATE .github/pull_request_template.md"
+description = "Reformat Markdown files with mdformat."
+
+[tool.pixi.tasks.format-yaml]
+cmd = "prettier --write '**/*.{yaml,yml}'"
+description = "Reformat YAML files with prettier."
+
+[tool.pixi.tasks.format]
+depends-on = ["format-ruff", "format-toml", "format-md", "format-yaml"]
+description = "Run all formatters, modifying files in place."
+
+# Documentation
+[tool.pixi.tasks.docs-clean]
+cmd = "rm -rf site/*"
+cwd = "./"
+description = "Remove all built documentation under site/."
+
+[tool.pixi.tasks.docs-build]
+cmd = "zensical build"
+description = "Build the documentation with Zensical into site/."
+
+[tool.pixi.tasks.docs-serve]
+cmd = "zensical serve"
+description = "Serve the documentation locally, rebuilding on changes."
+
+# Pre-commit hook configuration
+[tool.pixi.tasks.prek-update]
+cmd = "prek update"
+description = "Bump `rev` pins for hooks in .pre-commit-config.yaml to their latest versions."
