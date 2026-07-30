@@ -3,9 +3,6 @@ build-backend = "hatchling.build"
 requires = ["hatch-vcs>=0.5", "hatchling>=1.31"]
 
 [project]
-# Not published to PyPI or conda-forge -- installed locally via pixi only -- so this
-# doesn't need the "catalystcoop." namespace prefix that public packages use to avoid
-# collisions on the index.
 name = "cnems_inputs"
 description = "Data pipelines that feed inputs into the Community NEMS project."
 readme = { file = "README.md", content-type = "text/markdown" }
@@ -100,6 +97,7 @@ pydantic-settings = ">=2.14.2,<3"
 s3fs = "*"                        # pandas' S3 support
 snakemake = ">=9.23.0"            # Lightweight orchestration of data pipelines, used to run the CNEMS ETL
 zstandard = "*"                   # pandas' compression support
+pixi-pycharm = "*"                # support for pixi in PyCharm IDE (temporary?)
 
 # Development tools: pre-commit hooks, linting/formatting, and static analysis. All
 # available on conda-forge, so -- like the runtime dependencies above -- these are
