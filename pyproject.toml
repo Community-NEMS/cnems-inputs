@@ -26,7 +26,7 @@ dummy = "cnems_inputs.cli:main"
 source = "vcs"
 
 [tool.pytest]
-testpaths = ["."]
+testpaths = ["tests"]
 filterwarnings = [
   # Examples of how to filter out pytest warnings from dependencies
   # "ignore:distutils Version classes are deprecated:DeprecationWarning",
@@ -36,6 +36,8 @@ log_format = "%(asctime)s [%(levelname)8s] %(name)s:%(lineno)s %(message)s"
 log_date_format = "%Y-%m-%d %H:%M:%S"
 log_cli = true
 log_cli_level = "DEBUG"
+# We don't have any doctests right now, but if we did this would configure
+# how those docstrings are interpreted.
 doctest_optionflags = [
   "NORMALIZE_WHITESPACE",
   "IGNORE_EXCEPTION_DETAIL",
