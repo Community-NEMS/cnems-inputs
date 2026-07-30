@@ -1,6 +1,8 @@
 # cnems-inputs
 
 [![pre-commit.ci status](https://results.pre-commit.ci/badge/github/Community-NEMS/cnems-inputs/main.svg)](https://results.pre-commit.ci/latest/github/Community-NEMS/cnems-inputs/main)
+[![pytest](https://github.com/Community-NEMS/cnems-inputs/actions/workflows/pytest.yml/badge.svg)](https://github.com/Community-NEMS/cnems-inputs/actions/workflows/pytest.yml)
+[![Codecov Test Coverage](https://img.shields.io/codecov/c/github/Community-NEMS/cnems-inputs?style=flat&logo=codecov)](https://codecov.io/gh/Community-NEMS/cnems-inputs)
 [![Pixi Badge](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/prefix-dev/pixi/main/assets/badge/v0.json)](https://pixi.sh)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
@@ -35,14 +37,37 @@ can be reviewed on its own. Here's what's here so far and how it works.
   - `pixi run lint` -- run `ruff` and `pyrefly` to catch errors and style issues.
   - `pixi run format` -- automatically reformat the code and other files using
     `ruff`, `taplo`, `mdformat`, and `prettier`.
+  - `pixi run test` -- run the unit and integration tests with `pytest` and report
+    combined test coverage.
 - There's a single `default` pixi environment that contains everything needed for
   local development.
 - Runtime dependencies (`pandas`, `pyarrow`, `duckdb`, etc.) and development tools
-  (`ruff`, `pyrefly`, `prek`, and the rest of the linters below) are all installed as
-  conda packages under `[tool.pixi.dependencies]`, rather than via PyPI. That keeps
-  every dependency tracked in exactly one place, and lets us prefer conda-forge
-  builds, which tend to be better-optimized for the scientific Python stack we're
-  using here.
+  (`ruff`, `pyrefly`, `prek`, `pytest`, and the rest of the linters below) are all
+  installed as conda packages under `[tool.pixi.dependencies]`, rather than via PyPI.
+  That keeps every dependency tracked in exactly one place, and lets us prefer
+  conda-forge builds, which tend to be better-optimized for the scientific Python
+  stack we're using here.
+
+### Pytest Testing Framework
+
+- A skeleton [pytest](https://docs.pytest.org/) testing setup is included in the
+  `tests/` directory.
+- Tests are split into `unit` and `integration` categories.
+- Session-wide test fixtures, additional command line options, and other pytest
+  configuration can be added to `tests/conftest.py`.
+- Exactly what pytest commands are run during continuous integration is controlled by
+  the pixi tasks defined in `pyproject.toml`, and run there via
+  `.github/workflows/pytest.yml`.
+- Pytest can also be run manually without going through the pixi task, but still in
+  the pixi environment by prefixing the command with `pixi run`. For example
+  `pixi run pytest --no-cov tests/unit`. Running pytest on its own is a good way to
+  debug a specific new or failing test quickly, but we should always use
+  `pixi run test` for actual testing.
+- We use [pytest-cov](https://pytest-cov.readthedocs.io/) and
+  [coverage.py](https://coverage.readthedocs.io/) (configured under
+  `[tool.coverage.report]`) to track what fraction of the codebase is exercised by
+  the tests, and [CodeCov](https://about.codecov.io/) to report and track that
+  coverage over time on GitHub. Coverage is currently required to stay above 90%.
 
 ### Git Pre-commit Hooks
 

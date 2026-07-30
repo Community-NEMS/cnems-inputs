@@ -107,7 +107,24 @@ repos:
       - id: detect-secrets
         args: ["--baseline", ".secrets.baseline"]
 
+  ########################################################################################
+  # Custom local hooks
+  ########################################################################################
+  - repo: local
+    hooks:
+      # Run the (fast) tests
+      - id: pytest
+        name: pytest
+        stages: [pre-commit]
+        language: system
+        verbose: false
+        pass_filenames: false
+        always_run: true
+        entry: pixi run test
+
+########################################################################################
 # Configuration for pre-commit.ci
+########################################################################################
 ci:
   autofix_commit_msg: |
     [pre-commit.ci] auto fixes from pre-commit.com hooks
@@ -117,4 +134,5 @@ ci:
   autoupdate_branch: main
   autoupdate_commit_msg: "[pre-commit.ci] pre-commit autoupdate"
   autoupdate_schedule: weekly
+  skip: [pytest]
   submodules: false

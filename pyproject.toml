@@ -15,10 +15,59 @@ license = { file = "LICENSE" }
 # packages, under [tool.pixi.dependencies] rather than here too.
 dependencies = []
 
+[project.scripts]
+# Placeholder entry point demonstrating the pattern -- named after the dummy module
+# it comes from until real console scripts replace it.
+dummy = "cnems_inputs.cli:main"
+
 [tool.hatch.version]
 # Derive the package version from the latest git tag, rather than storing it in the
 # repository and manually updating it.
 source = "vcs"
+
+[tool.pytest]
+testpaths = ["tests"]
+filterwarnings = [
+  # Examples of how to filter out pytest warnings from dependencies
+  # "ignore:distutils Version classes are deprecated:DeprecationWarning",
+]
+addopts = ["--verbose"]
+log_format = "%(asctime)s [%(levelname)8s] %(name)s:%(lineno)s %(message)s"
+log_date_format = "%Y-%m-%d %H:%M:%S"
+log_cli = true
+log_cli_level = "DEBUG"
+# We don't have any doctests right now, but if we did this would configure
+# how those docstrings are interpreted.
+doctest_optionflags = [
+  "NORMALIZE_WHITESPACE",
+  "IGNORE_EXCEPTION_DETAIL",
+  "ELLIPSIS",
+]
+
+[tool.coverage.report]
+precision = 2
+sort = "miss"
+skip_empty = true
+fail_under = 90
+# fail_under is enforced once, after unit and integration coverage are combined, by
+# the final "coverage report" invocation in the `test` pixi task below -- not here,
+# since pytest-cov would otherwise also enforce it after unit or integration tests
+# run on their own, before the other suite gets a chance to contribute its coverage.
+exclude_lines = [
+  # Have to re-enable the standard pragma
+  "pragma: no cover",
+
+  # Don't complain if tests don't hit defensive assertion code:
+  "raise AssertionError",
+  "raise NotImplementedError",
+
+  # Don't complain if non-runnable code isn't run:
+  "if 0:",
+  "if __name__ == .__main__.:",
+
+  # Stuff that's not expected to run normally...
+  "logger.debug",
+]
 
 [tool.pixi.workspace]
 channels = ["conda-forge", "bioconda"]
@@ -69,6 +118,13 @@ ruff = ">=0.15.22"             # A very fast python linter & autofixer
 shellcheck = ">=0.11.0"
 taplo = ">=0.10.0"
 sqlite = ">=3.53.3,<4"
+
+# Testing and coverage tracking, also available on conda-forge so they're tracked
+# here alongside the rest of the development tools rather than as PyPI extras.
+coverage = ">=7.15.2"              # Lets us track what code is being tested
+pytest = ">=9.1.1"                 # Our testing framework
+pytest-console-scripts = ">=1.4.1" # Allow automatic testing of entry point scripts
+pytest-cov = ">=7.1.0"             # Pytest plugin for working with coverage
 
 [tool.ruff]
 # Configurations that apply to both the `format` and `lint` subcommands.
@@ -124,6 +180,7 @@ extend-select = ["NPY201"] # preview rule to easy migration to Numpy 2.0
 
 [tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["F401"] # Ignore unused imports
+"tests/*" = ["D"]        # Don't require docstrings in test modules
 
 [tool.ruff.lint.pep8-naming]
 # Allow Pydantic's `@validator` decorator to trigger class method treatment.
@@ -150,6 +207,15 @@ project-includes = ["src"]
 python-version = "3.14"
 
 [tool.pixi.tasks]
+test-erase = "coverage erase"
+test-unit = { cmd = "pytest --cov=cnems_inputs --cov-append --cov-report=xml --cov-fail-under=0 --doctest-modules src/cnems_inputs tests/unit" }
+test-integration = { cmd = "pytest --cov=cnems_inputs --cov-append --cov-report=xml --cov-fail-under=0 tests/integration" }
+test = { cmd = "coverage report --sort=cover", depends-on = [
+  "test-erase",
+  "test-unit",
+  "test-integration",
+] }
+
 lint-ruff = "ruff check ."
 lint-pyrefly = "pyrefly check src"
 lint = { depends-on = ["lint-ruff", "lint-pyrefly"] }
