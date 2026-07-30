@@ -50,6 +50,7 @@ pydantic-settings = ">=2.14.2,<3"
 s3fs = "*"                        # pandas' S3 support
 snakemake = ">=9.23.0"            # Lightweight orchestration of data pipelines, used to run the CNEMS ETL
 zstandard = "*"                   # pandas' compression support
+pixi-pycharm = "*"                # support for pixi in PyCharm IDE (temporary?)
 
 # Development tools: pre-commit hooks, linting/formatting, and static analysis. All
 # available on conda-forge, so -- like the runtime dependencies above -- these are
