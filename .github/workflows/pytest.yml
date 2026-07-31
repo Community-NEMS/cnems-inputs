@@ -40,7 +40,6 @@ jobs:
           fail_ci_if_error: false
 
   lint-pyrefly:
-    name: Type check with pyrefly
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
