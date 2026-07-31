@@ -11,7 +11,7 @@ Based off a subcomponent of [PUDL](https://github.com/catalyst-cooperative/pudl)
 Components
 
 - A way to specify and override defaults for the local resource cache,
-  previously provided by PudlPaths
+    previously provided by PudlPaths
 
 Decisions
 

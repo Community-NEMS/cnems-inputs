@@ -18,7 +18,7 @@ _KNOWN_DATASETS = sorted(ZenodoDoiSettings.model_fields)
 
 def _print_partitions(dstore: Datastore, datasets: list[str]) -> None:
     """Print known partition keys and values for each of the datasets."""
-    from cnems_inputs.datastore.datastore import ZenodoFetcher  # noqa: PLC0415
+    from cnems_inputs.datastore.datastore import ZenodoFetcher
 
     for single_ds in datasets:
         partitions = dstore.get_datapackage_descriptor(single_ds).get_partitions()
@@ -176,7 +176,7 @@ def main(
     datastore --all
     """
     import cnems_inputs.logging
-    from cnems_inputs.datastore.datastore import (  # noqa: PLC0415
+    from cnems_inputs.datastore.datastore import (
         Datastore,
         fetch_resources,
         validate_cache,
@@ -197,9 +197,9 @@ def main(
     dataset_list = _KNOWN_DATASETS if all_datasets else list(datasets)
 
     cache_path = None
-    #if not bypass_local_cache:
-        # TODO: get from environment probably
-        # cache_path = "."
+    # if not bypass_local_cache:
+    # TODO: get from environment probably
+    # cache_path = "."
 
     dstore = Datastore(
         # cloud_cache_path=cloud_cache_path,
