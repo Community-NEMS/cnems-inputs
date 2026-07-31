@@ -102,7 +102,7 @@ pyarrow = ">=25.0.0"              # pandas' parquet support
 pydantic = ">=2.13.4,<3"
 pydantic-settings = ">=2.14.2,<3"
 s3fs = "*"                        # pandas' S3 support
-snakemake = ">=9.24.0"            # Lightweight orchestration of data pipelines, used to run the CNEMS ETL
+snakemake = ">=9.24.0"            # Lightweight orchestration of data pipelines, runs the CNEMS ETL
 zstandard = "*"                   # pandas' compression support
 pixi-pycharm = "*"                # support for pixi in PyCharm IDE (temporary?)
 
@@ -160,7 +160,7 @@ skip-magic-trailing-comma = false
 line-ending = "auto"
 
 [tool.ruff.lint]
-select = [
+extend-select = [
   "A",   # flake8-builtins
   "B",   # flake8-bugbear
   "C",   # Limit cyclomatic complexity using mccabe
@@ -195,7 +195,6 @@ ignore = [
   "RET504", # Ignore unnecessary assignment before return
   "S101",   # Use of assert
 ]
-extend-select = ["NPY201"] # preview rule to easy migration to Numpy 2.0
 
 [tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["F401"] # Ignore unused imports
