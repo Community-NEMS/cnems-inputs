@@ -176,7 +176,7 @@ def main(
 
     datastore --all
     """
-    from cnems_inputs.datastore.datastore import (  # noqa: PLC0415
+    from cnems_inputs.datastore.datastore import (
         Datastore,
         fetch_resources,
         validate_cache,
