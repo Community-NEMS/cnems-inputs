@@ -7,15 +7,10 @@ import coloredlogs
 
 DEFAULT_DEPENDENCY_LOGLEVELS: dict[str, int] = {
     "aiobotocore": logging.WARNING,
-    "alembic": logging.WARNING,
-    "arelle": logging.INFO,
-    "asyncio": logging.INFO,
     "boto3": logging.WARNING,
     "botocore": logging.WARNING,
     "fsspec": logging.INFO,
     "google": logging.INFO,
-    "matplotlib": logging.WARNING,
-    "numba": logging.WARNING,
     "urllib3": logging.INFO,
 }
 
