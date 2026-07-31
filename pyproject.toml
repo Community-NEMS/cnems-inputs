@@ -26,8 +26,8 @@ source = "vcs"
 [tool.pytest]
 testpaths = ["tests"]
 filterwarnings = [
-    # Examples of how to filter out pytest warnings from dependencies
-    # "ignore:distutils Version classes are deprecated:DeprecationWarning",
+  # Examples of how to filter out pytest warnings from dependencies
+  # "ignore:distutils Version classes are deprecated:DeprecationWarning",
 ]
 addopts = ["--verbose"]
 log_format = "%(asctime)s [%(levelname)8s] %(name)s:%(lineno)s %(message)s"
@@ -37,9 +37,9 @@ log_cli_level = "DEBUG"
 # We don't have any doctests right now, but if we did this would configure
 # how those docstrings are interpreted.
 doctest_optionflags = [
-    "NORMALIZE_WHITESPACE",
-    "IGNORE_EXCEPTION_DETAIL",
-    "ELLIPSIS",
+  "NORMALIZE_WHITESPACE",
+  "IGNORE_EXCEPTION_DETAIL",
+  "ELLIPSIS",
 ]
 
 [tool.coverage.report]
@@ -52,19 +52,19 @@ fail_under = 50
 # since pytest-cov would otherwise also enforce it after unit or integration tests
 # run on their own, before the other suite gets a chance to contribute its coverage.
 exclude_lines = [
-    # Have to re-enable the standard pragma
-    "pragma: no cover",
+  # Have to re-enable the standard pragma
+  "pragma: no cover",
 
-    # Don't complain if tests don't hit defensive assertion code:
-    "raise AssertionError",
-    "raise NotImplementedError",
+  # Don't complain if tests don't hit defensive assertion code:
+  "raise AssertionError",
+  "raise NotImplementedError",
 
-    # Don't complain if non-runnable code isn't run:
-    "if 0:",
-    "if __name__ == .__main__.:",
+  # Don't complain if non-runnable code isn't run:
+  "if 0:",
+  "if __name__ == .__main__.:",
 
-    # Stuff that's not expected to run normally...
-    "logger.debug",
+  # Stuff that's not expected to run normally...
+  "logger.debug",
 ]
 
 [tool.pixi.workspace]
@@ -158,39 +158,39 @@ line-ending = "auto"
 
 [tool.ruff.lint]
 extend-select = [
-    "A", # flake8-builtins
-    "B", # flake8-bugbear
-    "C", # Limit cyclomatic complexity using mccabe
-    "C4", # flake8-comprehensions
-    "D", # pydocstyle errors
-    "E", # pycodestyle errors
-    "EXE", # executable file issues
-    "F", # pyflakes
-    "I", # isort
-    "ICN", # flake8 import conventions
-    "N", # pep8-naming
-    "NPY", # NumPy specific checks
-    "PD", # pandas checks
-    "PGH", # pygrep-hooks
-    "PIE", # flake8-pie miscellaneous linting
-    "PTH", # use pathlib
-    "Q", # flake8-quotes
-    "RET", # check return values
-    "RSE", # unnecessary parenthises on raised exceptions
-    "S", # flake8-bandit
-    "SIM", # flake8-simplify
-    "UP", # pyupgrade (use modern python syntax)
-    "W", # pycodestyle warnings
+  "A", # flake8-builtins
+  "B", # flake8-bugbear
+  "C", # Limit cyclomatic complexity using mccabe
+  "C4", # flake8-comprehensions
+  "D", # pydocstyle errors
+  "E", # pycodestyle errors
+  "EXE", # executable file issues
+  "F", # pyflakes
+  "I", # isort
+  "ICN", # flake8 import conventions
+  "N", # pep8-naming
+  "NPY", # NumPy specific checks
+  "PD", # pandas checks
+  "PGH", # pygrep-hooks
+  "PIE", # flake8-pie miscellaneous linting
+  "PTH", # use pathlib
+  "Q", # flake8-quotes
+  "RET", # check return values
+  "RSE", # unnecessary parenthises on raised exceptions
+  "S", # flake8-bandit
+  "SIM", # flake8-simplify
+  "UP", # pyupgrade (use modern python syntax)
+  "W", # pycodestyle warnings
 ]
 ignore = [
-    "D401", # Require imperative mood in docstrings.
-    "D417",
-    "E501", # Overlong lines.
-    "PD010", # Use of df.stack()
-    "PD013", # Use of df.unstack()
-    "PD015", # Use of pd.merge() rather than df.merge()
-    "RET504", # Ignore unnecessary assignment before return
-    "S101", # Use of assert
+  "D401", # Require imperative mood in docstrings.
+  "D417",
+  "E501", # Overlong lines.
+  "PD010", # Use of df.stack()
+  "PD013", # Use of df.unstack()
+  "PD015", # Use of pd.merge() rather than df.merge()
+  "RET504", # Ignore unnecessary assignment before return
+  "S101", # Use of assert
 ]
 
 [tool.ruff.lint.per-file-ignores]

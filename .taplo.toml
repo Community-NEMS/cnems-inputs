@@ -6,5 +6,5 @@ align_entries = false
 align_comments = false
 array_auto_collapse = true
 array_auto_expand = true
-indent_string = "    "
+indent_string = "  "
 reorder_keys = false
