@@ -82,6 +82,7 @@ repos:
     rev: 1.2.0.dev3
     hooks:
       - id: pyrefly-check
+        language: system
 
   - repo: https://github.com/rhysd/actionlint
     rev: v1.7.12

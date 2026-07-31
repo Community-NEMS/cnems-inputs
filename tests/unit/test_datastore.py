@@ -184,18 +184,18 @@ class TestZenodoFetcher:
             {
                 "name": "first",
                 "path": "http://localhost/first",
-                "hash": "6f1ed002ab5595859014ebf0951522d9",
+                "hash": "6f1ed002ab5595859014ebf0951522d9",  # pragma: allowlist secret
             },  # md5sum of "blah"
             {
                 "name": "second",
                 "path": "http://localhost/second",
-                "hash": "6f1ed002ab5595859014ebf0951522d9",
+                "hash": "6f1ed002ab5595859014ebf0951522d9",  # pragma: allowlist secret
             },
         ]
     }
     PROD_DOI = getattr(datastore.ZenodoDoiSettings(), TEST_ARCHIVE)
     # last numeric part of doi
-    PROD_ZEN_ID = re.search(datastore.ZENODO_REGEX, PROD_DOI).group(2)
+    PROD_ZEN_ID = re.fullmatch(datastore.ZENODO_REGEX, PROD_DOI).group(2)
 
     @pytest.fixture(autouse=True)
     def setup(self):
@@ -334,11 +334,11 @@ def test_get_zipfile_resources_eventual_success(mocker, tmp_path):
             [
                 (
                     ResourceKey("test_dataset", "test_doi", "test_name_0"),
-                    zipfile_bytes,
+                    zipfile_bytes.getvalue(),
                 ),
                 (
                     ResourceKey("test_dataset", "test_doi", "test_name_1"),
-                    zipfile_bytes,
+                    zipfile_bytes.getvalue(),
                 ),
             ]
         )

@@ -15,6 +15,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import Annotated, Any, Self
 
+import botocore.exceptions
 import frictionless
 import requests
 import yaml
@@ -146,7 +147,7 @@ class DatapackageDescriptor:
         if isinstance(
             parts.get(k), list
         ):  # If partitions are list, match whole list if it contains desired element
-            return any(str(part).lower() == str(v).lower() for part in parts.get(k))  # type: ignore  # noqa: PGH003
+            return any(str(part).lower() == str(v).lower() for part in parts.get(k, []))
         return str(parts.get(k)).lower() == str(v).lower()
 
     def get_resources(
@@ -322,7 +323,7 @@ class ZenodoFetcher:
             api_root = "https://zenodo.org/api"
         else:
             raise ValueError(f"Invalid Zenodo DOI: {doi}")
-        return f"{api_root}/records/{zenodo_id}/files"  # type: ignore  # noqa: PGH003
+        return HttpUrl(f"{api_root}/records/{zenodo_id}/files")
 
     def _fetch_from_url(self: Self, url: HttpUrl) -> requests.Response:
         logger.info(f"Retrieving {url} from zenodo")
@@ -406,15 +407,16 @@ class Datastore:
         # object is deleted
         self.temporary_extraction_dir = TemporaryDirectory()
 
-        assert local_cache_path is not None or cloud_cache_path is not None, (
-            "At least one of local_cache_path or cloud_cache_path must be provided."
-        )
+        if local_cache_path is None and cloud_cache_path is None:
+            raise ValueError(
+                "At least one of local_cache_path or cloud_cache_path must be provided."
+            )
         if local_cache_path is not None:
             # Convert to UPath with explicit file:// protocol if needed
             local_upath = UPath(local_cache_path).resolve()
             if local_upath.protocol == "":
                 # Local filesystem path without scheme - add file:// protocol
-                local_upath = UPath(f"file://{local_cache_path}")
+                local_upath = UPath(f"file://{local_upath}")
 
             if local_upath.protocol != "file":
                 raise ValueError(
@@ -443,7 +445,7 @@ class Datastore:
             )
             try:
                 self._cache.add_cache_layer(UPathCache(cloud_upath))
-            except RuntimeError as e:
+            except (RuntimeError, OSError, botocore.exceptions.BotoCoreError) as e:
                 logger.info(
                     f"Unable to initialize cache at {cloud_upath}. "
                     f"Falling back to Zenodo if necessary. Error was: {e}"
@@ -502,7 +504,7 @@ class Datastore:
             metadata["parts"].
 
         Yields:
-            (ResourceKey, io.BytesIO) holding content for each matching resource
+            (ResourceKey, bytes) holding content for each matching resource
         """
         desc = self.get_datapackage_descriptor(dataset)
         for res in desc.get_resources(**filters):
@@ -512,7 +514,7 @@ class Datastore:
                 )
                 continue
 
-            if self._cache.is_optimally_cached(res) and skip_optimally_cached:
+            if skip_optimally_cached and self._cache.is_optimally_cached(res):
                 logger.info(f"{res} is already optimally cached.")
                 continue
             if self._cache.contains(res):
@@ -567,7 +569,11 @@ class Datastore:
         for resource_key, content in self.get_resources(dataset, **filters):
             yield (
                 resource_key,
-                retry(zipfile.ZipFile, retry_on=(zipfile.BadZipFile,), file=content),
+                retry(
+                    zipfile.ZipFile,
+                    retry_on=(zipfile.BadZipFile,),
+                    file=io.BytesIO(content),
+                ),
             )
 
     def get_zipfile_file_names(self, zip_file: zipfile.ZipFile):
@@ -589,7 +595,9 @@ def validate_cache(
         for res, content in dstore.get_resources(
             single_ds,
             cached_only=True,
-            **partition,  # type: ignore  # noqa: PGH003
+            # [kmm] hard coding this to the default value to appease the type checker:
+            skip_optimally_cached=False,
+            **partition,
         ):
             try:
                 num_total += 1
@@ -616,11 +624,14 @@ def fetch_resources(
     for single_ds in datasets:
         for res, contents in dstore.get_resources(
             single_ds,
+            # [kmm] hard-coding this to the default to appease the type checker:
+            cached_only=False,
             skip_optimally_cached=True,
-            **partition,  # type: ignore  # noqa: PGH003
+            **partition,
         ):
             logger.info(f"Retrieved {res}.")
             dstore._cache.add(res, contents)
+            # TODO: if we restore cloud caching decide whether to revive this:
             # If the cloud_cache_path is specified and we don't want
             # to bypass the local cache, populate the local cache.
             # if cloud_cache_path and not bypass_local_cache:

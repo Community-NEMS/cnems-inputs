@@ -25,9 +25,12 @@ def get_logger(name: str):
     return logging.getLogger(f"cnems_inputs.{name}")
 
 
+LogLevel = Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
+
+
 def configure_root_logger(
     logfile: str | None = None,
-    loglevel: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = "INFO",
+    loglevel: LogLevel = "INFO",
     dependency_loglevels: dict[str, int] | None = None,
     color_logs: bool = True,
     propagate: bool = False,

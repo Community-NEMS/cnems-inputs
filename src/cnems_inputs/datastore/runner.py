@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING
 
 import click
 
+import cnems_inputs.logging
 from cnems_inputs.datastore import ZenodoDoiSettings
 
 if TYPE_CHECKING:
@@ -147,7 +148,7 @@ def main(
     # cloud_cache_path: str,
     bypass_local_cache: bool,
     logfile: pathlib.Path,
-    loglevel: str,
+    loglevel: cnems_inputs.logging.LogLevel,
 ) -> int:
     """Manage the raw data inputs to the C-NEMS input data processing pipeline.
 
@@ -175,8 +176,7 @@ def main(
 
     datastore --all
     """
-    import cnems_inputs.logging
-    from cnems_inputs.datastore.datastore import (
+    from cnems_inputs.datastore.datastore import (  # noqa: PLC0415
         Datastore,
         fetch_resources,
         validate_cache,
@@ -185,7 +185,7 @@ def main(
     logger = cnems_inputs.logging.get_logger(__name__)
     cnems_inputs.logging.configure_root_logger(
         logfile=str(logfile) if logfile else None,
-        loglevel=loglevel,  # type: ignore  # noqa: PGH003
+        loglevel=loglevel,
     )
 
     if all_datasets and datasets:
