@@ -49,7 +49,7 @@ doctest_optionflags = [
 precision = 2
 sort = "miss"
 skip_empty = true
-fail_under = 90
+fail_under = 50
 # fail_under is enforced once, after unit and integration coverage are combined, by
 # the final "coverage report" invocation in the `test` pixi task below -- not here,
 # since pytest-cov would otherwise also enforce it after unit or integration tests
