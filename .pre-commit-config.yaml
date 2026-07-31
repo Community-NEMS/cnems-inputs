@@ -127,8 +127,8 @@ repos:
       # hook execution -- but since pre-commit.ci can't run this hook either way (see
       # `ci.skip` below), it's enforced in CI via dedicated steps in pytest.yml
       # instead.
-      - id: pyrefly
-        name: pyrefly
+      - id: lint-pyrefly
+        name: lint-pyrefly
         stages: [pre-commit]
         language: system
         verbose: false
