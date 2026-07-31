@@ -145,7 +145,7 @@ def main(
     partition: dict[str, int | str],
     # TODO: decide if we're doing cloud cache
     # cloud_cache_path: str,
-    bypass_local_cache: bool,
+    # bypass_local_cache: bool,
     logfile: pathlib.Path,
     loglevel: str,
 ) -> int:
@@ -197,13 +197,13 @@ def main(
     dataset_list = _KNOWN_DATASETS if all_datasets else list(datasets)
 
     cache_path = None
-    if not bypass_local_cache:
+    #if not bypass_local_cache:
         # TODO: get from environment probably
-        cache_path = "."
+        # cache_path = "."
 
     dstore = Datastore(
         # cloud_cache_path=cloud_cache_path,
-        local_cache_path=cache_path,
+        # local_cache_path=cache_path,
     )
 
     if partition:

@@ -620,6 +620,7 @@ def fetch_resources(
             **partition,  # type: ignore  # noqa: PGH003
         ):
             logger.info(f"Retrieved {res}.")
+            dstore._cache.add(res, contents)
             # If the cloud_cache_path is specified and we don't want
             # to bypass the local cache, populate the local cache.
             # if cloud_cache_path and not bypass_local_cache:
