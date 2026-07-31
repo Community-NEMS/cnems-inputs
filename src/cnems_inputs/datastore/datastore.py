@@ -30,11 +30,11 @@ from cnems_inputs.logging import get_logger
 
 logger = get_logger(__name__)
 
+ZENODO_REGEX = r"^(10\.5072|10\.5281)/zenodo\.([\d]+)$"
+
 ZenodoDoi = Annotated[
     str,
-    StringConstraints(
-        strict=True, min_length=16, pattern=r"(10\.5072|10\.5281)/zenodo.([\d]+)"
-    ),
+    StringConstraints(strict=True, min_length=16, pattern=ZENODO_REGEX),
 ]
 
 
@@ -309,7 +309,7 @@ class ZenodoFetcher:
     def _get_url(self: Self, doi: ZenodoDoi) -> HttpUrl:
         """Construct a Zenodo depsition URL based on its Zenodo DOI."""
         # TODO: verify this prefix is still valid for C-NEMS archives
-        match = re.search(r"(10\.5072|10\.5281)/zenodo.([\d]+)", doi)
+        match = re.fullmatch(ZENODO_REGEX, doi)
 
         if match is None:
             raise ValueError(f"Invalid Zenodo DOI: {doi}")
@@ -368,7 +368,7 @@ class Datastore:
 
     def __init__(
         self,
-        local_cache_path: str | Path | UPath | None = "./cache",
+        local_cache_path: str | Path | UPath | None,
         # TODO: decide if we're doing cloud caches
         cloud_cache_path: str
         | UPath

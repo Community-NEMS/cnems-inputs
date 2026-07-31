@@ -100,16 +100,16 @@ def _parse_key_values(
     ),
     callback=_parse_key_values,
 )
+@click.option(
+    "--bypass-local-cache",
+    is_flag=True,
+    default=False,
+    help=(
+        "If enabled, locally cached data will not be used. Instead, a new copy will be "
+        "downloaded from Zenodo or the cloud cache if specified."
+    ),
+)
 # TODO: decide if we want cloud caching
-# @click.option(
-#     "--bypass-local-cache",
-#     is_flag=True,
-#     default=False,
-#     help=(
-#         "If enabled, locally cached data will not be used. Instead, a new copy will be "
-#         "downloaded from Zenodo or the cloud cache if specified."
-#     ),
-# )
 # @click.option(
 #     "--cloud-cache-path",
 #     type=str,
@@ -145,7 +145,7 @@ def main(
     partition: dict[str, int | str],
     # TODO: decide if we're doing cloud cache
     # cloud_cache_path: str,
-    # bypass_local_cache: bool,
+    bypass_local_cache: bool,
     logfile: pathlib.Path,
     loglevel: str,
 ) -> int:
@@ -197,13 +197,13 @@ def main(
     dataset_list = _KNOWN_DATASETS if all_datasets else list(datasets)
 
     cache_path = None
-    # if not bypass_local_cache:
-    # TODO: get from environment probably
-    # cache_path = "."
+    if not bypass_local_cache:
+        # TODO: get from environment probably
+        cache_path = "./cache"
 
     dstore = Datastore(
         # cloud_cache_path=cloud_cache_path,
-        # local_cache_path=cache_path,
+        local_cache_path=cache_path,
     )
 
     if partition:

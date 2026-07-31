@@ -195,7 +195,7 @@ class TestZenodoFetcher:
     }
     PROD_DOI = getattr(datastore.ZenodoDoiSettings(), TEST_ARCHIVE)
     # last numeric part of doi
-    PROD_ZEN_ID = re.search(r"^10\.(5072|5281)/zenodo\.(\d+)$", PROD_DOI).group(2)
+    PROD_ZEN_ID = re.search(datastore.ZENODO_REGEX, PROD_DOI).group(2)
 
     @pytest.fixture(autouse=True)
     def setup(self):
@@ -290,8 +290,8 @@ class TestZenodoFetcher:
             self.fetcher.get_resource(res)
 
 
-def test_get_zipfile_resource_failure(mocker):
-    ds = datastore.Datastore()
+def test_get_zipfile_resource_failure(mocker, tmp_path):
+    ds = datastore.Datastore(local_cache_path=tmp_path)
     ds.get_unique_resource = mocker.MagicMock(return_value=b"")
     sleep_mock = mocker.MagicMock()
     mocker.patch("time.sleep", sleep_mock)
@@ -300,13 +300,13 @@ def test_get_zipfile_resource_failure(mocker):
         ds.get_zipfile_resource("test_dataset")
 
 
-def test_get_zipfile_resource_eventual_success(mocker):
+def test_get_zipfile_resource_eventual_success(mocker, tmp_path):
     file_contents = "aaa"
     zipfile_bytes = io.BytesIO()
     with zipfile.ZipFile(zipfile_bytes, "w") as a_zipfile:
         a_zipfile.writestr("file_name", file_contents)
 
-    ds = datastore.Datastore()
+    ds = datastore.Datastore(local_cache_path=tmp_path)
     ds.get_unique_resource = mocker.MagicMock(return_value=b"")
     mocker.patch("time.sleep")
     mocker.patch(
@@ -322,13 +322,13 @@ def test_get_zipfile_resource_eventual_success(mocker):
     assert test_file.read().decode(encoding="utf-8") == file_contents
 
 
-def test_get_zipfile_resources_eventual_success(mocker):
+def test_get_zipfile_resources_eventual_success(mocker, tmp_path):
     file_contents = "aaa"
     zipfile_bytes = io.BytesIO()
     with zipfile.ZipFile(zipfile_bytes, "w") as a_zipfile:
         a_zipfile.writestr("file_name", file_contents)
 
-    ds = datastore.Datastore()
+    ds = datastore.Datastore(local_cache_path=tmp_path)
     ds.get_resources = mocker.MagicMock(
         return_value=iter(
             [
