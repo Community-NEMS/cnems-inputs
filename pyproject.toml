@@ -16,9 +16,6 @@ license = { file = "LICENSE" }
 dependencies = []
 
 [project.scripts]
-# Placeholder entry point demonstrating the pattern -- named after the dummy module
-# it comes from until real console scripts replace it.
-dummy = "cnems_inputs.cli:main"
 datastore = "cnems_inputs.datastore.runner:main"
 
 [tool.hatch.version]

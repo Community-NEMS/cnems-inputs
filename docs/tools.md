@@ -14,10 +14,9 @@ can be reviewed on its own. Here's what's here so far and how it works.
 - We use [hatch-vcs](https://github.com/ofek/hatch-vcs) (configured under
     `[tool.hatch.version]`) to obtain the package's version directly from `git` tags,
     rather than storing it in the repository and manually updating it.
-- `src/cnems_inputs/dummy.py` and `cli.py` are placeholder examples: a trivial
-    function, and a minimal argparse-based CLI wrapping it, registered as the `dummy`
-    console script under `[project.scripts]`. They exist to give the test suite (and
-    future real entry points) something to model.
+- `src/cnems_inputs/datastore` holds the first real pipeline code: fetching and
+    caching input data resources, registered as the `datastore` console script under
+    `[project.scripts]`.
 
 ## Environment & Task Management with Pixi
 
