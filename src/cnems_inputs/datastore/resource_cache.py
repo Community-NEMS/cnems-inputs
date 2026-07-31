@@ -2,7 +2,7 @@
 
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Any, NamedTuple
+from typing import Any, ClassVar, NamedTuple
 
 import boto3
 import botocore.exceptions
@@ -74,7 +74,7 @@ class UPathCache(AbstractCache):
         - file:///local/path
     """
 
-    supported_protocols: set[str] = {"s3", "gs", "file"}
+    supported_protocols: ClassVar[set[str]] = {"s3", "gs", "file"}
 
     def __init__(self, storage_upath: UPath, **kwargs: Any):
         """Constructs new cache using UPath for storage backend access.
@@ -334,7 +334,10 @@ class LayeredCache(AbstractCache):
                         )
                         try:
                             closer_cache.add(resource, content)
-                        except Exception as e:
+                        # Populating a closer cache layer is a best-effort optimization --
+                        # any backend-specific error here shouldn't prevent returning the
+                        # content already retrieved from the layer that did have it.
+                        except Exception as e:  # noqa: BLE001
                             logger.warning(
                                 f"Failed to populate {resource} into layer {j} "
                                 f"({closer_cache}): {e}"
