@@ -2,6 +2,11 @@
 ---
 # Line length is handled by mdformat/prettier line wrapping, not worth enforcing here.
 MD013: false
+# mdformat-mkdocs indents nested list content 4 spaces (not markdownlint's default of
+# 2), since Python-Markdown -- which Zensical's rendering is built on -- needs 4
+# spaces to reliably parse wrapped content as still belonging to a list item.
+MD007:
+  indent: 4
 # Don't treat a `title:` key in YAML front matter as an implicit top-level heading --
 # GitHub issue templates use `title:` for the default issue title, which otherwise
 # collides with this rule's Jekyll-style front-matter-title heuristic.
