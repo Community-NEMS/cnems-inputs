@@ -38,3 +38,22 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           slug: Community-NEMS/cnems-inputs
           fail_ci_if_error: false
+
+  lint-pyrefly:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Set up pixi
+        uses: prefix-dev/setup-pixi@v0.10.0
+        with:
+          cache: true
+
+      - name: Type check with pyrefly
+        # Not covered by pre-commit.ci -- see .pre-commit-config.yaml's
+        # "lint-pyrefly" local hook and its `ci.skip` entry -- so it's enforced
+        # here instead. We may want to track type coverage at some point in the
+        # future. See catalyst-cooperative/ferc-xbrl-extractor for reference
+        run: pixi run lint-pyrefly
