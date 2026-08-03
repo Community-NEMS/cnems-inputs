@@ -41,7 +41,7 @@ repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.16.1
     hooks:
-      - id: ruff
+      - id: ruff-check
         args: [--fix, --exit-non-zero-on-fix]
       - id: ruff-format
 
@@ -77,11 +77,6 @@ repos:
     rev: v0.23.2
     hooks:
       - id: markdownlint-cli2
-
-  - repo: https://github.com/facebook/pyrefly-pre-commit
-    rev: 1.2.0
-    hooks:
-      - id: pyrefly-check
 
   - repo: https://github.com/rhysd/actionlint
     rev: v1.7.12
@@ -125,6 +120,22 @@ repos:
         always_run: true
         entry: pixi run test
 
+      # Type check with pyrefly. This has to be a local hook rather than an official
+      # pre-commit repo for pyrefly: running it through the pixi default environment
+      # (which already has every dependency installed) avoids needing network access
+      # to resolve the project's dependencies, which pre-commit.ci disables during
+      # hook execution -- but since pre-commit.ci can't run this hook either way (see
+      # `ci.skip` below), it's enforced in CI via dedicated steps in pytest.yml
+      # instead.
+      - id: lint-pyrefly
+        name: lint-pyrefly
+        stages: [pre-commit]
+        language: system
+        verbose: false
+        pass_filenames: false
+        always_run: true
+        entry: pixi run lint-pyrefly
+
 ########################################################################################
 # Configuration for pre-commit.ci
 ########################################################################################
@@ -137,5 +148,5 @@ ci:
   autoupdate_branch: main
   autoupdate_commit_msg: "[pre-commit.ci] pre-commit autoupdate"
   autoupdate_schedule: weekly
-  skip: [pytest]
+  skip: [pytest, lint-pyrefly]
   submodules: false
