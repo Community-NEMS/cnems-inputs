@@ -14,10 +14,9 @@ can be reviewed on its own. Here's what's here so far and how it works.
 - We use [hatch-vcs](https://github.com/ofek/hatch-vcs) (configured under
     `[tool.hatch.version]`) to obtain the package's version directly from `git` tags,
     rather than storing it in the repository and manually updating it.
-- `src/cnems_inputs/dummy.py` and `cli.py` are placeholder examples: a trivial
-    function, and a minimal argparse-based CLI wrapping it, registered as the `dummy`
-    console script under `[project.scripts]`. They exist to give the test suite (and
-    future real entry points) something to model.
+- `src/cnems_inputs/datastore` holds the first real pipeline code: fetching and
+    caching input data resources, registered as the `datastore` console script under
+    `[project.scripts]`.
 
 ## Environment & Task Management with Pixi
 
@@ -161,16 +160,26 @@ look right so you can fix it.
     `README.md` verbatim using Zensical's `pymdownx.snippets` syntax
     (`--8<--   "README.md"`); `docs/license.md` embeds `LICENSE` the same way.
     `docs/release_notes.md` is a standalone Markdown file.
-- `docs/reference.md` holds the API reference, rendered from docstrings by
+- `docs/reference/` holds the API reference, rendered from docstrings by
     [mkdocstrings](https://mkdocstrings.github.io/) (configured under
     `[project.plugins.mkdocstrings...]` in `zensical.toml`, currently a preliminary
-    Zensical integration). Add a `::: module.path` line there for any new module that
-    should show up in the API reference -- it isn't generated automatically.
+    Zensical integration). It has one Markdown file per module (each with a single
+    `::: module.path` line), organized into a directory tree that mirrors the package
+    structure, with a matching nested `nav` entry in `zensical.toml` -- both have to be
+    updated by hand for any new module, since Zensical doesn't yet have an equivalent
+    to `mkdocs-gen-files`/`mkdocs-literate-nav` (the plugins Material for MkDocs
+    projects typically use to generate these pages and nav automatically from the
+    source tree). Its plugin system doesn't support arbitrary third-party MkDocs
+    plugins at all yet -- only a small built-in set
+    (`search`, `offline`, `autorefs`, `mkdocstrings`, `markdown-exec`, `glightbox`,
+    `macros`). Switch to automatic generation once Zensical ships that capability.
 - Build the docs with `pixi run docs-build`, which wipes the previously generated
     `site/` directory and rebuilds everything from scratch, or preview them locally with
     `pixi run docs-serve`.
-- There's no custom branding (logo, favicon, social links) configured yet -- the site
-    uses Zensical's defaults until Community-NEMS has its own to add.
+- There's no custom logo or favicon configured yet -- the site uses Zensical's
+    defaults until Community-NEMS has its own to add. A GitHub icon linking back to
+    the repository is configured under `[[project.extra.social]]` in
+    `zensical.toml`, though.
 
 ## Documentation Publishing
 

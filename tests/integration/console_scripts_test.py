@@ -17,28 +17,3 @@ def test_console_scripts(script_runner, ep: importlib.metadata.EntryPoint) -> No
     """
     ret = script_runner.run([ep.name, "--help"], print_result=False)
     assert ret.success  # nosec: B101
-
-
-@pytest.mark.parametrize("alpha,beta", [("2", "2")])
-@pytest.mark.script_launch_mode("inprocess")
-def test_dummy_valid_args(script_runner, alpha: str, beta: str) -> None:
-    """Running the script with valid integer arguments should succeed."""
-    ret = script_runner.run(["dummy", "--alpha", alpha, "--beta", beta])
-    assert ret.success  # nosec: B101
-
-
-@pytest.mark.parametrize(
-    "alpha,beta",
-    [
-        ("a", "2"),
-        ("2", "b"),
-        ("a", "b"),
-    ],
-)
-@pytest.mark.script_launch_mode("inprocess")
-def test_dummy_invalid_args(script_runner, alpha: str, beta: str) -> None:
-    """Non-integer arguments should be rejected by argparse, not silently accepted."""
-    ret = script_runner.run(["dummy", "--alpha", alpha, "--beta", beta])
-    assert not ret.success  # nosec: B101
-    assert ret.returncode == 2  # nosec: B101
-    assert "invalid int value" in ret.stderr
