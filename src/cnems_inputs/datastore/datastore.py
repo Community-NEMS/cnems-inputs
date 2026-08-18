@@ -214,6 +214,7 @@ class ZenodoDoiSettings(BaseSettings):
     """Digital Object Identifiers pointing to currently used Zenodo archives."""
 
     eianems: ZenodoDoi
+    eiabluesky: ZenodoDoi
 
     model_config = SettingsConfigDict(
         env_prefix="cnems_inputs_zenodo_doi_", env_file=".env", extra="ignore"

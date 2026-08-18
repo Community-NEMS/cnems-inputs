@@ -4,19 +4,20 @@ Reads a file from GitHub (soon to be Datastore...), then publishes it to R2.
 """
 
 from pathlib import Path
+from zipfile import ZipFile
 
 import polars as pl
 
 
-def extract(input_path: Path) -> pl.LazyFrame:
+def extract(zip_path: Path) -> pl.LazyFrame:
     """Make a LazyFrame from the input path.
 
-    Note that we've set the HTTP storage engine to `retrieve=False`. This means
-    that *we* handle the remote fetching with Polars, rather than having Snakemake
-    handle remote fetching to a local cached location. This allows us to have
-    partial remote reads using Polars predicate/projection pushdown.
+    Datastore downloads a ZIP file to a local cache dir - we are only looking
+    for one file in the ZIP archive so we grab that manually here.
     """
-    return pl.scan_csv(input_path)
+    with ZipFile(zip_path) as zf:
+        content = zf.open("input/electricity/cem_inputs/SupplyCurve.csv")
+    return pl.scan_csv(content)
 
 
 def transform(raw: pl.LazyFrame) -> pl.LazyFrame:
@@ -40,6 +41,9 @@ def run(input_path, output_path):
 
 
 if __name__ == "__main__":
-    from snakemake.iocontainers import snakemake
+    from typing import TYPE_CHECKING
+
+    if TYPE_CHECKING:
+        from snakemake.iocontainers import snakemake  # noqa: TC004
 
     run(snakemake.input[0], snakemake.output[0])
