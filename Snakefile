@@ -1,5 +1,5 @@
 rule supply_curve:
-  input: 
+  input:
     "SupplyCurve.csv"
   output:
     "supply_curve.csv"
