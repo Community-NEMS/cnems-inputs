@@ -100,6 +100,8 @@ pydantic = ">=2.13.4,<3"
 pydantic-settings = ">=2.14.2,<3"
 s3fs = "*" # pandas' S3 support
 snakemake = ">=9.24.0" # Lightweight orchestration of data pipelines, runs the CNEMS ETL
+snakemake-storage-plugin-http = ">=0.3.1,<0.4" # remote storage plugin for snakemake
+snakemake-storage-plugin-s3 = ">=0.3.6,<0.4" # remote storage plugin for snakemake
 zstandard = "*" # pandas' compression support
 pixi-pycharm = "*" # support for pixi in PyCharm IDE (temporary?)
 
@@ -140,7 +142,7 @@ pytest-mock = ">=3.15.1,<4"
 # Documentation build, also available on conda-forge so it's tracked here alongside
 # the rest of the development tools rather than as a PyPI extra.
 mkdocstrings-python = ">=2.0.5" # Renders API docs from docstrings, used by zensical
-zensical = ">=0.0.51" # Markdown-based static site generator for docs
+zensical = ">=0.0.51"           # Markdown-based static site generator for docs
 
 [tool.ruff]
 # Configurations that apply to both the `format` and `lint` subcommands.
