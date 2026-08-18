@@ -14,7 +14,7 @@ storage r2:
   secret_key=os.environ["CLOUDFLARE_R2_SECRET_ACCESS_KEY"]
 
 rule supply_curve:
-  input: 
+  input:
     storage.http("https://raw.githubusercontent.com/EIAgov/BlueSky/refs/heads/main/input/electricity/cem_inputs/SupplyCurve.csv")
   output:
     storage.r2(f"s3://test-catalyst-coop/supply_curve.csv")

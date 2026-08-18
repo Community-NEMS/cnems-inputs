@@ -132,8 +132,8 @@ pytest-cov = ">=7.1.0"             # Pytest plugin for working with coverage
 
 # Documentation build, also available on conda-forge so it's tracked here alongside
 # the rest of the development tools rather than as a PyPI extra.
-mkdocstrings-python = ">=2.0.5" # Renders API docs from docstrings, used by zensical
-zensical = ">=0.0.51"           # Markdown-based static site generator for docs
+mkdocstrings-python = ">=2.0.5"                # Renders API docs from docstrings, used by zensical
+zensical = ">=0.0.51"                          # Markdown-based static site generator for docs
 snakemake-storage-plugin-s3 = ">=0.3.6,<0.4"
 snakemake-storage-plugin-http = ">=0.3.1,<0.4"
 
