@@ -7,17 +7,19 @@ from pathlib import Path
 from zipfile import ZipFile
 
 import polars as pl
+from upath import UPath
 
 
-def extract(zip_path: Path) -> pl.LazyFrame:
+def extract(zip_path: UPath) -> pl.LazyFrame:
     """Make a LazyFrame from the input path.
 
-    Datastore downloads a ZIP file to a local cache dir - we are only looking
-    for one file in the ZIP archive so we grab that manually here.
+    We want to read the data *at extraction time*, not at definition time, so we get the zip_path as the HTTP path, not a local cached path.
+
+    NOTE (2026-08-19): consider using the cached-http storage plugin!
     """
-    with ZipFile(zip_path) as zf:
+    with UPath(zip_path).open("rb") as blob, ZipFile(blob) as zf:
         content = zf.open("input/electricity/cem_inputs/SupplyCurve.csv")
-    return pl.scan_csv(content)
+        return pl.scan_csv(content)
 
 
 def transform(raw: pl.LazyFrame) -> pl.LazyFrame:
@@ -28,9 +30,12 @@ def transform(raw: pl.LazyFrame) -> pl.LazyFrame:
 def load(transformed: pl.LazyFrame, output_path: Path) -> None:
     """Write LazyFrame to output.
 
-    Note that here, we've set the S3 storage engine to `retrieve=True`. This
+    Note that here, we've set the S3 storage plugin to `retrieve=True`. This
     means that we write to a local cached path, and the S3 storage plugin will read
     from that path and write to the configured location.
+
+    We use the S3 storage plugin because that lets Snakemake better understand
+    which outputs have been built vs. need rebuilding.
     """
     transformed.sink_csv(output_path)
 
