@@ -142,7 +142,7 @@ pytest-mock = ">=3.15.1,<4"
 # Documentation build, also available on conda-forge so it's tracked here alongside
 # the rest of the development tools rather than as a PyPI extra.
 mkdocstrings-python = ">=2.0.5" # Renders API docs from docstrings, used by zensical
-zensical = ">=0.0.51"           # Markdown-based static site generator for docs
+zensical = ">=0.0.51" # Markdown-based static site generator for docs
 
 [tool.ruff]
 # Configurations that apply to both the `format` and `lint` subcommands.
