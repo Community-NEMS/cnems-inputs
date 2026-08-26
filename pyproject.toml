@@ -98,6 +98,7 @@ pandera = ">=0.32.1"
 polars = ">=1.43,<2"
 python-snappy = "*"                                 # pandas' compression support
 pyarrow = ">=25.0.0"                                # pandas' parquet support
+pyyaml = ">=6.0.3,<7"                               # Reads packaged Zenodo DOI config
 pydantic = ">=2.13.4,<3"
 pydantic-settings = ">=2.14.2,<3"
 s3fs = "*"                                          # pandas' S3 support
