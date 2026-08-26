@@ -3,9 +3,10 @@ envvars:
   "CLOUDFLARE_R2_ACCESS_KEY_ID",
   "CLOUDFLARE_R2_SECRET_ACCESS_KEY",
 
-storage http:
-  provider="http",
-  retrieve=False
+storage cached_http:
+  provider="cached-http",
+  cache=".snakemake/storage/cached-http/cache"
+
 
 storage r2:
   provider="s3",
@@ -15,7 +16,7 @@ storage r2:
 
 rule supply_curve:
   input:
-    storage.http("https://raw.githubusercontent.com/EIAgov/BlueSky/refs/heads/main/input/electricity/cem_inputs/SupplyCurve.csv")
+    storage.cached_http("https://zenodo.org/records/21629428/files/eiabluesky-v1-1.zip")
   output:
     storage.r2(f"s3://test-catalyst-coop/supply_curve.csv")
   script:
