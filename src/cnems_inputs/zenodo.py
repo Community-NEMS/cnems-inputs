@@ -74,7 +74,7 @@ def _zenodo_record_url(doi: ZenodoDoi) -> str:
 def _normalize_record_path(relative_path: str) -> str:
     """Normalize relative paths.
 
-    Reject URLs, absolute paths, empty paths, and paths with .. - those are not
+    Reject URLs, absolute paths, empty paths, and paths with .. since those are not
     valid paths for Zenodo file access API.
     """
     path = PurePosixPath(relative_path)
