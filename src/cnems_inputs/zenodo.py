@@ -21,7 +21,7 @@ ZenodoDoiMap = RootModel[dict[str, ZenodoDoi]]
 
 def resolve(
     dataset: str,
-    relative_path: str,
+    resource_path: str,
     *,
     doi_map: ZenodoDoiMap | None = None,
 ) -> str:
@@ -34,7 +34,8 @@ def resolve(
 
     Args:
         dataset: Dataset name configured in the DOI map.
-        relative_path: File path relative to the dataset's Zenodo record.
+        resource_path: Path to desired resource relative to the dataset's
+            Zenodo record.
         doi_map: Optional DOI map to use instead of the default YAML config.
 
     Returns:
@@ -47,9 +48,9 @@ def resolve(
             has the wrong shape or includes invalid DOIs.
     """
     doi_config = _default_doi_map() if doi_map is None else doi_map
-    file_root = _zenodo_record(doi_config.root[dataset])
-    path = _normalize_record_path(relative_path)
-    return f"{file_root}/{quote(path, safe='/')}"
+    file_root = _zenodo_record_url(doi_config.root[dataset])
+    path = _normalize_record_path(resource_path)
+    return f"{file_root}/files/{quote(path, safe='/')}"
 
 
 @functools.cache
@@ -60,14 +61,14 @@ def _default_doi_map() -> ZenodoDoiMap:
     return ZenodoDoiMap.model_validate(loaded)
 
 
-def _zenodo_record(doi: ZenodoDoi) -> str:
-    """Resolve a validated Zenodo DOI to the record's file URL root."""
+def _zenodo_record_url(doi: ZenodoDoi) -> str:
+    """Resolve a validated Zenodo DOI to the record's URL."""
     doi_prefix, record_id = doi.split("/zenodo.")
     record_roots = {
         "10.5072": "https://sandbox.zenodo.org",
         "10.5281": "https://zenodo.org",
     }
-    return f"{record_roots[doi_prefix]}/records/{record_id}/files"
+    return f"{record_roots[doi_prefix]}/records/{record_id}"
 
 
 def _normalize_record_path(relative_path: str) -> str:
