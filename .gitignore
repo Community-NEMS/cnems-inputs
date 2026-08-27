@@ -222,3 +222,6 @@ __marimo__/
 
 # Pycharm stuff
 .idea
+
+# Snakemake dir
+.snakemake

@@ -88,22 +88,25 @@ mdformat-mkdocs = ">=5" # Stops mdformat from mangling zensical/MkDocs markdown 
 # This is the single place these are tracked -- see the note on [project.dependencies]
 # above.
 duckdb = ">=1.5.5,<2"
-email-validator = "*"             # pydantic's email-validation support
-frictionless = ">=5.19.0,<6"      # Frictionless data packages and tabular metadata validation
-fsspec = "*"                      # pandas' generic remote-filesystem support
-gcsfs = "*"                       # pandas' GCS support
-openpyxl = "*"                    # pandas' excel support
+email-validator = "*"                               # pydantic's email-validation support
+frictionless = ">=5.19.0,<6"                        # Frictionless data packages and tabular metadata validation
+fsspec = "*"                                        # pandas' generic remote-filesystem support
+gcsfs = "*"                                         # pandas' GCS support
+openpyxl = "*"                                      # pandas' excel support
 pandas = ">=3,<4"
 pandera = ">=0.32.1"
 polars = ">=1.43,<2"
-python-snappy = "*"               # pandas' compression support
-pyarrow = ">=25.0.0"              # pandas' parquet support
+python-snappy = "*"                                 # pandas' compression support
+pyarrow = ">=25.0.0"                                # pandas' parquet support
+pyyaml = ">=6.0.3,<7"                               # Reads packaged Zenodo DOI config
 pydantic = ">=2.13.4,<3"
 pydantic-settings = ">=2.14.2,<3"
-s3fs = "*"                        # pandas' S3 support
-snakemake = ">=9.24.0"            # Lightweight orchestration of data pipelines, runs the CNEMS ETL
-zstandard = "*"                   # pandas' compression support
-pixi-pycharm = "*"                # support for pixi in PyCharm IDE (temporary?)
+s3fs = "*"                                          # pandas' S3 support
+snakemake = ">=9.24.0"                              # Lightweight orchestration of data pipelines, runs the CNEMS ETL
+snakemake-storage-plugin-s3 = ">=0.3.6,<0.4"
+snakemake-storage-plugin-cached-http = ">=0.3,<0.4"
+zstandard = "*"                                     # pandas' compression support
+pixi-pycharm = "*"                                  # support for pixi in PyCharm IDE (temporary?)
 
 # Development tools: pre-commit hooks, linting/formatting, and static analysis. All
 # available on conda-forge, so -- like the runtime dependencies above -- these are
@@ -132,8 +135,9 @@ pytest-cov = ">=7.1.0"             # Pytest plugin for working with coverage
 
 # Documentation build, also available on conda-forge so it's tracked here alongside
 # the rest of the development tools rather than as a PyPI extra.
-mkdocstrings-python = ">=2.0.5" # Renders API docs from docstrings, used by zensical
-zensical = ">=0.0.51"           # Markdown-based static site generator for docs
+mkdocstrings-python = ">=2.0.5"     # Renders API docs from docstrings, used by zensical
+zensical = ">=0.0.51"               # Markdown-based static site generator for docs
+universal-pathlib = ">=0.3.10,<0.4"
 
 [tool.ruff]
 # Configurations that apply to both the `format` and `lint` subcommands.
