@@ -16,6 +16,9 @@ storage r2:
 
 from cnems_inputs.zenodo import resolve
 
+configfile: "config/emm_inputs.yaml"
+
+
 def resolve_dataset(dataset: str, resource_path: str) -> str:
     """Resolve a resource within a dataset to its URL.
 
@@ -37,10 +40,4 @@ def resolve_dataset(dataset: str, resource_path: str) -> str:
     # dispatch properly.
     return storage.cached_http(resolve(dataset, resource_path))
 
-rule supply_curve:
-  input:
-    resolve_dataset("eiabluesky", "eiabluesky-v1-1.zip")
-  output:
-    storage.r2(f"s3://test-catalyst-coop/supply_curve.csv")
-  script:
-    "src/cnems_inputs/stub_supply_curve.py"
+include: "electricity_market_model.smk"
