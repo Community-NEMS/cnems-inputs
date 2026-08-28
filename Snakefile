@@ -11,6 +11,12 @@ storage r2:
 from cnems_inputs.zenodo import resolve
 
 
+# Set CNEMS_INPUT_VERSION_ID env var to publish to a specific version prefix.
+#
+# NOTE (2026-08-28): we *could* do some fancy parsing of the git rev here if we
+# really want, but setting env var in GHA seemed easier
+R2_BASE = f"s3://test-catalyst-coop/{os.getenv('CNEMS_INPUT_VERSION_ID', 'nightly')}"
+
 
 def resolve_dataset(dataset: str, resource_path: str) -> str:
     """Resolve a resource within a dataset to its URL.
