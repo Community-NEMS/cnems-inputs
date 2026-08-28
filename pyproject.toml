@@ -119,6 +119,7 @@ mdformat-gfm = ">=1.0.0"
 prek = ">=0.4.10"              # Fast Rust-based pre-commit hook runner
 prettier = ">=3.9.3"
 pyrefly = ">=1.1.1"            # Fast Rust-based Python type checker
+rclone = ">=1.75.0,<2"         # for serving a local directory as if it was S3
 ruff = ">=0.16"                # A very fast python linter & autofixer
 # So actionlint's embedded shellcheck integration for GitHub Actions `run:` steps
 # actually runs, rather than silently skipping because the binary isn't on PATH.
@@ -222,7 +223,15 @@ python-version = "3.14"
 # Add words that should be excepted from spell-checking
 FOM = "FOM"
 
+[tool.pixi.activation.env]
+SNAKEMAKE_PROFILE = "profiles/dev.yaml" # set default snakemake profile to dev - can be overridden with --profile
+
 [tool.pixi.tasks]
+
+# dev S3/R2 server
+[tool.pixi.tasks.dev-storage]
+cmd = "rclone serve s3 --auth-key local_access_key,local_secret_key local:.dev/storage"
+description = "Put an S3-like API in front of the local directory .dev/storage for local development purposes."
 
 # Testing
 [tool.pixi.tasks.test-erase]
