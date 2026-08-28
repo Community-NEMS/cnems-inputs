@@ -10,16 +10,16 @@ import polars as pl
 from upath import UPath
 
 
-def extract(archive_path: UPath, member_path: str) -> pl.LazyFrame:
+def extract(archive_path: UPath, resource_path: str) -> pl.LazyFrame:
     """Make a LazyFrame from a file within a ZIP archive.
 
     archive_path: path to the ZIP archive itself. Since we're using the
         Datastore to cache files, this is likely a local path but *could* be a
         remote path depending on cache layer configuration.
-    member_path: the file name within the ZIP archive.
+    resource_path: the file name within the ZIP archive.
     """
     with UPath(archive_path).open("rb") as blob, ZipFile(blob) as zf:
-        content = zf.open(member_path)
+        content = zf.open(resource_path)
         return pl.scan_csv(content)
 
 

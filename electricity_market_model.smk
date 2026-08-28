@@ -11,4 +11,4 @@ rule extract_from_zip:
   params:
     resource_path=lambda wildcards: EMM_INPUTS[wildcards.resource]
   script:
-    "src/cnems_inputs/stub_supply_curve.py"
+    "src/cnems_inputs/stub_emm_inputs.py"
