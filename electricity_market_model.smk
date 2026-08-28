@@ -9,6 +9,6 @@ rule extract_from_zip:
   output:
     storage.r2("s3://test-catalyst-coop/{resource}.csv")
   params:
-    member_path=lambda wildcards: EMM_INPUTS[wildcards.resource]
+    resource_path=lambda wildcards: EMM_INPUTS[wildcards.resource]
   script:
     "src/cnems_inputs/stub_supply_curve.py"

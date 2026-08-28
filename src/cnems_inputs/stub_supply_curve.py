@@ -38,10 +38,10 @@ def load(transformed: pl.LazyFrame, output_path: Path) -> None:
     transformed.sink_csv(output_path)
 
 
-def run(input_path, output_path, member_path):
+def run(input_path, output_path, resource_path):
     """E, T, L."""
     load(
-        transform(extract(archive_path=input_path, member_path=member_path)),
+        transform(extract(archive_path=input_path, resource_path=resource_path)),
         output_path,
     )
 
@@ -55,4 +55,4 @@ if __name__ == "__main__":
         # so it complains about this import
         from snakemake.iocontainers import snakemake  # noqa: TC004
 
-    run(snakemake.input[0], snakemake.output[0], snakemake.params["member_path"])
+    run(snakemake.input[0], snakemake.output[0], snakemake.params["resource_path"])
