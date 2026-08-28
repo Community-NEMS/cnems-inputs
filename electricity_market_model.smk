@@ -1,3 +1,5 @@
+configfile: "config/emm_inputs.yaml"
+
 EMM_INPUTS = config["emm_inputs"]
 
 rule emm_inputs:
