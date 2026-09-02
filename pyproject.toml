@@ -230,7 +230,7 @@ SNAKEMAKE_PROFILE = "profiles/dev.yaml" # set default snakemake profile to dev -
 
 # dev S3/R2 server
 [tool.pixi.tasks.dev-storage]
-cmd = "rclone serve s3 --auth-key local_access_key,local_secret_key local:.dev/storage"
+cmd = "rclone serve s3 --config devenv/rclone.conf --auth-key local_access_key,local_secret_key local:.dev/storage"
 description = "Put an S3-like API in front of the local directory .dev/storage for local development purposes."
 
 # Testing
