@@ -65,7 +65,7 @@ If you want to use `staging` or `prod`, you'll need to:
 1. copy `config/staging.template.yaml` or `config/prod.template.yaml` to
     `config/staging.yaml` or `config/prod.yaml`.
 1. update `config/staging.yaml` or `config/prod.yaml` with credentials from your
-    Cloudflare R2 dashboard
+    Cloudflare R2 dashboard: [Log in](https://dash.cloudflare.com/login), then search for "R2" in the search box.
 1. DO NOT COMMIT THE CREDENTIALS.
 
 ## Pytest Testing Framework
