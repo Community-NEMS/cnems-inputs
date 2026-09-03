@@ -68,6 +68,22 @@ If you want to use `staging` or `prod`, you'll need to:
     Cloudflare R2 dashboard: [Log in](https://dash.cloudflare.com/login), then search for "R2" in the search box.
 1. DO NOT COMMIT THE CREDENTIALS.
 
+## Running the pipeline
+
+To run the pipeline for the electricity model inputs:
+
+```bash
+pixi run snakemake emm_inputs --cores 1
+```
+
+To run the pipeline for one specific input that has a wildcard in it
+(e.g. `extract_from_zip` with the `{resource}` wildcard) we can use the
+`--target-jobs` argument:
+
+```bash
+pixi run snakemake --target-jobs extract_from_zip:resource=supply_curve --cores 1
+```
+
 ## Pytest Testing Framework
 
 - A skeleton [pytest](https://docs.pytest.org/) testing setup is included in the
