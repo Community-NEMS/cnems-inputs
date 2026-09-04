@@ -225,3 +225,10 @@ __marimo__/
 
 # Snakemake dir
 .snakemake
+
+# dev env hidden files
+.dev/
+
+# staging/prod credentials
+config/staging.yaml
+config/prod.yaml

@@ -1,0 +1,6 @@
+environment: staging
+
+r2:
+  endpoint_url: "Go to your Cloudflare R2 settings and get the S3 API endpoint - should look like https://<ACCOUNT_ID>.cloudflarestorage.com"
+  access_key: "Also generate API tokens and put the access key ID here..."
+  secret_key: "and the secret access key here. DON'T COMMIT THE REAL CREDENTIALS!!" # pragma: allowlist secret

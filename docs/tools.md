@@ -45,6 +45,45 @@ can be reviewed on its own. Here's what's here so far and how it works.
     `mdformat-mkdocs`) are installed from PyPI instead, via
     `[tool.pixi.pypi-dependencies]`.
 
+## `dev`, `staging`, and `prod` environments
+
+`dev` is for local development - the Cloudflare R2 bucket is replaced with a
+local S3-like server. Run `pixi run dev-storage` for the server, which will store
+files in the `.dev/storage` directory in your repo.
+
+`staging` is for publishing unstable or testing outputs in a real R2 environment.
+
+`prod` is for publishing outputs we want people to actually see.
+
+We default to `dev`, but you can switch between them with `pixi run snakemake --profile=profiles/(dev|staging|prod).yaml`.
+
+These profiles point at files in `config/` - that's where the actual meat of the
+configuration is.
+
+If you want to use `staging` or `prod`, you'll need to:
+
+1. copy `config/staging.template.yaml` or `config/prod.template.yaml` to
+    `config/staging.yaml` or `config/prod.yaml`.
+1. update `config/staging.yaml` or `config/prod.yaml` with credentials from your
+    Cloudflare R2 dashboard: [Log in](https://dash.cloudflare.com/login), then search for "R2" in the search box.
+1. DO NOT COMMIT THE CREDENTIALS.
+
+## Running the pipeline
+
+To run the pipeline for the electricity model inputs:
+
+```bash
+pixi run snakemake emm_inputs --cores 1
+```
+
+To run the pipeline for one specific input that has a wildcard in it
+(e.g. `extract_from_zip` with the `{resource}` wildcard) we can use the
+`--target-jobs` argument:
+
+```bash
+pixi run snakemake --target-jobs extract_from_zip:resource=supply_curve --cores 1
+```
+
 ## Pytest Testing Framework
 
 - A skeleton [pytest](https://docs.pytest.org/) testing setup is included in the

@@ -1,0 +1,6 @@
+environment: dev
+
+r2:
+  endpoint_url: "http://localhost:8080"
+  access_key: "local_access_key"
+  secret_key: "local_secret_key" # pragma: allowlist secret
