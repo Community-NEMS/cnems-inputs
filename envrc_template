@@ -1,4 +1,0 @@
-# For cloudflare creds, make an access key here: https://dash.cloudflare.com/6ef1b3ba66fb3b95a5fdafbb7608b00b/r2/api-tokens then copy the 'S3 credentials' values below.
-export CLOUDFLARE_R2_ENDPOINT="stub"
-export CLOUDFLARE_R2_ACCESS_KEY_ID="stub"
-export CLOUDFLARE_R2_SECRET_ACCESS_KEY="stub" # pragma: allowlist secret
