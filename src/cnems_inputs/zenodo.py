@@ -2,7 +2,7 @@
 
 import functools
 from importlib.resources import files
-from pathlib import PurePosixPath
+from pathlib import Path
 from typing import Annotated
 from urllib.parse import quote, urlsplit
 
@@ -53,6 +53,16 @@ def resolve(
     return f"{file_root}/files/{quote(path, safe='/')}"
 
 
+def cache_path(url: str, *, cache_dir: str | Path) -> Path:
+    """Return the cached-http cache path for an HTTP(S) URL.
+
+    The cached-http plugin stores files below its configured cache directory using
+    the URL netloc and path.
+    """
+    parsed_url = urlsplit(url)
+    return Path(cache_dir) / f"{parsed_url.netloc}{parsed_url.path}"
+
+
 @functools.cache
 def _default_doi_map() -> ZenodoDoiMap:
     """Read the default dataset-to-Zenodo-DOI map."""
@@ -77,13 +87,8 @@ def _normalize_record_path(relative_path: str) -> str:
     Reject URLs, absolute paths, empty paths, and paths with .. since those are not
     valid paths for Zenodo file access API.
     """
-    path = PurePosixPath(relative_path)
+    path = Path(relative_path)
     parsed_url = urlsplit(relative_path)
-    if (
-        parsed_url.scheme
-        or path.is_absolute()
-        or path == PurePosixPath(".")
-        or ".." in path.parts
-    ):
+    if parsed_url.scheme or path.is_absolute() or path == Path() or ".." in path.parts:
         raise ValueError(f"Zenodo record path must be relative: {relative_path!r}")
     return path.as_posix()

@@ -84,6 +84,11 @@ To run the pipeline for one specific input that has a wildcard in it
 pixi run snakemake --target-jobs extract_from_zip:resource=supply_curve --cores 1
 ```
 
+To use already-cached Zenodo downloads without touching the network, add
+`--config zenodo_source=cache` to the Snakemake command.
+This reads from the configured cached-http storage cache, so the files need to
+have been downloaded in an earlier online run.
+
 ## Publishing a specific version of the outputs
 
 By default, we write outputs to a bucket with a versioned prefix - i.e.,

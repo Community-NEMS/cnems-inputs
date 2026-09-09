@@ -1,5 +1,7 @@
 """Tests for Zenodo dataset URL resolution."""
 
+from pathlib import Path
+
 import pytest
 from pydantic import ValidationError
 
@@ -24,6 +26,14 @@ def test_resolve_accepts_custom_doi_map() -> None:
         )
         == "https://sandbox.zenodo.org/records/12345/files/relative/path/to%20file.zip"
     )
+
+
+def test_cache_path_matches_cached_http_layout() -> None:
+    """Assuming that the cached_http cache layout is stable, we should match it."""
+    assert zenodo.cache_path(
+        "https://zenodo.org/records/21629428/files/eiabluesky-v1-1.zip",
+        cache_dir="cache",
+    ) == Path("cache/zenodo.org/records/21629428/files/eiabluesky-v1-1.zip")
 
 
 def test_zenodo_doi_map_validates_dois() -> None:
