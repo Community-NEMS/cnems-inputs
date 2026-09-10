@@ -38,7 +38,7 @@ def resolve_dataset(dataset: str, resource_path: str) -> str:
     url = resolve(dataset, resource_path)
     zenodo_source = config.get("zenodo_source", "remote")
     if zenodo_source == "remote":
-        return storage(url)
+        return storage.cached_http(url)
     if zenodo_source == "cache":
         return str(cache_path(url, cache_dir=storage._storages["cached_http"].settings.cache))
     raise ValueError("zenodo_source must be 'remote' or 'cache'")
