@@ -8,7 +8,7 @@ import os
 # NOTE (2026-08-28): we *could* do some fancy parsing of the git rev here if we
 # really want, but setting env var in GHA seemed easier
 def versioned_r2_uri(path: str) -> str:
-    """Given a path to publish to, make sure we have the right R2 URI.
+    """Given a path to publish to, generate the right R2 URI.
 
     * correct version prefix - set CNEMS_INPUT_VERSION_ID to publish to a
       specific prefix; defaults to nightly
