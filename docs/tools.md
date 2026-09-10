@@ -84,6 +84,13 @@ To run the pipeline for one specific input that has a wildcard in it
 pixi run snakemake --target-jobs extract_from_zip:resource=supply_curve --cores 1
 ```
 
+## Publishing a specific version of the outputs
+
+By default, we write outputs to a bucket with a versioned prefix - i.e.,
+`test-catalyst-coop/nightly/your_file_here`. This defaults to `nightly`, but
+when you need to publish a different version like `v2026.9.1`, or `stable`, set
+the `CNEMS_INPUT_VERSION_ID` to whatever prefix you'd like.
+
 ## Pytest Testing Framework
 
 - A skeleton [pytest](https://docs.pytest.org/) testing setup is included in the
