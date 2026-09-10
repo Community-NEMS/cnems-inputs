@@ -11,6 +11,7 @@ storage r2:
 from cnems_inputs.zenodo import resolve
 from cnems_inputs.helpers import versioned_r2_uri
 
+OUTPUT_BUCKET = config["r2"]["bucket"]
 
 def resolve_dataset(dataset: str, resource_path: str) -> str:
     """Resolve a resource within a dataset to its URL.
