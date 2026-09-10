@@ -9,7 +9,7 @@ storage r2:
   secret_key=config["r2"]["secret_key"]
 
 from cnems_inputs.zenodo import resolve
-
+from cnems_inputs.helpers import versioned_r2_uri
 
 
 def resolve_dataset(dataset: str, resource_path: str) -> str:
