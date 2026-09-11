@@ -69,7 +69,7 @@
             "type": "integer"
           },
           {
-            "name": "BatteryEfficiency",
+            "name": "efficiency",
             "type": "number"
           }
         ]
@@ -102,7 +102,7 @@
             "type": "integer"
           },
           {
-            "name": "CapCost",
+            "name": "cost",
             "type": "integer"
           }
         ]
@@ -131,7 +131,7 @@
             "type": "integer"
           },
           {
-            "name": "CapCostInitial",
+            "name": "cost",
             "type": "integer"
           }
         ]
@@ -164,7 +164,7 @@
             "type": "number"
           },
           {
-            "name": "CapFactorVRE",
+            "name": "value",
             "type": "number"
           }
         ]
@@ -264,7 +264,7 @@
             "type": "integer"
           },
           {
-            "name": "FOMCost",
+            "name": "cost",
             "type": "integer"
           }
         ]
@@ -301,7 +301,7 @@
             "type": "integer"
           },
           {
-            "name": "H2Price",
+            "name": "cost",
             "type": "number"
           }
         ]
@@ -322,7 +322,7 @@
             "type": "integer"
           },
           {
-            "name": "HourstoBuy",
+            "name": "hours",
             "type": "number"
           }
         ]
@@ -347,7 +347,7 @@
             "type": "integer"
           },
           {
-            "name": "HydroCapFactor",
+            "name": "value",
             "type": "number"
           }
         ]
@@ -368,7 +368,7 @@
             "type": "integer"
           },
           {
-            "name": "LearningRate",
+            "name": "rate",
             "type": "number"
           }
         ]
@@ -410,7 +410,7 @@
             "type": "integer"
           },
           {
-            "name": "RampDownCost",
+            "name": "cost",
             "type": "number"
           }
         ]
@@ -431,7 +431,7 @@
             "type": "integer"
           },
           {
-            "name": "RampRate",
+            "name": "rate",
             "type": "number"
           }
         ]
@@ -452,7 +452,7 @@
             "type": "integer"
           },
           {
-            "name": "RampUpCost",
+            "name": "cost",
             "type": "number"
           }
         ]
@@ -473,7 +473,7 @@
             "type": "integer"
           },
           {
-            "name": "RegReservesCost",
+            "name": "cost",
             "type": "number"
           }
         ]
@@ -494,7 +494,7 @@
             "type": "integer"
           },
           {
-            "name": "ReserveMargin",
+            "name": "margin",
             "type": "number"
           }
         ]
@@ -519,7 +519,7 @@
             "type": "integer"
           },
           {
-            "name": "ResTechUpperBound",
+            "name": "value",
             "type": "number"
           }
         ]
@@ -552,7 +552,7 @@
             "type": "integer"
           },
           {
-            "name": "SupplyCurve",
+            "name": "capacity",
             "type": "number"
           }
         ]
@@ -573,7 +573,7 @@
             "type": "integer"
           },
           {
-            "name": "SupplyCurveLearning",
+            "name": "capacity",
             "type": "number"
           }
         ]
@@ -610,7 +610,7 @@
             "type": "integer"
           },
           {
-            "name": "SupplyPrice",
+            "name": "cost",
             "type": "number"
           }
         ]
@@ -763,11 +763,11 @@
       "schema": {
         "fields": [
           {
-            "name": "region",
+            "name": "destination_region",
             "type": "integer"
           },
           {
-            "name": "region1",
+            "name": "source_region",
             "type": "integer"
           },
           {
@@ -775,7 +775,7 @@
             "type": "integer"
           },
           {
-            "name": "TranCost",
+            "name": "cost",
             "type": "integer"
           }
         ]
@@ -796,7 +796,7 @@
             "type": "integer"
           },
           {
-            "name": "region1",
+            "name": "region_international",
             "type": "integer"
           },
           {
@@ -808,7 +808,7 @@
             "type": "integer"
           },
           {
-            "name": "TranCostInt",
+            "name": "cost",
             "type": "number"
           }
         ]
@@ -829,7 +829,7 @@
             "type": "integer"
           },
           {
-            "name": "region1",
+            "name": "region_international",
             "type": "integer"
           },
           {
@@ -841,7 +841,7 @@
             "type": "integer"
           },
           {
-            "name": "TranLimitCapInt",
+            "name": "capacity",
             "type": "number"
           }
         ]
@@ -858,11 +858,11 @@
       "schema": {
         "fields": [
           {
-            "name": "region",
+            "name": "destination_region",
             "type": "number"
           },
           {
-            "name": "region1",
+            "name": "source_region",
             "type": "number"
           },
           {
@@ -874,7 +874,7 @@
             "type": "integer"
           },
           {
-            "name": "TranLimit",
+            "name": "value",
             "type": "number"
           }
         ]
@@ -891,7 +891,7 @@
       "schema": {
         "fields": [
           {
-            "name": "region1",
+            "name": "region_international",
             "type": "integer"
           },
           {
@@ -907,7 +907,7 @@
             "type": "integer"
           },
           {
-            "name": "TranLimitGenInt",
+            "name": "generation",
             "type": "number"
           }
         ]
