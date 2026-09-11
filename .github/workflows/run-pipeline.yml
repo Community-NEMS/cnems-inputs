@@ -10,9 +10,6 @@ on:
 # - workflow_dispatch: Whatever branch it was run against.
 # - schedule: Always runs on main
 
-env:
-  TODAY: ""
-
 jobs:
   run-pipeline:
     runs-on: ubuntu-latest
@@ -27,5 +24,14 @@ jobs:
         with:
           cache: true
 
+      # use command line config to make it harder to leak secrets
       - name: Run input pipeline
-        run: pixi run snakemake --cores 2 emm_inputs
+        run: |-
+          pixi run snakemake \
+            --cores 4 \
+            --config environment=prod \
+            --config r2.endpoint_url=${{ secrets.PROD_R2_ENDPOINT_URL }} \
+            --config r2.access_key=${{ secrets.PROD_R2_ACCESS_KEY }} \
+            --config r2.secret_key=${{ secrets.PROD_R2_SECRET_KEY }} \
+            --config r2.bucket=cnems-inputs \
+            emm_inputs
