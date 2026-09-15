@@ -34,7 +34,7 @@ would when cutting an actual release. -->
 ### What's New?
 
 - Created a `run-pipeline` GHA so it's easy to generate a fresh copy of the model inputs
-    in their production R2 location. See #42, !46, !56
+    in their production R2 location. See issue #42 and PRs !46, !56
 
 ### Bug Fixes
 
