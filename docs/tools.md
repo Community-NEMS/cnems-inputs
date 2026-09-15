@@ -70,7 +70,9 @@ If you want to use `staging` or `prod`, you'll need to:
 
 ## Running the pipeline
 
-To run the pipeline for the electricity model inputs:
+### Locally
+
+To run the pipeline for the electricity model inputs in your local development environment:
 
 ```bash
 pixi run snakemake emm_inputs --cores 1
@@ -88,6 +90,19 @@ To use already-cached Zenodo downloads without touching the network, add
 `--config zenodo_source=cache` to the Snakemake command.
 This reads from the configured cached-http storage cache, so the files need to
 have been downloaded in an earlier online run.
+
+### In production
+
+To run the pipeline for the electricity model inputs in production and publish the
+results to R2, go to the [cnems-inputs Actions
+tab](https://github.com/Community-NEMS/cnems-inputs/actions), select `run-pipeline`, and
+click `Run workflow`. The default branch it runs from is `main`, but you may select a
+different branch if you are testing changes. The default version it publishes is
+`nightly`, but you may specify a different version (and if you're not running from
+`main` you probably should).
+
+This GHA also runs automatically every Sunday evening (from `main`, publishing to
+`nightly`).
 
 ## Publishing a specific version of the outputs
 

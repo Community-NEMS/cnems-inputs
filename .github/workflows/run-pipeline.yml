@@ -3,15 +3,17 @@ name: run-pipeline
 
 on:
   workflow_dispatch:
+    inputs:
+      version:
+        type: string
+        description: "Version to publish? nightly, stable, vYYYY.MM.xx, or some_descriptive_name"
+        default: "nightly"
   schedule:
     - cron: "0 20 * * 0" # Sundays at 8PM UTC
 
 # What branch does this action run on?
 # - workflow_dispatch: Whatever branch it was run against.
 # - schedule: Always runs on main
-
-env:
-  TODAY: ""
 
 jobs:
   run-pipeline:
@@ -27,5 +29,26 @@ jobs:
         with:
           cache: true
 
+      - name: Configure prod settings
+        env:
+          R2_ENDPOINT_URL: ${{ secrets.PROD_R2_ENDPOINT_URL }}
+          R2_ACCESS_KEY: ${{ secrets.PROD_R2_ACCESS_KEY }}
+          R2_SECRET_KEY: ${{ secrets.PROD_R2_SECRET_KEY }}
+        run: |
+          cat << EOF >config/prod.yaml
+          environment: prod
+          r2:
+            endpoint_url: "$R2_ENDPOINT_URL"
+            access_key: "$R2_ACCESS_KEY"
+            secret_key: "$R2_SECRET_KEY"
+            bucket: cnems-inputs
+          EOF
+
       - name: Run input pipeline
-        run: pixi run snakemake --cores 2 emm_inputs
+        env:
+          CNEMS_INPUT_VERSION_ID: ${{ inputs.version || 'nightly' }}
+        run: |-
+          pixi run snakemake \
+            --cores 4 \
+            --profile profiles/prod.yaml \
+            emm_inputs

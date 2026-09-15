@@ -28,3 +28,18 @@ would when cutting an actual release. -->
 ### Known Issues
 
 - It's also good to list any remaining known problems, and link to their issues too.
+
+## 2026.9.0 (YYYY-MM-DD)
+
+### What's New?
+
+- Created a `run-pipeline` GHA so it's easy to generate a fresh copy of the model inputs
+    in their production R2 location. See issue #42 and PRs !46, !56
+
+### Bug Fixes
+
+-
+
+### Known Issues
+
+-
