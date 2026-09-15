@@ -35,6 +35,9 @@ would when cutting an actual release. -->
 
 - Created a `run-pipeline` GHA so it's easy to generate a fresh copy of the model inputs
     in their production R2 location. See issue #42 and PRs !46, !56
+- Added integration test helper `materialize_input` which will use Snakemake to
+    materialize an input, while pointing at a test-only Zenodo cache and a
+    test-only local R2 instance. See issue #40 and PR #57
 
 ### Bug Fixes
 
