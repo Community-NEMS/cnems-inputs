@@ -29,9 +29,15 @@ repos:
       - id: debug-statements # Watch for lingering debugger calls.
       - id: detect-private-key # Don't accidentally commit private keys.
       - id: trailing-whitespace # Strip trailing whitespace, beyond what ruff covers in .py files.
+        # Preserve byte identity for upstream data fixtures.
+        exclude: ^tests/fixtures/
       - id: mixed-line-ending # Only newlines, no line-feeds.
         args: ["--fix=lf"]
+        # Preserve byte identity for upstream data fixtures, including line endings.
+        exclude: ^tests/fixtures/
       - id: end-of-file-fixer
+        # Preserve byte identity for upstream data fixtures.
+        exclude: ^tests/fixtures/
       - id: no-commit-to-branch # Discourage committing directly to main; PRs only.
         args: ["--branch", "main"]
 
