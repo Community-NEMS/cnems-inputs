@@ -112,6 +112,9 @@ def materialize_input(
 ) -> Callable[[str], Path]:
     """Return a helper that runs Snakemake for one input and returns its CSV.
 
+    Upstream files that you need for your resource, but don't actually want to
+    hit network for, should be cached locally via cached_http_cache.
+
     Points cached_http at the test cache set up in cached_http_cache above so
     we can skip Zenodo.
 
