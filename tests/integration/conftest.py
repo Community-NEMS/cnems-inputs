@@ -1,7 +1,7 @@
-"""Integration test fixtures for running the Snakemake pipeline."""
+"""Set up fake R2 storage and helpers for running resources via Snakemake."""
 
 import functools
-import os
+import json
 import socket
 import subprocess
 import sysconfig
@@ -15,31 +15,6 @@ import pytest
 from cnems_inputs.zenodo import cache_path, resolve
 
 
-def _find_free_port() -> int:
-    """Return a currently available localhost TCP port."""
-    with socket.socket() as sock:
-        sock.bind(("127.0.0.1", 0))
-        return sock.getsockname()[1]
-
-
-def _wait_for_port(
-    port: int,
-    *,
-    attempts: int = 8,
-    initial_delay: float = 0.05,
-) -> None:
-    """Wait until a localhost TCP port accepts connections."""
-    delay = initial_delay
-    for _ in range(attempts):
-        try:
-            with socket.create_connection(("127.0.0.1", port), timeout=delay):
-                return
-        except OSError:
-            time.sleep(delay)
-            delay *= 2
-    raise TimeoutError(f"Timed out waiting for localhost port {port}")
-
-
 @pytest.fixture(scope="session")
 def test_fixture_dir(test_dir: Path) -> Path:
     """Return the test fixture data directory."""
@@ -47,18 +22,27 @@ def test_fixture_dir(test_dir: Path) -> Path:
 
 
 @pytest.fixture(scope="session")
-def fake_s3(
+def fake_r2(
     tmp_path_factory: pytest.TempPathFactory,
-) -> Iterator[dict[str, Path | str]]:
-    """Run an rclone S3-compatible server backed by a temporary local directory."""
-    access_key = "local_access_key"
-    secret_key = "local_secret_key"  # noqa: S105  # pragma: allowlist secret
-    bucket = "test-bucket"
+) -> Iterator[tuple[Path, dict[str, str]]]:
+    """Run an rclone S3-compatible server as a local R2 stand-in."""
+    r2_config = {
+        "access_key": "local_access_key",
+        "bucket": "test-bucket",
+        "secret_key": "local_secret_key",  # pragma: allowlist secret
+    }
 
-    root = tmp_path_factory.mktemp("fake-s3")
-    (root / bucket).mkdir()
-    port = _find_free_port()
-    endpoint_url = f"http://127.0.0.1:{port}"
+    root = tmp_path_factory.mktemp("fake-r2")
+    (root / r2_config["bucket"]).mkdir()
+
+    # 2026-09-15: bind a socket to port 0 to get the OS give us a free port
+    # then we can drop the socket and hand that port # to rclone.
+    # in theory this could still have a race condition in between closing the
+    # socket and calling rclone, but that's "unlikely"
+    with socket.socket() as sock:
+        sock.bind(("127.0.0.1", 0))
+        port = sock.getsockname()[1]
+    r2_config["endpoint_url"] = f"http://127.0.0.1:{port}"
 
     proc = subprocess.Popen(  # noqa: S603
         [
@@ -70,20 +54,14 @@ def fake_s3(
             "--config",
             "devenv/rclone.conf",
             "--auth-key",
-            f"{access_key},{secret_key}",
+            f"{r2_config['access_key']},{r2_config['secret_key']}",
             f"local:{root}",
         ],
         text=True,
     )
     try:
         _wait_for_port(port)
-        yield {
-            "access_key": access_key,
-            "bucket": bucket,
-            "endpoint_url": endpoint_url,
-            "root": root,
-            "secret_key": secret_key,
-        }
+        yield root, r2_config
     finally:
         proc.terminate()
         try:
@@ -98,7 +76,18 @@ def cached_http_cache(
     tmp_path_factory: pytest.TempPathFactory,
     test_fixture_dir: Path,
 ) -> Path:
-    """Create a cached Zenodo ZIP containing fixture EMM inputs."""
+    """Warm a Zenodo cache directory with some test inputs.
+
+    This avoids us having to hit Zenodo during integration test. If we pull
+    more data from Zenodo we'll have to rethink how we want to warm the cache
+    but for now manual creation like this should be OK (2026-09-15).
+
+    We include everything in the test/fixtures/eiabluesky directory, which is
+    much less than what's actually archived right now.
+
+    We create the ZIP here so the internal structure of the ZIP is in a
+    source-controlled situation instead of opaquely in a committed ZIP file.
+    """
     cache_dir = tmp_path_factory.mktemp("cached-http-cache")
     zip_url = resolve("eiabluesky", "eiabluesky-v1-1.zip")
     zip_path = cache_path(zip_url, cache_dir=cache_dir)
@@ -117,58 +106,60 @@ def cached_http_cache(
 
 
 @pytest.fixture(scope="session")
-def materialize_emm_input(
-    tmp_path_factory: pytest.TempPathFactory,
-    fake_s3: dict[str, Path | str],
+def materialize_input(
+    fake_r2: tuple[Path, dict[str, str]],
     cached_http_cache: Path,
 ) -> Callable[[str], Path]:
-    """Return a helper that runs Snakemake for one EMM input and returns its CSV."""
+    """Return a helper that runs Snakemake for one input and returns its CSV.
+
+    Points cached_http at the test cache set up in cached_http_cache above so
+    we can skip Zenodo.
+
+    Points r2 at the test endpoint set up in fake_r2.
+    """
 
     @functools.cache
     def materialize(resource_name: str) -> Path:
-        config_path = tmp_path_factory.mktemp("snakemake-config") / "config.yaml"
-        bucket = str(fake_s3["bucket"])
-        endpoint_url = str(fake_s3["endpoint_url"])
-        config_path.write_text(
-            "\n".join(
-                [
-                    "environment: test",
-                    f"cached_http_cache: {cached_http_cache.as_posix()}",
-                    "zenodo_source: cache",
-                    "r2:",
-                    f"  endpoint_url: {endpoint_url}",
-                    f"  access_key: {fake_s3['access_key']}",
-                    f"  secret_key: {fake_s3['secret_key']}",
-                    f"  bucket: {bucket}",
-                    "",
-                ]
-            ),
-            encoding="utf-8",
-        )
-        env = os.environ.copy()
-        env.pop("SNAKEMAKE_PROFILE", None)
-        version = "pytest"
-        env["CNEMS_INPUT_VERSION_ID"] = version
+        fake_r2_root, r2_config = fake_r2
         subprocess.run(  # noqa: S603
             [
                 str(Path(sysconfig.get_path("scripts")) / "snakemake"),
                 "--snakefile",
                 "Snakefile",
-                "--configfile",
-                str(config_path),
                 "--cores",
                 "1",
+                "--config",
+                "zenodo_source=cache",
+                f"cached_http_cache={cached_http_cache.as_posix()}",
+                f"r2={json.dumps(r2_config)}",
                 "--target-jobs",
                 f"extract_from_zip:resource={resource_name}",
             ],
             check=True,
-            env=env,
         )
 
         output_path = (
-            Path(str(fake_s3["root"])) / bucket / version / f"{resource_name}.csv"
+            fake_r2_root / r2_config["bucket"] / "nightly" / f"{resource_name}.csv"
         )
         assert output_path.exists()
         return output_path
 
     return materialize
+
+
+def _wait_for_port(
+    port: int,
+    *,
+    attempts: int = 8,
+    initial_delay: float = 0.05,
+) -> None:
+    """Wait until a localhost TCP port accepts connections."""
+    delay = initial_delay
+    for _ in range(attempts):
+        try:
+            with socket.create_connection(("127.0.0.1", port), timeout=delay):
+                return
+        except OSError:
+            time.sleep(delay)
+            delay *= 2
+    raise TimeoutError(f"Timed out waiting for localhost port {port}")
