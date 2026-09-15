@@ -24,14 +24,24 @@ jobs:
         with:
           cache: true
 
-      # use command line config to make it harder to leak secrets
+      - name: Configure prod settings
+        env:
+          R2_ENDPOINT_URL: ${{ secrets.PROD_R2_ENDPOINT_URL }}
+          R2_ACCESS_KEY: ${{ secrets.PROD_R2_ACCESS_KEY }}
+          R2_SECRET_KEY: ${{ secrets.PROD_R2_SECRET_KEY }}
+        run: |
+          cat << EOF >config/prod.yaml
+          environment: prod
+          r2:
+            endpoint_url: "$R2_ENDPOINT_URL"
+            access_key: "$R2_ACCESS_KEY"
+            secret_key: "$R2_SECRET_KEY"
+            bucket: cnems-inputs
+          EOF
+
       - name: Run input pipeline
         run: |-
           pixi run snakemake \
             --cores 4 \
-            --config environment=prod \
-            --config r2.endpoint_url=${{ secrets.PROD_R2_ENDPOINT_URL }} \
-            --config r2.access_key=${{ secrets.PROD_R2_ACCESS_KEY }} \
-            --config r2.secret_key=${{ secrets.PROD_R2_SECRET_KEY }} \
-            --config r2.bucket=cnems-inputs \
+            --profile profiles/prod.yaml \
             emm_inputs
