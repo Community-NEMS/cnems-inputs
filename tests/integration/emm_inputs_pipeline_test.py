@@ -8,7 +8,7 @@ from polars.testing import assert_frame_equal
 
 
 def test_supply_curve_matches_fixture(
-    materialize_emm_input: Callable[[str], Path],
+    materialize_input: Callable[[str], Path],
     test_fixture_dir: Path,
 ) -> None:
     """The supply curve pipeline should publish the source data unchanged."""
@@ -21,9 +21,12 @@ def test_supply_curve_matches_fixture(
         / "SupplyCurve.csv"
     )
 
-    actual = pl.read_csv(materialize_emm_input("supply_curve"))
+    actual = pl.read_csv(materialize_input("supply_curve"))
     expected = pl.read_csv(expected_path)
 
-    assert actual.height == 17_500
-    assert actual.columns == ["region", "tech", "step", "year", "SupplyCurve"]
     assert_frame_equal(actual, expected)
+
+
+# NOTE (2026-09-15) we could probably add a "supply curve schema
+# matches datapackage.json" test here, or even add that as part of the
+# materialize_input fixture

@@ -29,14 +29,14 @@ repos:
       - id: debug-statements # Watch for lingering debugger calls.
       - id: detect-private-key # Don't accidentally commit private keys.
       - id: trailing-whitespace # Strip trailing whitespace, beyond what ruff covers in .py files.
-        # Preserve byte identity for upstream data fixtures.
+        # Assume fixtures are copied directly from some file, which we want to keep unchanged
         exclude: ^tests/fixtures/
       - id: mixed-line-ending # Only newlines, no line-feeds.
         args: ["--fix=lf"]
-        # Preserve byte identity for upstream data fixtures, including line endings.
+        # Assume fixtures are copied directly from some file, which we want to keep unchanged
         exclude: ^tests/fixtures/
       - id: end-of-file-fixer
-        # Preserve byte identity for upstream data fixtures.
+        # Assume fixtures are copied directly from some file, which we want to keep unchanged
         exclude: ^tests/fixtures/
       - id: no-commit-to-branch # Discourage committing directly to main; PRs only.
         args: ["--branch", "main"]
@@ -116,15 +116,15 @@ repos:
   ########################################################################################
   - repo: local
     hooks:
-      # Run the (fast) tests
+      # Run the fast unit tests. Integration tests still run in CI and via `pixi run test`.
       - id: pytest
-        name: pytest
+        name: pytest-unit
         stages: [pre-commit]
         language: system
         verbose: false
         pass_filenames: false
         always_run: true
-        entry: pixi run test
+        entry: pixi run test-unit
 
       # Type check with pyrefly. This has to be a local hook rather than an official
       # pre-commit repo for pyrefly: running it through the pixi default environment
