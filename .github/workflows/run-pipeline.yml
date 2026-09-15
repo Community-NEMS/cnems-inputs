@@ -3,6 +3,11 @@ name: run-pipeline
 
 on:
   workflow_dispatch:
+    inputs:
+      version:
+        type: string
+        description: "Version to publish? nightly, stable, vYYYY.MM.xx, or some_descriptive_name"
+        default: "nightly"
   schedule:
     - cron: "0 20 * * 0" # Sundays at 8PM UTC
 
@@ -40,6 +45,8 @@ jobs:
           EOF
 
       - name: Run input pipeline
+        env:
+          CNEMS_INPUT_VERSION_ID: ${{ inputs.version || 'nightly' }}
         run: |-
           pixi run snakemake \
             --cores 4 \
