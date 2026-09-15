@@ -1,6 +1,6 @@
 storage cached_http:
   provider="cached-http",
-  cache=".snakemake/storage/cached-http/cache"
+  cache=config.get("cached_http_cache", ".snakemake/storage/cached-http/cache")
 
 storage r2:
   provider="s3",
