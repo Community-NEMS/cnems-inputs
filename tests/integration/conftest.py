@@ -35,13 +35,7 @@ def fake_r2(
     root = tmp_path_factory.mktemp("fake-r2")
     (root / r2_config["bucket"]).mkdir()
 
-    # 2026-09-15: bind a socket to port 0 to get the OS give us a free port
-    # then we can drop the socket and hand that port # to rclone.
-    # in theory this could still have a race condition in between closing the
-    # socket and calling rclone, but that's "unlikely"
-    with socket.socket() as sock:
-        sock.bind(("127.0.0.1", 0))
-        port = sock.getsockname()[1]
+    port = 9001
     r2_config["endpoint_url"] = f"http://127.0.0.1:{port}"
 
     proc = subprocess.Popen(  # noqa: S603
