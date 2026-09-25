@@ -3,7 +3,9 @@ configfile: "config/emm_inputs.yaml"
 EMM_INPUTS = config["emm_inputs"]
 
 rule emm_inputs:
-  input: [storage.r2(versioned_r2_uri(OUTPUT_BUCKET, f"{name}.csv")) for name in EMM_INPUTS]
+  input:
+    [storage.r2(versioned_r2_uri(OUTPUT_BUCKET, f"{name}.csv")) for name in EMM_INPUTS],
+    storage.r2(versioned_r2_uri(OUTPUT_BUCKET, "datapackage.json"))
 
 rule extract_from_zip:
   input:
@@ -14,3 +16,8 @@ rule extract_from_zip:
     resource_path=lambda wildcards: EMM_INPUTS[wildcards.resource]
   script:
     "src/cnems_inputs/stub_emm_inputs.py"
+
+rule datapackage:
+  input: "datapackage.json"
+  output: storage.r2(versioned_r2_uri(OUTPUT_BUCKET, "datapackage.json"))
+  shell: "cp {input} {output}"
