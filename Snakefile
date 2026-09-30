@@ -44,4 +44,11 @@ def resolve_dataset(dataset: str, resource_path: str) -> str:
     raise ValueError("zenodo_source must be 'remote' or 'cache'")
 
 
+def load_pudl_table(table_name: str, version="nightly") -> pl.LazyFrame:
+    """Read a PUDL table."""
+    return pl.read_parquet(
+        f"s3://pudl.catalyst.coop/{version}/out_eia__yearly_generators.parquet",
+        storage_options={"aws_region": "us-west-2", "aws_skip_signature": "True"},
+    )
+
 include: "electricity_market_model.smk"

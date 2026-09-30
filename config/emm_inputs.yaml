@@ -29,3 +29,9 @@ emm_inputs:
   tran_limit: input/electricity/cem_inputs/TranLimit.csv
   tran_limit_cap_int: input/electricity/cem_inputs/TranLimitCapInt.csv
   tran_limit_gen_int: input/electricity/cem_inputs/TranLimitGenInt.csv
+supply_curve_config:
+  first_year: 2023
+  last_year: 2050
+  population_year: 2022
+  eia860m_month: "max"
+
