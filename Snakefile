@@ -11,6 +11,8 @@ storage r2:
 from cnems_inputs.zenodo import cache_path, resolve
 from cnems_inputs.helpers import versioned_r2_uri
 
+import polars as pl
+
 OUTPUT_BUCKET = config["r2"]["bucket"]
 
 def resolve_dataset(dataset: str, resource_path: str) -> str:
