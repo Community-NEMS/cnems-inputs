@@ -21,7 +21,7 @@ rule extract_from_zip:
   output:
     storage.r2(versioned_r2_uri(OUTPUT_BUCKET, "{unprocessed_resource}.csv"))
   params:
-    # could restrict wildcard to regex to avoid specific 
+    # could restrict wildcard to regex to avoid specific
     resource_path=lambda wildcards: EMM_UNPROCESSED_INPUTS[wildcards.unprocessed_resource]
   script:
     "src/cnems_inputs/stub_emm_inputs.py"
@@ -44,7 +44,7 @@ rule supply_curve:
     settings=config["supply_curve"]
   script:
     "src/cnems_inputs/supply_curve.py"
-  
+
 rule datapackage:
   input: "datapackage.json"
   output: storage.r2(versioned_r2_uri(OUTPUT_BUCKET, "datapackage.json"))
