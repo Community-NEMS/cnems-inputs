@@ -22,7 +22,7 @@ def versioned_r2_uri(bucket: str, path: str) -> str:
     return f"s3://{bucket}/{version}/{path}"
 
 
-def extract_from_zip(archive_path: UPath, resource_path: str) -> pl.LazyFrame:
+def extract_from_zip(archive_path: str, resource_path: str) -> pl.LazyFrame:
     """Make a LazyFrame from a file within a ZIP archive.
 
     archive_path: path to the ZIP archive itself. Since we're using the

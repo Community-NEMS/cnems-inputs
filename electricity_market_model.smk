@@ -1,10 +1,12 @@
 configfile: "config/emm_inputs.yaml"
 
-# Every time we make a new pipeline to fully build one of these
-# inputs, remove that input from this config?
 EMM_INPUTS = config["emm_inputs"]
+# Every time we make a new pipeline to fully build one of these inputs,
+# add it into this list
 EMM_PROCESSED_INPUTS = ["supply_curve"]
-EMM_UNPROCESSED_INPUTS = [i for i in EMM_INPUTS if i not in EMM_PROCESSED_INPUTS]
+EMM_UNPROCESSED_INPUTS = {
+    name: path for (name, path) in EMM_INPUTS.items() if name not in EMM_PROCESSED_INPUTS
+}
 
 rule emm_inputs:
   input:
@@ -26,11 +28,6 @@ rule extract_from_zip:
   script:
     "src/cnems_inputs/stub_emm_inputs.py"
 
-
-def myfunc(wildcards):
-    return
-
-
 rule supply_curve:
   input:
     {
@@ -38,12 +35,12 @@ rule supply_curve:
       "out_eia__yearly_generators": load_pudl_table(table_name="out_eia__yearly_generators")
     }
   output:
-    storage.r2(versioned_r2_uri(OUTPUT_BUCKET, "SupplyCurve.csv"))
+    storage.r2(versioned_r2_uri(OUTPUT_BUCKET, "supply_curve.csv"))
   params:
     cwt_path="input/cw_tech.csv",
     cwc_path="input/cwc_path.csv",
     cws_path="input/cws_path.csv",
-    indx_path="input/indx_path.csv",
+    index_path="input/indx_path.csv",
     cwst_path="input/cwst_path.csv",
     cw_path="input/cw_path.csv",
     dg_path="input/dg_path.csv",

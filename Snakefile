@@ -47,9 +47,9 @@ def resolve_dataset(dataset: str, resource_path: str) -> str:
 
 
 def load_pudl_table(table_name: str, version="nightly") -> pl.LazyFrame:
-    """Read a PUDL table."""
+    """Read a PUDL table from a ."""
     return pl.read_parquet(
-        f"s3://pudl.catalyst.coop/{version}/out_eia__yearly_generators.parquet",
+        f"s3://pudl.catalyst.coop/{version}/{table_name}.parquet",
         storage_options={"aws_region": "us-west-2", "aws_skip_signature": "True"},
     )
 

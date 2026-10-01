@@ -3,7 +3,6 @@
 Reads a file from GitHub (soon to be Datastore...), then publishes it to R2.
 """
 
-from datetime import datetime
 from logging import getLogger
 from pathlib import Path
 
@@ -30,9 +29,6 @@ class Settings:
     # eia860m_month = (
     #     datetime.strptime("2025-01-01", "%Y-%m-%d").astimezone(datetime.timezone.utc).date()
     # )
-
-
-settings = Settings()
 
 
 def calc_pop_cw(cw: pd.DataFrame, pop: pd.DataFrame, settings) -> pd.DataFrame:
@@ -140,14 +136,14 @@ def sum_data_cnty(df: pd.DataFrame, pop: pd.DataFrame):
 
     # sum_data_cnty -- calculate total data for each county
     df = df.drop(columns=[cw_id, "pop_share"])
-    df = df.groupby(by=["FIPS_cnty"] + groupby_cols, as_index=False).sum(data_id)
+    df = df.groupby(by=["FIPS_cnty"] + groupby_cols, as_index=False)[[data_id]].sum()
     df["FIPS_cnty"] = df["FIPS_cnty"].astype(pd.Int64Dtype())
 
     return df
 
 
 def prep_eia860m(
-    out_eia__yearly_generators: pl.DataFrame, eia860m_month: max | datetime
+    out_eia__yearly_generators: pl.LazyFrame, eia860m_month
 ) -> pd.DataFrame:
     """Prep the PUDL table for the C-NEMS.
 
@@ -192,20 +188,20 @@ def prep_eia860m(
         "Operating Year",
         "Planned Retirement Year",
     ]
-    eia860m = eia860m[cols_to_keep].to_pandas().convert_dtypes()
+    eia860m = eia860m.collect().to_pandas()[cols_to_keep].convert_dtypes()
     return eia860m
 
 
 def transform_supply_curve(
-    out_eia__yearly_generators: pd.DataFrame,
-    cwt: pd.DataFrame,
-    cwc: pd.DataFrame,
-    cws: pd.DataFrame,
-    indx: pd.DataFrame,
-    cwst: pd.DataFrame,
-    cw: pd.DataFrame,
-    dg: pd.DataFrame,
-    pop: pd.DataFrame,
+    out_eia__yearly_generators: pl.LazyFrame,
+    cwt_lf: pl.LazyFrame,
+    cwc_lf: pl.LazyFrame,
+    cws_lf: pl.LazyFrame,
+    index_lf: pl.LazyFrame,
+    cwst_lf: pl.LazyFrame,
+    cw_lf: pl.LazyFrame,
+    dg_lf: pl.LazyFrame,
+    pop_lf: pl.LazyFrame,
     settings: Settings,
 ) -> pd.DataFrame:
     """Build the supply curve output.
@@ -214,6 +210,14 @@ def transform_supply_curve(
     BlueSky/sample/electricity_data_pipeline/src/runner.py::create_supplycurve_cnty
     """
     eia860m = prep_eia860m(out_eia__yearly_generators, settings.eia860m_month)
+    cwt = cwt_lf.collect().to_pandas()
+    cwc = cwc_lf.collect().to_pandas()
+    cws = cws_lf.collect().to_pandas()
+    index = index_lf.collect().to_pandas()
+    cwst = cwst_lf.collect().to_pandas()
+    cw = cw_lf.collect().to_pandas()
+    dg = dg_lf.collect().to_pandas()
+    pop = pop_lf.collect().to_pandas()
 
     # create_supplycurve_cnty -- create an ID column
     df = eia860m.dropna(subset=["Plant ID"]).copy()
@@ -231,7 +235,7 @@ def transform_supply_curve(
     df = df.dropna(subset=["FIPS_cnty"])
     df["FIPS_cnty"] = df["FIPS_cnty"].astype(pd.Int64Dtype())
 
-    # Exctract just the code from inside parenthesis within the
+    # Extract just the code from inside parenthesis within the
     cws["Status Code"] = cws["Status"].str.extract(r"\((.*?)\)")
     df = pd.merge(df, cws, how="left", on=["Status Code"]).drop(columns=["Status Code"])
     df = df[df["Keep"] == 1]
@@ -253,14 +257,14 @@ def transform_supply_curve(
     }
     df = df.drop(columns=drop).rename(columns=rename)
 
-    # # create_supplycurve_cnty -- keep only online years relavent to the model
+    # # create_supplycurve_cnty -- keep only online years relevant to the model
     df.loc[df["year"] < settings.first_year, "year"] = settings.first_year
     df["year"] = df["year"].astype(pd.Int64Dtype())
 
     df.loc[df["year"] > settings.last_year, "Drop"] = 1
     df = df[df["Drop"] != 1].drop(columns=["Drop"])
 
-    # create_supplycurve_cnty -- keep only retirement years relavent to the model
+    # create_supplycurve_cnty -- keep only retirement years relevant to the model
     df.loc[df["Ret_Year"] == " ", "Ret_Year"] = 9999
     df.loc[df["Ret_Year"].isna(), "Ret_Year"] = 9999
     df.loc[df["Ret_Year"] > settings.last_year, "Ret_Year"] = 9999
@@ -275,11 +279,11 @@ def transform_supply_curve(
     df = df.drop(columns=["ID"])
     df = df.groupby(by=["tech", "FIPS_cnty", "year", "Ret_Year"], as_index=False).sum()
 
-    indx = pd.merge(
-        indx, pd.DataFrame(cwt["tech"].unique(), columns=["tech"]), how="cross"
+    index = pd.merge(
+        index, pd.DataFrame(cwt["tech"].unique(), columns=["tech"]), how="cross"
     )
-    indx = pd.merge(
-        indx,
+    index = pd.merge(
+        index,
         pd.DataFrame(
             range(settings.first_year, settings.last_year + 1), columns=["year"]
         ),
@@ -288,7 +292,7 @@ def transform_supply_curve(
     # create_supplycurve_cnty -- add online capacity for each county/technology/year
     online = df.drop(columns=["Ret_Year"])
     online = online.groupby(by=["tech", "FIPS_cnty", "year"], as_index=False).sum()
-    frame = pd.merge(indx, online, how="left", on=["FIPS_cnty", "tech", "year"])
+    frame = pd.merge(index, online, how="left", on=["FIPS_cnty", "tech", "year"])
 
     # create_supplycurve_cnty -- add planned retirement capacity for each county/technology/year
     offline = df.drop(columns=["year"])
@@ -345,16 +349,16 @@ def load(transformed: pd.DataFrame, output_path: Path) -> None:
 
 
 def run_supply_curve(
-    archive_path: Path,
+    archive_path: str,
     output_path: Path,
-    cwt_path: Path,
-    cwc_path: Path,
-    cws_path: Path,
-    indx_path: Path,
-    cwst_path: Path,
-    cw_path: Path,
-    dg_path: Path,
-    pop_path: Path,
+    cwt_path: str,
+    cwc_path: str,
+    cws_path: str,
+    index_path: str,
+    cwst_path: str,
+    cw_path: str,
+    dg_path: str,
+    pop_path: str,
     settings: Settings,
     out_eia__yearly_generators: pl.LazyFrame,
 ):
@@ -362,15 +366,15 @@ def run_supply_curve(
     load(
         transform_supply_curve(
             out_eia__yearly_generators,
-            cwt=extract_from_zip(archive_path=archive_path, resource_path=cwt_path),
-            cwc=extract_from_zip(archive_path=archive_path, resource_path=cwc_path),
-            cws=extract_from_zip(archive_path=archive_path, resource_path=cws_path),
-            indx=extract_from_zip(archive_path=archive_path, resource_path=indx_path),
-            cwst=extract_from_zip(archive_path=archive_path, resource_path=cwst_path),
-            cw=extract_from_zip(archive_path=archive_path, resource_path=cw_path),
-            dg=extract_from_zip(archive_path=archive_path, resource_path=dg_path),
-            pop=extract_from_zip(archive_path=archive_path, resource_path=pop_path),
-            settings=Settings(settings),
+            cwt_lf=extract_from_zip(archive_path, cwt_path),
+            cwc_lf=extract_from_zip(archive_path, cwc_path),
+            cws_lf=extract_from_zip(archive_path, cws_path),
+            index_lf=extract_from_zip(archive_path, index_path),
+            cwst_lf=extract_from_zip(archive_path, cwst_path),
+            cw_lf=extract_from_zip(archive_path, cw_path),
+            dg_lf=extract_from_zip(archive_path, dg_path),
+            pop_lf=extract_from_zip(archive_path, pop_path),
+            settings=settings,
         ),
         output_path,
     )
@@ -391,7 +395,7 @@ if __name__ == "__main__":
         cwt_path=snakemake.params["cwt_path"],
         cwc_path=snakemake.params["cwc_path"],
         cws_path=snakemake.params["cws_path"],
-        indx_path=snakemake.params["indx_path"],
+        index_path=snakemake.params["index_path"],
         cwst_path=snakemake.params["cwst_path"],
         cw_path=snakemake.params["cw_path"],
         dg_path=snakemake.params["dg_path"],
