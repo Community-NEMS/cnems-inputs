@@ -9,26 +9,10 @@ from pathlib import Path
 import pandas as pd
 import polars as pl
 
-from cnems_inputs.helpers import extract_from_zip
+from cnems_inputs.helpers import extract_from_zip, extract_pudl_table
 
 # Establish logger
 logger = getLogger(__name__)
-
-
-class Settings:
-    """Settings for Supply Curve.
-
-    TODO: Is there a more snakemake-y place to do validations of settings?
-    I'd like to pydantic this guy but this doesn't seem like the right place to do it.
-    """
-
-    first_year = 2023
-    last_year = 2050
-    population_year = 2022
-    eia860m_month = "max"
-    # eia860m_month = (
-    #     datetime.strptime("2025-01-01", "%Y-%m-%d").astimezone(datetime.timezone.utc).date()
-    # )
 
 
 def calc_pop_cw(cw: pd.DataFrame, pop: pd.DataFrame, settings) -> pd.DataFrame:
@@ -49,7 +33,7 @@ def calc_pop_cw(cw: pd.DataFrame, pop: pd.DataFrame, settings) -> pd.DataFrame:
         data frame which contains user-defined region/county mapping and the fraction of the user-defined region population in each county
     """
     # calc_pop_cw -- read in county population for population_year and combine w/ regional crosswalk
-    population_year = settings.population_year
+    population_year = settings["population_year"]
     pop = pop[pop["year"] == population_year]
     pop = pop.drop(columns=["year"])
     pop = (
@@ -143,7 +127,7 @@ def sum_data_cnty(df: pd.DataFrame, pop: pd.DataFrame):
 
 
 def prep_eia860m(
-    out_eia__yearly_generators: pl.LazyFrame, eia860m_month
+    out_eia__yearly_generators: pl.DataFrame, eia860m_month
 ) -> pd.DataFrame:
     """Prep the PUDL table for the C-NEMS.
 
@@ -188,12 +172,12 @@ def prep_eia860m(
         "Operating Year",
         "Planned Retirement Year",
     ]
-    eia860m = eia860m.collect().to_pandas()[cols_to_keep].convert_dtypes()
+    eia860m = eia860m.to_pandas()[cols_to_keep].convert_dtypes()
     return eia860m
 
 
 def transform_supply_curve(
-    out_eia__yearly_generators: pl.LazyFrame,
+    out_eia__yearly_generators: pl.DataFrame,
     cwt_lf: pl.LazyFrame,
     cwc_lf: pl.LazyFrame,
     cws_lf: pl.LazyFrame,
@@ -202,14 +186,14 @@ def transform_supply_curve(
     cw_lf: pl.LazyFrame,
     dg_lf: pl.LazyFrame,
     pop_lf: pl.LazyFrame,
-    settings: Settings,
+    settings: dict,
 ) -> pd.DataFrame:
     """Build the supply curve output.
 
     Built mostly from:
     BlueSky/sample/electricity_data_pipeline/src/runner.py::create_supplycurve_cnty
     """
-    eia860m = prep_eia860m(out_eia__yearly_generators, settings.eia860m_month)
+    eia860m = prep_eia860m(out_eia__yearly_generators, settings["eia860m_month"])
     cwt = cwt_lf.collect().to_pandas()
     cwc = cwc_lf.collect().to_pandas()
     cws = cws_lf.collect().to_pandas()
@@ -225,7 +209,6 @@ def transform_supply_curve(
     df["ID"] = df["Plant ID"].astype(str) + "_" + df["Generator ID"].astype(str)
 
     df = pd.merge(df, cwt, how="left", on=["Technology"])
-
     df = pd.merge(
         df,
         cwc[["State", "County", "FIPS_cnty"]].rename(columns={"State": "Plant State"}),
@@ -258,16 +241,16 @@ def transform_supply_curve(
     df = df.drop(columns=drop).rename(columns=rename)
 
     # # create_supplycurve_cnty -- keep only online years relevant to the model
-    df.loc[df["year"] < settings.first_year, "year"] = settings.first_year
+    df.loc[df["year"] < settings["first_year"], "year"] = settings["first_year"]
     df["year"] = df["year"].astype(pd.Int64Dtype())
 
-    df.loc[df["year"] > settings.last_year, "Drop"] = 1
+    df.loc[df["year"] > settings["last_year"], "Drop"] = 1
     df = df[df["Drop"] != 1].drop(columns=["Drop"])
 
     # create_supplycurve_cnty -- keep only retirement years relevant to the model
     df.loc[df["Ret_Year"] == " ", "Ret_Year"] = 9999
     df.loc[df["Ret_Year"].isna(), "Ret_Year"] = 9999
-    df.loc[df["Ret_Year"] > settings.last_year, "Ret_Year"] = 9999
+    df.loc[df["Ret_Year"] > settings["last_year"], "Ret_Year"] = 9999
     df["Ret_Year"] = df["Ret_Year"].astype(pd.Int64Dtype())
 
     # create_supplycurve_cnty -- remove rows with missing capacity data
@@ -285,7 +268,7 @@ def transform_supply_curve(
     index = pd.merge(
         index,
         pd.DataFrame(
-            range(settings.first_year, settings.last_year + 1), columns=["year"]
+            range(settings["first_year"], settings["last_year"] + 1), columns=["year"]
         ),
         how="cross",
     )
@@ -359,13 +342,13 @@ def run_supply_curve(
     cw_path: str,
     dg_path: str,
     pop_path: str,
-    settings: Settings,
-    out_eia__yearly_generators: pl.LazyFrame,
+    settings: dict,
+    pudl_table_name: str,
 ):
     """E, T, L."""
     load(
         transform_supply_curve(
-            out_eia__yearly_generators,
+            out_eia__yearly_generators=extract_pudl_table(pudl_table_name),
             cwt_lf=extract_from_zip(archive_path, cwt_path),
             cwc_lf=extract_from_zip(archive_path, cwc_path),
             cws_lf=extract_from_zip(archive_path, cws_path),
@@ -390,7 +373,7 @@ if __name__ == "__main__":
         from snakemake.iocontainers import snakemake  # noqa: TC004
 
     run_supply_curve(
-        archive_path=snakemake.input["archive_path"],
+        archive_path=snakemake.input[0],
         output_path=snakemake.output[0],
         cwt_path=snakemake.params["cwt_path"],
         cwc_path=snakemake.params["cwc_path"],
@@ -401,5 +384,6 @@ if __name__ == "__main__":
         dg_path=snakemake.params["dg_path"],
         pop_path=snakemake.params["pop_path"],
         settings=snakemake.params["settings"],
-        out_eia__yearly_generators=snakemake.input["out_eia__yearly_generators"],
+        pudl_table_name=snakemake.params["pudl_table_name"],
+        # out_eia__yearly_generators=snakemake.input["out_eia__yearly_generators"],
     )

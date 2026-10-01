@@ -45,9 +45,10 @@ def resolve_dataset(dataset: str, resource_path: str) -> str:
         return str(cache_path(url, cache_dir=storage._storages["cached_http"].settings.cache))
     raise ValueError("zenodo_source must be 'remote' or 'cache'")
 
-
-def load_pudl_table(table_name: str, version="nightly") -> pl.LazyFrame:
-    """Read a PUDL table from a ."""
+# TODO: OKAYYYY SNAKKKEE. I need to make you into a thing that stores this file
+# either remotely or cached and then return a path?!? Okay? sure.
+def extract_pudl_table(table_name: str, version="nightly") -> pl.LazyFrame:
+    """Read a PUDL table from aws for a given version."""
     return pl.read_parquet(
         f"s3://pudl.catalyst.coop/{version}/{table_name}.parquet",
         storage_options={"aws_region": "us-west-2", "aws_skip_signature": "True"},

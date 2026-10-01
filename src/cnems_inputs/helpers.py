@@ -33,3 +33,11 @@ def extract_from_zip(archive_path: str, resource_path: str) -> pl.LazyFrame:
     with UPath(archive_path).open("rb") as blob, ZipFile(blob) as zf:
         content = zf.open(resource_path)
         return pl.scan_csv(content)
+
+
+def extract_pudl_table(table_name: str, version="nightly") -> pl.DataFrame:
+    """Read a PUDL table from aws for a given version."""
+    return pl.read_parquet(
+        f"s3://pudl.catalyst.coop/{version}/{table_name}.parquet",
+        storage_options={"aws_region": "us-west-2", "aws_skip_signature": "True"},
+    )

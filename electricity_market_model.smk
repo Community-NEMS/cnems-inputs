@@ -30,21 +30,19 @@ rule extract_from_zip:
 
 rule supply_curve:
   input:
-    {
-      "archive_path": resolve_dataset("eiabluesky", "eiabluesky-v1-1.zip"),
-      "out_eia__yearly_generators": load_pudl_table(table_name="out_eia__yearly_generators")
-    }
+    resolve_dataset("eiabluesky", "eiabluesky-v1-1.zip")
   output:
     storage.r2(versioned_r2_uri(OUTPUT_BUCKET, "supply_curve.csv"))
   params:
-    cwt_path="input/cw_tech.csv",
-    cwc_path="input/cwc_path.csv",
-    cws_path="input/cws_path.csv",
-    index_path="input/indx_path.csv",
-    cwst_path="input/cwst_path.csv",
-    cw_path="input/cw_path.csv",
-    dg_path="input/dg_path.csv",
-    pop_path="input/pop_path.csv",
+    pudl_table_name="out_eia__yearly_generators",
+    cwt_path="sample/electricity_data_pipeline/input/cw_tech.csv",
+    cwc_path="sample/electricity_data_pipeline/input/cw_county.csv",
+    cws_path="sample/electricity_data_pipeline/input/cw_status.csv",
+    index_path="sample/electricity_data_pipeline/input/cw_r.csv",
+    cwst_path="sample/electricity_data_pipeline/input/cw_steps.csv",
+    cw_path="sample/electricity_data_pipeline/input/cw_r.csv",
+    dg_path="sample/electricity_data_pipeline/input/dgpv_cap.csv",
+    pop_path="sample/electricity_data_pipeline/input/County_Population_2010-2022.csv",
     settings=config["supply_curve_config"]
   script:
     "src/cnems_inputs/supply_curve.py"
