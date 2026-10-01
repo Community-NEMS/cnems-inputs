@@ -28,7 +28,7 @@ rule extract_from_zip:
 
 
 def myfunc(wildcards):
-    return 
+    return
 
 
 rule supply_curve:
