@@ -51,4 +51,5 @@ def load_pudl_table(table_name: str, version="nightly") -> pl.LazyFrame:
         storage_options={"aws_region": "us-west-2", "aws_skip_signature": "True"},
     )
 
+
 include: "electricity_market_model.smk"
