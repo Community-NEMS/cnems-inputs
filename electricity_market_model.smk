@@ -8,6 +8,43 @@ rule emm_inputs:
     [r2(p) for p in get_published_paths("datapackage.json")],
     r2("datapackage.json")
 
+
+rule raw_pudl:
+  input: pudl("stable", "out_eia__yearly_generators")
+  output: r2("raw/out_eia__yearly_generators.parquet")
+  shell: "cp {input} {output}"
+
+
+rule core__supply_curve_county:
+  input:
+    out_eia__yearly_generators_path=r2("raw/out_eia__yearly_generators.parquet"),
+    cwt_path=r2(f"raw/bluesky/crosswalk_tech.csv"),
+    cwc_path=r2(f"raw/bluesky/crosswalk_county.csv"),
+    cws_path=r2(f"raw/bluesky/crosswalk_status.csv"),
+    cw_path=r2(f"raw/bluesky/crosswalk_region.csv"),
+    cwst_path=r2(f"raw/bluesky/crosswalk_steps.csv"),
+    dg_path=r2(f"raw/bluesky/dgpv_cap.csv"),
+    pop_path=r2(f"raw/bluesky/population.csv"),
+  output: r2("core/supply_curve_county.csv"),
+  params:
+    settings = config["core_supply_curve"]
+  script:
+    "src/cnems_inputs/supply_curve_county.py"
+
+
+rule core__supply_curve_regional:
+  input:
+    supply_curve_county_path=r2("core/supply_curve_county.csv"),
+    cwst_path=r2(f"raw/bluesky/crosswalk_steps.csv"),
+    cw_path=r2(f"raw/bluesky/crosswalk_region.csv"),
+  output:
+    r2("core/supply_curve.csv")
+  params:
+    settings = config["core_supply_curve"]
+  script:
+    "src/cnems_inputs/supply_curve_regional.py"
+
+
 rule datapackage:
   input: "datapackage.json"
   output: r2("datapackage.json")

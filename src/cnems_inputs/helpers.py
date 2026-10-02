@@ -3,6 +3,11 @@
 import json
 import os
 from pathlib import Path
+from zipfile import ZipFile
+
+import pandas as pd
+import polars as pl
+from upath import UPath
 
 
 # Set CNEMS_INPUT_VERSION_ID env var to publish to a specific version prefix.
@@ -18,6 +23,39 @@ def versioned_r2_uri(bucket: str, path: str) -> str:
     """
     version = os.getenv("CNEMS_INPUT_VERSION_ID", "nightly")
     return f"s3://{bucket}/{version}/{path}"
+
+
+def extract_from_zip(archive_path: str, resource_path: str) -> pl.LazyFrame:
+    """Make a LazyFrame from a file within a ZIP archive.
+
+    archive_path: path to the ZIP archive itself. Since we're using the
+        Datastore to cache files, this is likely a local path but *could* be a
+        remote path depending on cache layer configuration.
+    resource_path: the file name within the ZIP archive.
+    """
+    with UPath(archive_path).open("rb") as blob, ZipFile(blob) as zf:
+        content = zf.open(resource_path)
+        return pl.scan_csv(content)
+
+
+def extract_parquet_to_pl(path: str) -> pl.DataFrame:
+    """Read a parquet file as a polars DataFrame."""
+    return pl.read_parquet(path)
+
+
+def extract_csv_to_pl(path: str) -> pl.LazyFrame:
+    """Read a csv file as a polars LazyFrame."""
+    return pl.scan_csv(path)
+
+
+def load(transformed: pd.DataFrame, output_path: Path) -> None:
+    """Write DataFrame to output.
+
+    transformed: the data we want to write out.
+    output_path: a path for us to write the data out to, which may then be
+        pushed remotely via the storage backend configured for this output.
+    """
+    transformed.to_csv(output_path, index=False)
 
 
 def get_published_paths(datapackage_path: str) -> list[str]:

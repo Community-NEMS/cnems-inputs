@@ -7,21 +7,20 @@ import polars as pl
 from polars.testing import assert_frame_equal
 
 
-def test_supply_curve_matches_fixture(
+def test_enduse_base_shares_matches_fixture(
     materialize_input: Callable[[str], Path],
     test_fixture_dir: Path,
 ) -> None:
-    """The supply curve pipeline should publish the source data unchanged."""
+    """The enduse_base_shares pipeline should publish the source data unchanged."""
     expected_path = (
         test_fixture_dir
         / "eiabluesky"
         / "input"
-        / "electricity"
-        / "cem_inputs"
-        / "SupplyCurve.csv"
+        / "residential"
+        / "EnduseBaseShares.csv"
     )
 
-    actual = pl.read_csv(materialize_input("core__supply_curve"))
+    actual = pl.read_csv(materialize_input("core__enduse_base_shares"))
     expected = pl.read_csv(expected_path)
 
     assert_frame_equal(actual, expected)
