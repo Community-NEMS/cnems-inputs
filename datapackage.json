@@ -619,7 +619,7 @@
     {
       "name": "sw_builds",
       "type": "table",
-      "path": "sw_builds.csv",
+      "path": "core/sw_builds.csv",
       "scheme": "file",
       "format": "csv",
       "mediatype": "text/csv",
@@ -644,7 +644,7 @@
     {
       "name": "sw_retires",
       "type": "table",
-      "path": "sw_retires.csv",
+      "path": "core/sw_retires.csv",
       "scheme": "file",
       "format": "csv",
       "mediatype": "text/csv",
@@ -669,7 +669,7 @@
     {
       "name": "tech_subsets",
       "type": "table",
-      "path": "tech_subsets.csv",
+      "path": "core/tech_subsets.csv",
       "scheme": "file",
       "format": "csv",
       "mediatype": "text/csv",

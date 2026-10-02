@@ -9,9 +9,10 @@ storage r2:
   secret_key=config["r2"]["secret_key"]
 
 from cnems_inputs.zenodo import cache_path, resolve
-from cnems_inputs.helpers import versioned_r2_uri
+from cnems_inputs.helpers import get_published_paths, versioned_r2_uri
 
-OUTPUT_BUCKET = config["r2"]["bucket"]
+def r2(path: str):
+    return storage.r2(versioned_r2_uri(config["r2"]["bucket"], path))
 
 def resolve_dataset(dataset: str, resource_path: str) -> str:
     """Resolve a resource within a dataset to its URL.
@@ -42,6 +43,5 @@ def resolve_dataset(dataset: str, resource_path: str) -> str:
     if zenodo_source == "cache":
         return str(cache_path(url, cache_dir=storage._storages["cached_http"].settings.cache))
     raise ValueError("zenodo_source must be 'remote' or 'cache'")
-
 
 include: "electricity_market_model.smk"

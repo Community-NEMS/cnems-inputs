@@ -6,16 +6,16 @@ from cnems_inputs.extract_emm_inputs import extract
 
 def test_extract_copies_configured_members_unchanged(tmp_path: Path) -> None:
     archive_path = tmp_path / "inputs.zip"
-    member = "input/electricity/cem_inputs/SupplyCurve.csv"
+    resource_path = "input/electricity/cem_inputs/SupplyCurve.csv"
     content = b"region,tech\n1,2\n"
     with ZipFile(archive_path, "w") as archive:
-        archive.writestr(member, content)
+        archive.writestr(resource_path, content)
 
-    output_path = tmp_path / "raw/bluesky/SupplyCurve.csv"
+    output_path = tmp_path / "raw/bluesky/supply_curve.csv"
     extract(
         str(archive_path),
-        {"supply_curve": str(output_path)},
-        {"supply_curve": member},
+        str(output_path),
+        resource_path,
     )
 
     assert output_path.read_bytes() == content

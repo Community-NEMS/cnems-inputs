@@ -11,7 +11,6 @@ from pathlib import Path
 from zipfile import ZipFile
 
 import pytest
-import yaml
 
 from cnems_inputs.zenodo import cache_path, resolve
 
@@ -36,7 +35,7 @@ def fake_r2(
     root = tmp_path_factory.mktemp("fake-r2")
     (root / r2_config["bucket"]).mkdir()
 
-    port = 9001
+    port = 9002
     r2_config["endpoint_url"] = f"http://127.0.0.1:{port}"
 
     proc = subprocess.Popen(  # noqa: S603
@@ -90,23 +89,12 @@ def cached_http_cache(
 
     source_root = test_fixture_dir / "eiabluesky"
     with ZipFile(zip_path, "w") as zf:
-        archived_paths = set()
         for source_path in source_root.rglob("*"):
             if source_path.is_file():
-                archive_path = source_path.relative_to(source_root).as_posix()
-                zf.write(source_path, arcname=archive_path)
-                archived_paths.add(archive_path)
-
-        # The repository fixture only contains the table under test, while the
-        # production rule intentionally extracts every configured input.
-        # Add harmless placeholders so the test archive has the same shape.
-        config = yaml.safe_load(Path("config/emm_inputs.yaml").read_text())
-        source_bytes = (
-            source_root / "input/electricity/cem_inputs/SupplyCurve.csv"
-        ).read_bytes()
-        for archive_path in config["emm_inputs"].values():
-            if archive_path not in archived_paths:
-                zf.writestr(archive_path, source_bytes)
+                zf.write(
+                    source_path,
+                    arcname=source_path.relative_to(source_root).as_posix(),
+                )
 
     return cache_dir
 
@@ -137,13 +125,11 @@ def materialize_input(
                 "Snakefile",
                 "--cores",
                 "1",
+                resource_name,
                 "--config",
                 "zenodo_source=cache",
                 f"cached_http_cache={cached_http_cache.as_posix()}",
-                f"emm_inputs={json.dumps({'supply_curve': 'input/electricity/cem_inputs/SupplyCurve.csv'})}",
                 f"r2={json.dumps(r2_config)}",
-                "--target-jobs",
-                f"copy_core_{resource_name}:",
             ],
             check=True,
         )
@@ -152,8 +138,7 @@ def materialize_input(
             fake_r2_root
             / r2_config["bucket"]
             / "nightly"
-            / "core"
-            / f"{resource_name}.csv"
+            / f"{resource_name.replace('__', '/')}.csv"
         )
         assert output_path.exists()
         return output_path

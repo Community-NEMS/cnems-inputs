@@ -21,7 +21,7 @@ def test_supply_curve_matches_fixture(
         / "SupplyCurve.csv"
     )
 
-    actual = pl.read_csv(materialize_input("supply_curve"))
+    actual = pl.read_csv(materialize_input("core__supply_curve"))
     expected = pl.read_csv(expected_path)
 
     assert_frame_equal(actual, expected)
