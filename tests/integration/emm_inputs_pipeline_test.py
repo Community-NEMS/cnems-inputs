@@ -20,7 +20,7 @@ def test_enduse_base_shares_matches_fixture(
         / "EnduseBaseShares.csv"
     )
 
-    actual = pl.read_csv(materialize_input("enduse_base_shares"))
+    actual = pl.read_csv(materialize_input("core__enduse_base_shares"))
     expected = pl.read_csv(expected_path)
 
     assert_frame_equal(actual, expected)
