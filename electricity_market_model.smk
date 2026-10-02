@@ -1,5 +1,8 @@
 configfile: "config/emm_inputs.yaml"
 
+# We want to ensure that all of the files enumerated in the datapackage are definitely
+# in the outputs, so look through the datapackage to build up the list of outputs we
+# want the snakemake dag to build.
 rule emm_inputs:
   input:
     [r2(p) for p in get_published_paths("datapackage.json")],

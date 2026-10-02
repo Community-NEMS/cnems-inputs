@@ -4,7 +4,12 @@ from zipfile import ZipFile
 from cnems_inputs.extract_emm_inputs import extract
 
 
-def test_extract_copies_configured_members_unchanged(tmp_path: Path) -> None:
+def test_extract_emm_imputs(tmp_path: Path) -> None:
+    """Test the EMM extraction method by attempting it with a small sample.
+    
+    Ensure that the extraction is run, that it put the output in the place we told it to go
+    and that the contents of that extracted output are unchanged.
+    """
     archive_path = tmp_path / "inputs.zip"
     resource_path = "input/electricity/cem_inputs/SupplyCurve.csv"
     content = b"region,tech\n1,2\n"
