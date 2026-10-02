@@ -1,8 +1,10 @@
 """Assorted helper functions that shouldn't live in Snakefile."""
 
 import os
+from pathlib import Path
 from zipfile import ZipFile
 
+import pandas as pd
 import polars as pl
 from upath import UPath
 
@@ -38,3 +40,18 @@ def extract_from_zip(archive_path: str, resource_path: str) -> pl.LazyFrame:
 def extract_parquet_to_pl(path: str) -> pl.DataFrame:
     """Read a parquet file as a polars DataFrame."""
     return pl.read_parquet(path)
+
+
+def extract_csv_to_df(path: str) -> pd.DataFrame:
+    """Read a csv file as a pandas DataFrame."""
+    return pd.read_csv(path)
+
+
+def load(transformed: pd.DataFrame, output_path: Path) -> None:
+    """Write DataFrame to output.
+
+    transformed: the data we want to write out.
+    output_path: a path for us to write the data out to, which may then be
+        pushed remotely via the storage backend configured for this output.
+    """
+    transformed.to_csv(output_path, index=False)

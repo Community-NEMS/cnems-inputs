@@ -36,12 +36,12 @@ rule raw_pudl:
   shell: "cp {input} {output}"
 
 
-rule core_supply_curve:
+rule core_supply_curve_county:
   input:
     resolve_dataset("eiabluesky", "eiabluesky-v1-1.zip"),
     storage.r2(versioned_r2_uri(OUTPUT_BUCKET, "raw/out_eia__yearly_generators.parquet"))
   output:
-    storage.r2(versioned_r2_uri(OUTPUT_BUCKET, "core/supply_curve.csv"))
+    storage.r2(versioned_r2_uri(OUTPUT_BUCKET, "core/supply_curve_county.csv")),
   params:
     cwt_path = "sample/electricity_data_pipeline/input/cw_tech.csv",
     cwc_path = "sample/electricity_data_pipeline/input/cw_county.csv",
@@ -53,7 +53,22 @@ rule core_supply_curve:
     pop_path = "sample/electricity_data_pipeline/input/County_Population_2010-2022.csv",
     settings = config["core_supply_curve"]
   script:
-    "src/cnems_inputs/supply_curve.py"
+    "src/cnems_inputs/supply_curve_county.py"
+
+
+rule core_supply_curve_regional:
+  input:
+    resolve_dataset("eiabluesky", "eiabluesky-v1-1.zip"),
+    storage.r2(versioned_r2_uri(OUTPUT_BUCKET, "core/supply_curve_county.csv"))
+  output:
+    storage.r2(versioned_r2_uri(OUTPUT_BUCKET, "core/supply_curve_regional.csv"))
+  params:
+    cwst_path = "sample/electricity_data_pipeline/input/cw_steps.csv",
+    cw_path = "sample/electricity_data_pipeline/input/cw_r.csv",
+    settings = config["core_supply_curve"]
+  script:
+    "src/cnems_inputs/supply_curve_regional.py"
+
 
 rule datapackage:
   input: "datapackage.json"

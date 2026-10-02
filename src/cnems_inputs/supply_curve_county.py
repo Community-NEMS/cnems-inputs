@@ -9,7 +9,7 @@ from pathlib import Path
 import pandas as pd
 import polars as pl
 
-from cnems_inputs.helpers import extract_from_zip, extract_parquet_to_pl
+from cnems_inputs.helpers import extract_from_zip, extract_parquet_to_pl, load
 
 # Establish logger
 logger = getLogger(__name__)
@@ -176,7 +176,7 @@ def prep_eia860m(
     return eia860m
 
 
-def transform_supply_curve(
+def transform_supply_curve_county(
     out_eia__yearly_generators: pl.DataFrame,
     cwt_lf: pl.LazyFrame,
     cwc_lf: pl.LazyFrame,
@@ -321,19 +321,48 @@ def transform_supply_curve(
     return frame
 
 
-def load(transformed: pd.DataFrame, output_path: Path) -> None:
-    """Write DataFrame to output.
+def aggregate_supply_curve_regional(
+    frame: pd.DataFrame, settings: dict, cw_lf: pl.LazyFrame, cwst_lf: pl.LazyFrame
+):
+    """Aggregates supply curves from county to user-specified regional level.
 
-    transformed: the data we want to write out.
-    output_path: a path for us to write the data out to, which may then be
-        pushed remotely via the storage backend configured for this output.
+    This was create_supplycurve_r from BlueSky.
+
+    Args:
+        frame : data frame containing supply curves at the county-level
+        settings : input settings
+
+    Returns:
+        data frame containing supply curves at user-specified regional level
     """
-    transformed.to_csv(output_path, index=False)
+    # agg the data up to the model region level
+    cwr = cw_lf.collect().to_pandas()
+    frame = (
+        pd.merge(frame, cwr, how="right", on=["FIPS_cnty"])
+        .drop(columns=["FIPS_cnty"])
+        .groupby(by=["tech", "region", "year", "step"], as_index=False)
+        .sum()[["region", "tech", "step", "year", "SupplyCurve"]]
+    )
+
+    # create full index to merge to
+    index = cwr.drop(columns=["FIPS_cnty"]).drop_duplicates()
+    cwst = cwst_lf.collect().to_pandas().drop(columns=["count"])
+    # TODO: ask Brian why this new row addition exists?
+    new_row = pd.DataFrame({"tech": [15], "step": [2]})
+    cwst = pd.concat([cwst, new_row], ignore_index=True)
+    index = pd.merge(index, cwst, how="cross")
+    index = pd.merge(
+        index, pd.DataFrame(settings["year_range"], columns=["year"]), how="cross"
+    )
+
+    frame = pd.merge(
+        index, frame, on=["region", "tech", "step", "year"], how="left"
+    ).fillna(0)
+    return frame
 
 
 def run_supply_curve(
     archive_path: str,
-    output_path: Path,
     cwt_path: str,
     cwc_path: str,
     cws_path: str,
@@ -344,25 +373,25 @@ def run_supply_curve(
     pop_path: str,
     settings: dict,
     out_eia__yearly_generators_path: str,
+    county_output_path: Path,
+    regional_output_path: Path,
 ):
     """E, T, L."""
-    load(
-        transform_supply_curve(
-            out_eia__yearly_generators=extract_parquet_to_pl(
-                out_eia__yearly_generators_path
-            ),
-            cwt_lf=extract_from_zip(archive_path, cwt_path),
-            cwc_lf=extract_from_zip(archive_path, cwc_path),
-            cws_lf=extract_from_zip(archive_path, cws_path),
-            index_lf=extract_from_zip(archive_path, index_path),
-            cwst_lf=extract_from_zip(archive_path, cwst_path),
-            cw_lf=extract_from_zip(archive_path, cw_path),
-            dg_lf=extract_from_zip(archive_path, dg_path),
-            pop_lf=extract_from_zip(archive_path, pop_path),
-            settings=settings,
+    supply_curve_county = transform_supply_curve_county(
+        out_eia__yearly_generators=extract_parquet_to_pl(
+            out_eia__yearly_generators_path
         ),
-        output_path,
+        cwt_lf=extract_from_zip(archive_path, cwt_path),
+        cwc_lf=extract_from_zip(archive_path, cwc_path),
+        cws_lf=extract_from_zip(archive_path, cws_path),
+        index_lf=extract_from_zip(archive_path, index_path),
+        cwst_lf=extract_from_zip(archive_path, cwst_path),
+        cw_lf=extract_from_zip(archive_path, cw_path),
+        dg_lf=extract_from_zip(archive_path, dg_path),
+        pop_lf=extract_from_zip(archive_path, pop_path),
+        settings=settings,
     )
+    load(supply_curve_county, county_output_path)
 
 
 if __name__ == "__main__":
@@ -377,7 +406,6 @@ if __name__ == "__main__":
     run_supply_curve(
         archive_path=snakemake.input[0],
         out_eia__yearly_generators_path=snakemake.input[1],
-        output_path=snakemake.output[0],
         cwt_path=snakemake.params["cwt_path"],
         cwc_path=snakemake.params["cwc_path"],
         cws_path=snakemake.params["cws_path"],
@@ -387,4 +415,6 @@ if __name__ == "__main__":
         dg_path=snakemake.params["dg_path"],
         pop_path=snakemake.params["pop_path"],
         settings=snakemake.params["settings"],
+        county_output_path=snakemake.output[0],
+        regional_output_path=snakemake.output[1],
     )
