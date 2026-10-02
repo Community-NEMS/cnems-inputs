@@ -130,7 +130,7 @@ def materialize_input(
                 f"cached_http_cache={cached_http_cache.as_posix()}",
                 f"r2={json.dumps(r2_config)}",
                 "--target-jobs",
-                f"extract_from_zip:resource={resource_name}",
+                f"extract_from_zip:unprocessed_resource={resource_name}",
             ],
             check=True,
         )

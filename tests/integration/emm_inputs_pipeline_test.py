@@ -7,21 +7,20 @@ import polars as pl
 from polars.testing import assert_frame_equal
 
 
-def test_supply_curve_matches_fixture(
+def test_enduse_base_shares_matches_fixture(
     materialize_input: Callable[[str], Path],
     test_fixture_dir: Path,
 ) -> None:
-    """The supply curve pipeline should publish the source data unchanged."""
+    """The enduse_base_shares pipeline should publish the source data unchanged."""
     expected_path = (
         test_fixture_dir
         / "eiabluesky"
         / "input"
-        / "electricity"
-        / "cem_inputs"
-        / "SupplyCurve.csv"
+        / "residential"
+        / "EnduseBaseShares.csv"
     )
 
-    actual = pl.read_csv(materialize_input("supply_curve"))
+    actual = pl.read_csv(materialize_input("enduse_base_shares"))
     expected = pl.read_csv(expected_path)
 
     assert_frame_equal(actual, expected)
@@ -30,3 +29,8 @@ def test_supply_curve_matches_fixture(
 # NOTE (2026-09-15) we could probably add a "supply curve schema
 # matches datapackage.json" test here, or even add that as part of the
 # materialize_input fixture
+
+
+# TODO: Add a test to ensure the schema matches the datapackage.json
+def _test_validate_schema():
+    return
