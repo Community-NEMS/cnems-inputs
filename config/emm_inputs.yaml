@@ -1,4 +1,39 @@
-emm_inputs:
+core_snapshots: # this is the list we iterate over for the "snapshot" approach
+  - base_elec_price # ok grab raw/bluesky/base_elec_price.csv
+  - base_load
+  - battery_efficiency
+  - cap_cost
+  - cap_cost_initial
+  - cap_factor_vre
+  - enduse_base_shares
+  - enduse_scalar
+  - enduse_shapes
+  - fom_cost
+  - h2_price
+  - hours_to_buy
+  - hydro_cap_factor
+  - learning_rate
+  - load_scalar
+  - ramp_down_cost
+  - ramp_rate
+  - ramp_up_cost
+  - reg_reserves_cost
+  - reserve_margin
+  - res_tech_upper_bound
+  - supply_curve
+  - supply_curve_learning
+  - supply_price
+  - sw_builds
+  - sw_retires
+  - tech_subsets
+  - test_prices
+  - tran_cost
+  - tran_cost_int
+  - tran_limit
+  - tran_limit_cap_int
+  - tran_limit_gen_int
+
+raw_bluesky: # this is the list we iterate over for extraction from bluesky zip
   base_elec_price: input/residential/BaseElecPrice.csv
   base_load: input/residential/BaseLoad.csv
   battery_efficiency: input/electricity/cem_inputs/BatteryEfficiency.csv
@@ -23,6 +58,9 @@ emm_inputs:
   supply_curve: input/electricity/cem_inputs/SupplyCurve.csv
   supply_curve_learning: input/electricity/cem_inputs/SupplyCurveLearning.csv
   supply_price: input/electricity/cem_inputs/SupplyPrice.csv
+  sw_builds: input/electricity/sw_builds.csv
+  sw_retires: input/electricity/sw_retires.csv
+  tech_subsets: input/electricity/tech_subsets.csv
   test_prices: input/residential/testPrices.csv
   tran_cost: input/electricity/cem_inputs/TranCost.csv
   tran_cost_int: input/electricity/cem_inputs/TranCostInt.csv

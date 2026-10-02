@@ -12,11 +12,22 @@ storage s3:
   provider="http", # 2026-10-02 S3 provider doesn't support anonymous requests so we go HTTP instead
 
 from cnems_inputs.zenodo import cache_path, resolve
-from cnems_inputs.helpers import versioned_r2_uri
+from cnems_inputs.helpers import get_published_paths, versioned_r2_uri
 
 import polars as pl
 
 OUTPUT_BUCKET = config["r2"]["bucket"]
+def r2(path: str) -> str:
+    """Hook up snakemake storage.r2 plugin to the R2 URI helper.
+
+    The R2 URI helper is pure normal Python and just munges strings together.
+    `storage.r2` and `config` are only available in Snakefiles, so we wrap
+    the pure function here.
+
+    `storage.r2()`... returns a string, but also has the side-effect of
+    registering the file with the Snakemake storage system.
+    """
+    return storage.r2(versioned_r2_uri(config["r2"]["bucket"], path))
 
 def resolve_dataset(dataset: str, resource_path: str) -> str:
     """Resolve a resource within a dataset to its URL.
@@ -57,7 +68,6 @@ def pudl(version: str, table_name: str) -> str:
             specific version for extra stability.
         table_name: the pudl table name.
     """
-    # TODO: make this a better docstring
     return storage.s3(f"https://s3.us-west-2.amazonaws.com/pudl.catalyst.coop/{version}/{table_name}.parquet")
 
 

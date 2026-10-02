@@ -1,5 +1,6 @@
 """Assorted helper functions that shouldn't live in Snakefile."""
 
+import json
 import os
 from pathlib import Path
 from zipfile import ZipFile
@@ -55,3 +56,10 @@ def load(transformed: pd.DataFrame, output_path: Path) -> None:
         pushed remotely via the storage backend configured for this output.
     """
     transformed.to_csv(output_path, index=False)
+
+
+def get_published_paths(datapackage_path: str) -> list[str]:
+    """Get resource paths defined within a datapackage."""
+    with Path(datapackage_path).open() as dp:
+        datapackage = json.load(dp)
+    return [r["path"] for r in datapackage["resources"]]
