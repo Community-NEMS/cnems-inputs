@@ -9,14 +9,14 @@ from pathlib import Path
 import pandas as pd
 import polars as pl
 
-from cnems_inputs.helpers import extract_csv_to_df, extract_from_zip, load
+from cnems_inputs.helpers import extract_csv_to_pl, extract_from_zip, load
 
 # Establish logger
 logger = getLogger(__name__)
 
 
 def aggregate_supply_curve_regional(
-    supply_curve_county: pd.DataFrame,
+    supply_curve_county: pl.LazyFrame,
     settings: dict,
     cw_lf: pl.LazyFrame,
     cwst_lf: pl.LazyFrame,
@@ -32,7 +32,7 @@ def aggregate_supply_curve_regional(
     Returns:
         data frame containing supply curves at user-specified regional level
     """
-    frame = supply_curve_county
+    frame = supply_curve_county.collect().to_pandas()
     # agg the data up to the model region level
     cwr = cw_lf.collect().to_pandas()
     frame = (
@@ -50,7 +50,11 @@ def aggregate_supply_curve_regional(
     cwst = pd.concat([cwst, new_row], ignore_index=True)
     index = pd.merge(index, cwst, how="cross")
     index = pd.merge(
-        index, pd.DataFrame(settings["year_range"], columns=["year"]), how="cross"
+        index,
+        pd.DataFrame(
+            range(settings["first_year"], settings["last_year"] + 1), columns=["year"]
+        ),
+        how="cross",
     )
 
     frame = pd.merge(
@@ -69,7 +73,7 @@ def run_supply_curve_regional(
 ):
     """E, T, L."""
     supply_curve_regional = aggregate_supply_curve_regional(
-        supply_curve_county=extract_csv_to_df(supply_curve_county_path),
+        supply_curve_county=extract_csv_to_pl(supply_curve_county_path),
         cw_lf=extract_from_zip(archive_path, cw_path),
         cwst_lf=extract_from_zip(archive_path, cwst_path),
         settings=settings,

@@ -43,9 +43,9 @@ def extract_parquet_to_pl(path: str) -> pl.DataFrame:
     return pl.read_parquet(path)
 
 
-def extract_csv_to_df(path: str) -> pd.DataFrame:
-    """Read a csv file as a pandas DataFrame."""
-    return pd.read_csv(path)
+def extract_csv_to_pl(path: str) -> pl.LazyFrame:
+    """Read a csv file as a polars LazyFrame."""
+    return pl.scan_csv(path)
 
 
 def load(transformed: pd.DataFrame, output_path: Path) -> None:

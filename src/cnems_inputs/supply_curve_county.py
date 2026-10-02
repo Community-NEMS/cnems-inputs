@@ -9,7 +9,11 @@ from pathlib import Path
 import pandas as pd
 import polars as pl
 
-from cnems_inputs.helpers import extract_from_zip, extract_parquet_to_pl, load
+from cnems_inputs.helpers import (
+    extract_csv_to_pl,
+    extract_parquet_to_pl,
+    load,
+)
 
 # Establish logger
 logger = getLogger(__name__)
@@ -361,8 +365,7 @@ def aggregate_supply_curve_regional(
     return frame
 
 
-def run_supply_curve(
-    archive_path: str,
+def run_supply_curve_county(
     cwt_path: str,
     cwc_path: str,
     cws_path: str,
@@ -374,21 +377,20 @@ def run_supply_curve(
     settings: dict,
     out_eia__yearly_generators_path: str,
     county_output_path: Path,
-    regional_output_path: Path,
 ):
     """E, T, L."""
     supply_curve_county = transform_supply_curve_county(
         out_eia__yearly_generators=extract_parquet_to_pl(
             out_eia__yearly_generators_path
         ),
-        cwt_lf=extract_from_zip(archive_path, cwt_path),
-        cwc_lf=extract_from_zip(archive_path, cwc_path),
-        cws_lf=extract_from_zip(archive_path, cws_path),
-        index_lf=extract_from_zip(archive_path, index_path),
-        cwst_lf=extract_from_zip(archive_path, cwst_path),
-        cw_lf=extract_from_zip(archive_path, cw_path),
-        dg_lf=extract_from_zip(archive_path, dg_path),
-        pop_lf=extract_from_zip(archive_path, pop_path),
+        cwt_lf=extract_csv_to_pl(cwt_path),
+        cwc_lf=extract_csv_to_pl(cwc_path),
+        cws_lf=extract_csv_to_pl(cws_path),
+        index_lf=extract_csv_to_pl(index_path),
+        cwst_lf=extract_csv_to_pl(cwst_path),
+        cw_lf=extract_csv_to_pl(cw_path),
+        dg_lf=extract_csv_to_pl(dg_path),
+        pop_lf=extract_csv_to_pl(pop_path),
         settings=settings,
     )
     load(supply_curve_county, county_output_path)
@@ -403,18 +405,17 @@ if __name__ == "__main__":
         # so it complains about this import
         from snakemake.iocontainers import snakemake  # noqa: TC004
 
-    run_supply_curve(
-        archive_path=snakemake.input[0],
+    run_supply_curve_county(
         out_eia__yearly_generators_path=snakemake.input[1],
-        cwt_path=snakemake.params["cwt_path"],
-        cwc_path=snakemake.params["cwc_path"],
-        cws_path=snakemake.params["cws_path"],
-        index_path=snakemake.params["index_path"],
-        cwst_path=snakemake.params["cwst_path"],
-        cw_path=snakemake.params["cw_path"],
-        dg_path=snakemake.params["dg_path"],
-        pop_path=snakemake.params["pop_path"],
+        cwt_path=snakemake.input[2],
+        cwc_path=snakemake.input[3],
+        cws_path=snakemake.input[4],
+        index_path=snakemake.input[5],
+        cwst_path=snakemake.input[6],
+        # THIS IS THE SECOND cw_r
+        cw_path=snakemake.input[5],
+        dg_path=snakemake.input[7],
+        pop_path=snakemake.input[8],
         settings=snakemake.params["settings"],
         county_output_path=snakemake.output[0],
-        regional_output_path=snakemake.output[1],
     )

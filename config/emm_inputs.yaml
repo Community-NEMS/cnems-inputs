@@ -20,7 +20,6 @@ core_snapshots: # this is the list we iterate over for the "snapshot" approach
   - reg_reserves_cost
   - reserve_margin
   - res_tech_upper_bound
-  - supply_curve
   - supply_curve_learning
   - supply_price
   - sw_builds
@@ -67,6 +66,14 @@ raw_bluesky: # this is the list we iterate over for extraction from bluesky zip
   tran_limit: input/electricity/cem_inputs/TranLimit.csv
   tran_limit_cap_int: input/electricity/cem_inputs/TranLimitCapInt.csv
   tran_limit_gen_int: input/electricity/cem_inputs/TranLimitGenInt.csv
+  # Inputs for the Supply curve pipeline
+  crosswalk_tech: sample/electricity_data_pipeline/input/cw_tech.csv
+  crosswalk_county: sample/electricity_data_pipeline/input/cw_county.csv
+  crosswalk_status: sample/electricity_data_pipeline/input/cw_status.csv
+  crosswalk_region: sample/electricity_data_pipeline/input/cw_r.csv
+  crosswalk_steps: sample/electricity_data_pipeline/input/cw_steps.csv
+  dgpv_cap: sample/electricity_data_pipeline/input/dgpv_cap.csv
+  population: sample/electricity_data_pipeline/input/County_Population_2010-2022.csv
 core_supply_curve:
   first_year: 2023
   last_year: 2050
