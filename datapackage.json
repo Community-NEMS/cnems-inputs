@@ -3,7 +3,7 @@
     {
       "name": "baseelecprice",
       "type": "table",
-      "path": "BaseElecPrice.csv",
+      "path": "core/base_elec_price.csv",
       "scheme": "file",
       "format": "csv",
       "mediatype": "text/csv",
@@ -32,7 +32,7 @@
     {
       "name": "baseload",
       "type": "table",
-      "path": "BaseLoad.csv",
+      "path": "core/base_load.csv",
       "scheme": "file",
       "format": "csv",
       "mediatype": "text/csv",
@@ -57,7 +57,7 @@
     {
       "name": "batteryefficiency",
       "type": "table",
-      "path": "BatteryEfficiency.csv",
+      "path": "core/battery_efficiency.csv",
       "scheme": "file",
       "format": "csv",
       "mediatype": "text/csv",
@@ -78,7 +78,7 @@
     {
       "name": "capcost",
       "type": "table",
-      "path": "CapCost.csv",
+      "path": "core/cap_cost.csv",
       "scheme": "file",
       "format": "csv",
       "mediatype": "text/csv",
@@ -111,7 +111,7 @@
     {
       "name": "capcostinitial",
       "type": "table",
-      "path": "CapCostInitial.csv",
+      "path": "core/cap_cost_initial.csv",
       "scheme": "file",
       "format": "csv",
       "mediatype": "text/csv",
@@ -140,7 +140,7 @@
     {
       "name": "capfactorvre",
       "type": "table",
-      "path": "CapFactorVRE.csv",
+      "path": "core/cap_factor_vre.csv",
       "scheme": "file",
       "format": "csv",
       "mediatype": "text/csv",
@@ -173,7 +173,7 @@
     {
       "name": "endusebaseshares",
       "type": "table",
-      "path": "EnduseBaseShares.csv",
+      "path": "core/enduse_base_shares.csv",
       "scheme": "file",
       "format": "csv",
       "mediatype": "text/csv",
@@ -194,7 +194,7 @@
     {
       "name": "endusescalar",
       "type": "table",
-      "path": "EnduseScalar.csv",
+      "path": "core/enduse_scalar.csv",
       "scheme": "file",
       "format": "csv",
       "mediatype": "text/csv",
@@ -219,7 +219,7 @@
     {
       "name": "enduseshapes",
       "type": "table",
-      "path": "EnduseShapes.csv",
+      "path": "core/enduse_shapes.csv",
       "scheme": "file",
       "format": "csv",
       "mediatype": "text/csv",
@@ -244,7 +244,7 @@
     {
       "name": "fomcost",
       "type": "table",
-      "path": "FOMCost.csv",
+      "path": "core/fom_cost.csv",
       "scheme": "file",
       "format": "csv",
       "mediatype": "text/csv",
@@ -273,7 +273,7 @@
     {
       "name": "h2price",
       "type": "table",
-      "path": "H2Price.csv",
+      "path": "core/h2_price.csv",
       "scheme": "file",
       "format": "csv",
       "mediatype": "text/csv",
@@ -310,7 +310,7 @@
     {
       "name": "hourstobuy",
       "type": "table",
-      "path": "HourstoBuy.csv",
+      "path": "core/hours_to_buy.csv",
       "scheme": "file",
       "format": "csv",
       "mediatype": "text/csv",
@@ -331,7 +331,7 @@
     {
       "name": "hydrocapfactor",
       "type": "table",
-      "path": "HydroCapFactor.csv",
+      "path": "core/hydro_cap_factor.csv",
       "scheme": "file",
       "format": "csv",
       "mediatype": "text/csv",
@@ -356,7 +356,7 @@
     {
       "name": "learningrate",
       "type": "table",
-      "path": "LearningRate.csv",
+      "path": "core/learning_rate.csv",
       "scheme": "file",
       "format": "csv",
       "mediatype": "text/csv",
@@ -377,7 +377,7 @@
     {
       "name": "loadscalar",
       "type": "table",
-      "path": "LoadScalar.csv",
+      "path": "core/load_scalar.csv",
       "scheme": "file",
       "format": "csv",
       "mediatype": "text/csv",
@@ -398,7 +398,7 @@
     {
       "name": "rampdowncost",
       "type": "table",
-      "path": "RampDownCost.csv",
+      "path": "core/ramp_down_cost.csv",
       "scheme": "file",
       "format": "csv",
       "mediatype": "text/csv",
@@ -419,7 +419,7 @@
     {
       "name": "ramprate",
       "type": "table",
-      "path": "RampRate.csv",
+      "path": "core/ramp_rate.csv",
       "scheme": "file",
       "format": "csv",
       "mediatype": "text/csv",
@@ -440,7 +440,7 @@
     {
       "name": "rampupcost",
       "type": "table",
-      "path": "RampUpCost.csv",
+      "path": "core/ramp_up_cost.csv",
       "scheme": "file",
       "format": "csv",
       "mediatype": "text/csv",
@@ -461,7 +461,7 @@
     {
       "name": "regreservescost",
       "type": "table",
-      "path": "RegReservesCost.csv",
+      "path": "core/reg_reserves_cost.csv",
       "scheme": "file",
       "format": "csv",
       "mediatype": "text/csv",
@@ -482,7 +482,7 @@
     {
       "name": "reservemargin",
       "type": "table",
-      "path": "ReserveMargin.csv",
+      "path": "core/reserve_margin.csv",
       "scheme": "file",
       "format": "csv",
       "mediatype": "text/csv",
@@ -503,7 +503,7 @@
     {
       "name": "restechupperbound",
       "type": "table",
-      "path": "ResTechUpperBound.csv",
+      "path": "core/res_tech_upper_bound.csv",
       "scheme": "file",
       "format": "csv",
       "mediatype": "text/csv",
@@ -528,7 +528,7 @@
     {
       "name": "supplycurve",
       "type": "table",
-      "path": "SupplyCurve.csv",
+      "path": "core/supply_curve.csv",
       "scheme": "file",
       "format": "csv",
       "mediatype": "text/csv",
@@ -561,7 +561,7 @@
     {
       "name": "supplycurvelearning",
       "type": "table",
-      "path": "SupplyCurveLearning.csv",
+      "path": "core/supply_curve_learning.csv",
       "scheme": "file",
       "format": "csv",
       "mediatype": "text/csv",
@@ -582,7 +582,7 @@
     {
       "name": "supplyprice",
       "type": "table",
-      "path": "SupplyPrice.csv",
+      "path": "core/supply_price.csv",
       "scheme": "file",
       "format": "csv",
       "mediatype": "text/csv",
@@ -726,7 +726,7 @@
     {
       "name": "testprices",
       "type": "table",
-      "path": "testPrices.csv",
+      "path": "core/test_prices.csv",
       "scheme": "file",
       "format": "csv",
       "mediatype": "text/csv",
@@ -755,7 +755,7 @@
     {
       "name": "trancost",
       "type": "table",
-      "path": "TranCost.csv",
+      "path": "core/tran_cost.csv",
       "scheme": "file",
       "format": "csv",
       "mediatype": "text/csv",
@@ -784,7 +784,7 @@
     {
       "name": "trancostint",
       "type": "table",
-      "path": "TranCostInt.csv",
+      "path": "core/tran_cost_int.csv",
       "scheme": "file",
       "format": "csv",
       "mediatype": "text/csv",
@@ -817,7 +817,7 @@
     {
       "name": "tranlimitcapint",
       "type": "table",
-      "path": "TranLimitCapInt.csv",
+      "path": "core/tran_limit_cap_int.csv",
       "scheme": "file",
       "format": "csv",
       "mediatype": "text/csv",
@@ -850,7 +850,7 @@
     {
       "name": "tranlimit",
       "type": "table",
-      "path": "TranLimit.csv",
+      "path": "core/tran_limit.csv",
       "scheme": "file",
       "format": "csv",
       "mediatype": "text/csv",
@@ -883,7 +883,7 @@
     {
       "name": "tranlimitgenint",
       "type": "table",
-      "path": "TranLimitGenInt.csv",
+      "path": "core/tran_limit_gen_int.csv",
       "scheme": "file",
       "format": "csv",
       "mediatype": "text/csv",

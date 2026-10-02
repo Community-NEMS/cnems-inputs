@@ -78,12 +78,10 @@ To run the pipeline for the electricity model inputs in your local development e
 pixi run snakemake emm_inputs --cores 1
 ```
 
-To run the pipeline for one specific input that has a wildcard in it
-(e.g. `extract_from_zip` with the `{resource}` wildcard) we can use the
-`--target-jobs` argument:
+To run the pipeline for one specific input, just run its rule instead:
 
 ```bash
-pixi run snakemake --target-jobs extract_from_zip:resource=supply_curve --cores 1
+pixi run snakemake core_supply_curve --cores 1
 ```
 
 To use already-cached Zenodo downloads without touching the network, add

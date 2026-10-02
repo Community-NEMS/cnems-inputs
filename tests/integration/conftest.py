@@ -11,6 +11,7 @@ from pathlib import Path
 from zipfile import ZipFile
 
 import pytest
+import yaml
 
 from cnems_inputs.zenodo import cache_path, resolve
 
@@ -89,12 +90,23 @@ def cached_http_cache(
 
     source_root = test_fixture_dir / "eiabluesky"
     with ZipFile(zip_path, "w") as zf:
+        archived_paths = set()
         for source_path in source_root.rglob("*"):
             if source_path.is_file():
-                zf.write(
-                    source_path,
-                    arcname=source_path.relative_to(source_root).as_posix(),
-                )
+                archive_path = source_path.relative_to(source_root).as_posix()
+                zf.write(source_path, arcname=archive_path)
+                archived_paths.add(archive_path)
+
+        # The repository fixture only contains the table under test, while the
+        # production rule intentionally extracts every configured input.
+        # Add harmless placeholders so the test archive has the same shape.
+        config = yaml.safe_load(Path("config/emm_inputs.yaml").read_text())
+        source_bytes = (
+            source_root / "input/electricity/cem_inputs/SupplyCurve.csv"
+        ).read_bytes()
+        for archive_path in config["emm_inputs"].values():
+            if archive_path not in archived_paths:
+                zf.writestr(archive_path, source_bytes)
 
     return cache_dir
 
@@ -128,15 +140,20 @@ def materialize_input(
                 "--config",
                 "zenodo_source=cache",
                 f"cached_http_cache={cached_http_cache.as_posix()}",
+                f"emm_inputs={json.dumps({'supply_curve': 'input/electricity/cem_inputs/SupplyCurve.csv'})}",
                 f"r2={json.dumps(r2_config)}",
                 "--target-jobs",
-                f"extract_from_zip:resource={resource_name}",
+                f"copy_core_{resource_name}:",
             ],
             check=True,
         )
 
         output_path = (
-            fake_r2_root / r2_config["bucket"] / "nightly" / f"{resource_name}.csv"
+            fake_r2_root
+            / r2_config["bucket"]
+            / "nightly"
+            / "core"
+            / f"{resource_name}.csv"
         )
         assert output_path.exists()
         return output_path
