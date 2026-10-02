@@ -8,25 +8,23 @@ rule emm_inputs:
     [r2(p) for p in get_published_paths("datapackage.json")],
     r2("datapackage.json")
 
-# TODO: enable grabbing multiple files from config once dazhong changes config into raw/core
+
 rule raw_pudl:
   input: pudl("stable", "out_eia__yearly_generators")
   output: r2("raw/out_eia__yearly_generators.parquet")
   shell: "cp {input} {output}"
 
 
-# TODO.... Make this work with DX's new raw/core input setup
-rule core_supply_curve_county:
+rule core__supply_curve_county:
   input:
-    resolve_dataset("eiabluesky", "eiabluesky-v1-1.zip"),
-    r2("raw/out_eia__yearly_generators.parquet"),
-    r2(f"raw/bluesky/crosswalk_tech.csv"),
-    r2(f"raw/bluesky/crosswalk_county.csv"),
-    r2(f"raw/bluesky/crosswalk_status.csv"),
-    r2(f"raw/bluesky/crosswalk_region.csv"),
-    r2(f"raw/bluesky/crosswalk_steps.csv"),
-    r2(f"raw/bluesky/dgpv_cap.csv"),
-    r2(f"raw/bluesky/population.csv"),
+    out_eia__yearly_generators_path=r2("raw/out_eia__yearly_generators.parquet"),
+    cwt_path=r2(f"raw/bluesky/crosswalk_tech.csv"),
+    cwc_path=r2(f"raw/bluesky/crosswalk_county.csv"),
+    cws_path=r2(f"raw/bluesky/crosswalk_status.csv"),
+    cw_path=r2(f"raw/bluesky/crosswalk_region.csv"),
+    cwst_path=r2(f"raw/bluesky/crosswalk_steps.csv"),
+    dg_path=r2(f"raw/bluesky/dgpv_cap.csv"),
+    pop_path=r2(f"raw/bluesky/population.csv"),
   output: r2("core/supply_curve_county.csv"),
   params:
     settings = config["core_supply_curve"]
@@ -34,15 +32,14 @@ rule core_supply_curve_county:
     "src/cnems_inputs/supply_curve_county.py"
 
 
-rule core_supply_curve_regional:
+rule core__supply_curve_regional:
   input:
-    resolve_dataset("eiabluesky", "eiabluesky-v1-1.zip"),
-    r2("core/supply_curve_county.csv")
+    supply_curve_county_path=r2("core/supply_curve_county.csv"),
+    cwst_path=r2(f"raw/bluesky/crosswalk_steps.csv"),
+    cw_path=r2(f"raw/bluesky/crosswalk_region.csv"),
   output:
     r2("core/supply_curve.csv")
   params:
-    cwst_path = "sample/electricity_data_pipeline/input/cw_steps.csv",
-    cw_path = "sample/electricity_data_pipeline/input/cw_r.csv",
     settings = config["core_supply_curve"]
   script:
     "src/cnems_inputs/supply_curve_regional.py"

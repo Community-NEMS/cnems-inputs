@@ -9,7 +9,7 @@ from pathlib import Path
 import pandas as pd
 import polars as pl
 
-from cnems_inputs.helpers import extract_csv_to_pl, extract_from_zip, load
+from cnems_inputs.helpers import extract_csv_to_pl, load
 
 # Establish logger
 logger = getLogger(__name__)
@@ -64,7 +64,6 @@ def aggregate_supply_curve_regional(
 
 
 def run_supply_curve_regional(
-    archive_path: str,
     supply_curve_county_path: str,
     cwst_path: str,
     cw_path: str,
@@ -74,8 +73,8 @@ def run_supply_curve_regional(
     """E, T, L."""
     supply_curve_regional = aggregate_supply_curve_regional(
         supply_curve_county=extract_csv_to_pl(supply_curve_county_path),
-        cw_lf=extract_from_zip(archive_path, cw_path),
-        cwst_lf=extract_from_zip(archive_path, cwst_path),
+        cw_lf=extract_csv_to_pl(cw_path),
+        cwst_lf=extract_csv_to_pl(cwst_path),
         settings=settings,
     )
     load(supply_curve_regional, regional_output_path)
@@ -91,10 +90,9 @@ if __name__ == "__main__":
         from snakemake.iocontainers import snakemake  # noqa: TC004
 
     run_supply_curve_regional(
-        archive_path=snakemake.input[0],
-        supply_curve_county_path=snakemake.input[1],
-        cwst_path=snakemake.params["cwst_path"],
-        cw_path=snakemake.params["cw_path"],
+        supply_curve_county_path=snakemake.input["supply_curve_county_path"],
+        cwst_path=snakemake.input["cwst_path"],
+        cw_path=snakemake.input["cw_path"],
         settings=snakemake.params["settings"],
         regional_output_path=snakemake.output[0],
     )

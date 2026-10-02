@@ -406,16 +406,19 @@ if __name__ == "__main__":
         from snakemake.iocontainers import snakemake  # noqa: TC004
 
     run_supply_curve_county(
-        out_eia__yearly_generators_path=snakemake.input[1],
-        cwt_path=snakemake.input[2],
-        cwc_path=snakemake.input[3],
-        cws_path=snakemake.input[4],
-        index_path=snakemake.input[5],
-        cwst_path=snakemake.input[6],
+        out_eia__yearly_generators_path=snakemake.input[
+            "out_eia__yearly_generators_path"
+        ],
+        cwt_path=snakemake.input["cwt_path"],
+        cwc_path=snakemake.input["cwc_path"],
+        cws_path=snakemake.input["cws_path"],
+        # TWO INPUTS ARE THE SAME
+        index_path=snakemake.input["cw_path"],
+        cwst_path=snakemake.input["cwst_path"],
         # THIS IS THE SECOND cw_r
-        cw_path=snakemake.input[5],
-        dg_path=snakemake.input[7],
-        pop_path=snakemake.input[8],
+        cw_path=snakemake.input["cw_path"],
+        dg_path=snakemake.input["dg_path"],
+        pop_path=snakemake.input["pop_path"],
         settings=snakemake.params["settings"],
         county_output_path=snakemake.output[0],
     )
