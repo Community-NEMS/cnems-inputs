@@ -8,6 +8,9 @@ storage r2:
   access_key=config["r2"]["access_key"],
   secret_key=config["r2"]["secret_key"]
 
+storage s3:
+  provider="http", # 2026-10-02 S3 provider doesn't support anonymous requests so we go HTTP instead
+
 from cnems_inputs.zenodo import cache_path, resolve
 from cnems_inputs.helpers import versioned_r2_uri
 
@@ -45,14 +48,17 @@ def resolve_dataset(dataset: str, resource_path: str) -> str:
         return str(cache_path(url, cache_dir=storage._storages["cached_http"].settings.cache))
     raise ValueError("zenodo_source must be 'remote' or 'cache'")
 
-# TODO: OKAYYYY SNAKKKEE. I need to make you into a thing that stores this file
-# either remotely or cached and then return a path?!? Okay? sure.
-def extract_pudl_table(table_name: str, version="nightly") -> pl.LazyFrame:
-    """Read a PUDL table from aws for a given version."""
-    return pl.read_parquet(
-        f"s3://pudl.catalyst.coop/{version}/{table_name}.parquet",
-        storage_options={"aws_region": "us-west-2", "aws_skip_signature": "True"},
-    )
+def pudl(version: str, table_name: str) -> str:
+    """Read a PUDL table from aws for a given version.
+
+    Args:
+        version: PUDL version. `stable` is recommended. If `nightly`, then this will grab
+            the most recent which is freshest but less stable. You can also pin to
+            specific version for extra stability.
+        table_name: the pudl table name.
+    """
+    # TODO: make this a better docstring
+    return storage.s3(f"https://s3.us-west-2.amazonaws.com/pudl.catalyst.coop/{version}/{table_name}.parquet")
 
 
 include: "electricity_market_model.smk"

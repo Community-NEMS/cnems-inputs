@@ -9,7 +9,7 @@ from pathlib import Path
 import pandas as pd
 import polars as pl
 
-from cnems_inputs.helpers import extract_from_zip, extract_pudl_table
+from cnems_inputs.helpers import extract_from_zip, extract_parquet_to_pl
 
 # Establish logger
 logger = getLogger(__name__)
@@ -343,12 +343,14 @@ def run_supply_curve(
     dg_path: str,
     pop_path: str,
     settings: dict,
-    pudl_table_name: str,
+    out_eia__yearly_generators_path: str,
 ):
     """E, T, L."""
     load(
         transform_supply_curve(
-            out_eia__yearly_generators=extract_pudl_table(pudl_table_name),
+            out_eia__yearly_generators=extract_parquet_to_pl(
+                out_eia__yearly_generators_path
+            ),
             cwt_lf=extract_from_zip(archive_path, cwt_path),
             cwc_lf=extract_from_zip(archive_path, cwc_path),
             cws_lf=extract_from_zip(archive_path, cws_path),
@@ -374,6 +376,7 @@ if __name__ == "__main__":
 
     run_supply_curve(
         archive_path=snakemake.input[0],
+        out_eia__yearly_generators_path=snakemake.input[1],
         output_path=snakemake.output[0],
         cwt_path=snakemake.params["cwt_path"],
         cwc_path=snakemake.params["cwc_path"],
@@ -384,6 +387,4 @@ if __name__ == "__main__":
         dg_path=snakemake.params["dg_path"],
         pop_path=snakemake.params["pop_path"],
         settings=snakemake.params["settings"],
-        pudl_table_name=snakemake.params["pudl_table_name"],
-        # out_eia__yearly_generators=snakemake.input["out_eia__yearly_generators"],
     )

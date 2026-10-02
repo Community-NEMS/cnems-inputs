@@ -29,8 +29,3 @@ def test_enduse_base_shares_matches_fixture(
 # NOTE (2026-09-15) we could probably add a "supply curve schema
 # matches datapackage.json" test here, or even add that as part of the
 # materialize_input fixture
-
-
-# TODO: Add a test to ensure the schema matches the datapackage.json
-def _test_validate_schema():
-    return

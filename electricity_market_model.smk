@@ -27,13 +27,22 @@ rule extract_from_zip:
   script:
     "src/cnems_inputs/stub_emm_inputs.py"
 
-rule supply_curve:
+# TODO: enable grabbing multiple files from config once dazhong changes config into raw/core
+rule raw_pudl:
   input:
-    resolve_dataset("eiabluesky", "eiabluesky-v1-1.zip")
+    pudl("stable", "out_eia__yearly_generators")
   output:
-    storage.r2(versioned_r2_uri(OUTPUT_BUCKET, "supply_curve.csv"))
+    storage.r2(versioned_r2_uri(OUTPUT_BUCKET, "raw/out_eia__yearly_generators.parquet"))
+  shell: "cp {input} {output}"
+
+
+rule core_supply_curve:
+  input:
+    resolve_dataset("eiabluesky", "eiabluesky-v1-1.zip"),
+    storage.r2(versioned_r2_uri(OUTPUT_BUCKET, "raw/out_eia__yearly_generators.parquet"))
+  output:
+    storage.r2(versioned_r2_uri(OUTPUT_BUCKET, "core/supply_curve.csv"))
   params:
-    pudl_table_name = "out_eia__yearly_generators",
     cwt_path = "sample/electricity_data_pipeline/input/cw_tech.csv",
     cwc_path = "sample/electricity_data_pipeline/input/cw_county.csv",
     cws_path = "sample/electricity_data_pipeline/input/cw_status.csv",
@@ -42,7 +51,7 @@ rule supply_curve:
     cw_path = "sample/electricity_data_pipeline/input/cw_r.csv",
     dg_path = "sample/electricity_data_pipeline/input/dgpv_cap.csv",
     pop_path = "sample/electricity_data_pipeline/input/County_Population_2010-2022.csv",
-    settings = config["supply_curve_config"]
+    settings = config["core_supply_curve"]
   script:
     "src/cnems_inputs/supply_curve.py"
 
