@@ -35,7 +35,7 @@ def fake_r2(
     root = tmp_path_factory.mktemp("fake-r2")
     (root / r2_config["bucket"]).mkdir()
 
-    port = 9001
+    port = 9002
     r2_config["endpoint_url"] = f"http://127.0.0.1:{port}"
 
     proc = subprocess.Popen(  # noqa: S603
@@ -125,18 +125,20 @@ def materialize_input(
                 "Snakefile",
                 "--cores",
                 "1",
+                resource_name,
                 "--config",
                 "zenodo_source=cache",
                 f"cached_http_cache={cached_http_cache.as_posix()}",
                 f"r2={json.dumps(r2_config)}",
-                "--target-jobs",
-                f"extract_from_zip:resource={resource_name}",
             ],
             check=True,
         )
 
         output_path = (
-            fake_r2_root / r2_config["bucket"] / "nightly" / f"{resource_name}.csv"
+            fake_r2_root
+            / r2_config["bucket"]
+            / "nightly"
+            / f"{resource_name.replace('__', '/')}.csv"
         )
         assert output_path.exists()
         return output_path
