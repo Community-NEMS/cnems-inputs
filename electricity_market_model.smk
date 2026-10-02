@@ -17,6 +17,8 @@ for resource_name in config["core_snapshots"]:
     rule:
         name: f"core__{resource_name}"
         input:
+            # NOTE 2026-10-02: eventually we might want to have some helper
+            # manage these raw/core/etc. paths
             r2(f"raw/bluesky/{resource_name}.csv")
         output:
             r2(f"core/{resource_name}.csv")

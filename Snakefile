@@ -11,7 +11,16 @@ storage r2:
 from cnems_inputs.zenodo import cache_path, resolve
 from cnems_inputs.helpers import get_published_paths, versioned_r2_uri
 
-def r2(path: str):
+def r2(path: str) -> str:
+    """Hook up snakemake storage.r2 plugin to the R2 URI helper.
+
+    The R2 URI helper is pure normal Python and just munges strings together.
+    `storage.r2` and `config` are only available in Snakefiles, so we wrap
+    the pure function here.
+
+    `storage.r2()`... returns a string, but also has the side-effect of
+    registering the file with the Snakemake storage system.
+    """
     return storage.r2(versioned_r2_uri(config["r2"]["bucket"], path))
 
 def resolve_dataset(dataset: str, resource_path: str) -> str:
