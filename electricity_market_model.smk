@@ -4,13 +4,6 @@ from pathlib import Path
 
 EMM_INPUTS = config["emm_inputs"]
 
-RAW_INPUTS = {
-    resource: f"raw/bluesky/{Path(archive_path).name}"
-    for resource, archive_path in EMM_INPUTS.items()
-}
-if len(RAW_INPUTS.values()) != len(set(RAW_INPUTS.values())):
-    raise ValueError("EMM input archive paths must have unique basenames")
-
 CORE_OUTPUTS = {
     resource: f"core/{resource}.csv" for resource in EMM_INPUTS
 }
@@ -20,7 +13,14 @@ rule emm_inputs:
     [storage.r2(versioned_r2_uri(OUTPUT_BUCKET, path)) for path in CORE_OUTPUTS.values()],
     storage.r2(versioned_r2_uri(OUTPUT_BUCKET, "datapackage.json"))
 
-rule extract_from_zip:
+RAW_INPUTS = {
+    resource: f"raw/bluesky/{Path(archive_path).name}"
+    for resource, archive_path in EMM_INPUTS.items()
+}
+if len(RAW_INPUTS.values()) != len(set(RAW_INPUTS.values())):
+    raise ValueError("EMM input archive paths must have unique basenames")
+
+rule extract_from_bluesky:
   input:
     resolve_dataset("eiabluesky", "eiabluesky-v1-1.zip")
   output:
@@ -39,15 +39,15 @@ rule extract_from_zip:
 #
 # When we add bespoke processing to an input, add it to the CORE_PRODUCERS set.
 CORE_PRODUCERS = set()
-for resource, raw_path in RAW_INPUTS.items():
+for resource, core_path in CORE_OUTPUTS.items():
     if resource in CORE_PRODUCERS:
         continue
     rule:
         name: f"core_{resource}"
         input:
-            storage.r2(versioned_r2_uri(OUTPUT_BUCKET, raw_path))
+            storage.r2(versioned_r2_uri(OUTPUT_BUCKET, RAW_INPUTS[resource]))
         output:
-            storage.r2(versioned_r2_uri(OUTPUT_BUCKET, CORE_OUTPUTS[resource]))
+            storage.r2(versioned_r2_uri(OUTPUT_BUCKET, core_path))
         shell:
             "cp {input} {output}"
 

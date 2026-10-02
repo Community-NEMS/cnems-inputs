@@ -11,11 +11,12 @@ def extract(
     output_paths: Mapping[str, str],
     resource_paths: Mapping[str, str],
 ) -> None:
-    """Copy configured archive members to their raw output paths unchanged.
+    """Copy configured archive members to their raw output paths.
 
-    The output and archive-member paths are keyed by resource name so the
-    extraction does not depend on dictionary iteration order.  The extraction
-    deliberately copies bytes rather than parsing and rewriting CSV files.
+    Args:
+        archive_path: path... to the archive that contains the files.
+        output_paths: in-archive path -> output path mapping.
+        resource_paths: resource name -> in-archive path to resource mapping.
     """
     with ZipFile(archive_path) as archive:
         if output_paths.keys() != resource_paths.keys():
@@ -33,7 +34,7 @@ if __name__ == "__main__":
     from typing import TYPE_CHECKING
 
     if TYPE_CHECKING:
-        # Snakemake injects this object when executing the script.
+        # Snakemake injects this object on execution, ruff doesn't know
         from snakemake.iocontainers import snakemake  # noqa: TC004
 
     extract(
