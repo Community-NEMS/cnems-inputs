@@ -163,7 +163,7 @@ def prep_eia860m(
         out_eia__yearly_generators.filter(month_filter)
         .with_columns(
             pl.col("generator_operating_date").dt.year().alias("Operating Year"),
-            pl.col("generator_retirement_date")
+            pl.col("planned_generator_retirement_date")
             .dt.year()
             .alias("Planned Retirement Year"),
         )
@@ -176,6 +176,7 @@ def prep_eia860m(
                 "summer_capacity_mw": "Net Summer Capacity (MW)",
                 "technology_description": "Technology",
                 "operational_status_code": "Status Code",
+                "county_id_fips": "FIPS_cnty",
             }
         )
     )
@@ -189,15 +190,15 @@ def prep_eia860m(
         "Status Code",
         "Operating Year",
         "Planned Retirement Year",
+        "FIPS_cnty",
     ]
-    eia860m = eia860m.to_pandas()[cols_to_keep].convert_dtypes()
+    eia860m = eia860m.select(cols_to_keep).to_pandas().convert_dtypes()
     return eia860m
 
 
 def transform_supply_curve_county(
     out_eia__yearly_generators: pl.DataFrame,
     cwt_lf: pl.LazyFrame,
-    cwc_lf: pl.LazyFrame,
     cws_lf: pl.LazyFrame,
     index_lf: pl.LazyFrame,
     cwst_lf: pl.LazyFrame,
@@ -215,7 +216,6 @@ def transform_supply_curve_county(
         out_eia__yearly_generators, settings["eia860m_month"], settings["use_changelog"]
     )
     cwt = cwt_lf.collect().to_pandas()
-    cwc = cwc_lf.collect().to_pandas()
     cws = cws_lf.collect().to_pandas()
     index = index_lf.collect().to_pandas()
     cwst = cwst_lf.collect().to_pandas()
@@ -229,11 +229,14 @@ def transform_supply_curve_county(
     df["ID"] = df["Plant ID"].astype(str) + "_" + df["Generator ID"].astype(str)
 
     df = pd.merge(df, cwt, how="left", on=["Technology"])
-    df = pd.merge(
-        df,
-        cwc[["State", "County", "FIPS_cnty"]].rename(columns={"State": "Plant State"}),
-        how="left",
-        on=["Plant State", "County"],
+    # all of these do not have a Technology
+    assert len(missing_tech := df[df.tech.isna()]) < 21, (
+        f"We expect next to no records should not have a tech code and we found {len(missing_tech)}:"
+        f"\n\n {missing_tech}"
+    )
+    assert len(missing_fips := df.loc[df.FIPS_cnty.isna(), "County"].unique()) < 7, (
+        f"We expect next to no records should not have a fips code and we found {len(missing_fips)}:"
+        f"\n\n {missing_fips}"
     )
     df = df.dropna(subset=["FIPS_cnty"])
     df["FIPS_cnty"] = df["FIPS_cnty"].astype(pd.Int64Dtype())
@@ -271,6 +274,12 @@ def transform_supply_curve_county(
     df.loc[df["Ret_Year"] == " ", "Ret_Year"] = 9999
     df.loc[df["Ret_Year"].isna(), "Ret_Year"] = 9999
     df.loc[df["Ret_Year"] > settings["last_year"], "Ret_Year"] = 9999
+    # TODO: move the retirement dates forward to the first_year to cover the case where the
+    # "first year" is after the timestamp of the data file. Else, retirements that are
+    # between the datafile year and the first year will be missed and we will have
+    # erroneous high capacity.
+    # df.loc[df["year"] < settings["first_year"], "year"] = settings["first_year"]
+
     df["Ret_Year"] = df["Ret_Year"].astype(pd.Int64Dtype())
 
     # create_supplycurve_cnty -- remove rows with missing capacity data
@@ -400,7 +409,6 @@ def run_supply_curve_county(
             out_eia__yearly_generators_path
         ),
         cwt_lf=extract_csv_to_pl(cwt_path),
-        cwc_lf=extract_csv_to_pl(cwc_path),
         cws_lf=extract_csv_to_pl(cws_path),
         index_lf=extract_csv_to_pl(index_path),
         cwst_lf=extract_csv_to_pl(cwst_path),

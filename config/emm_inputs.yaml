@@ -68,7 +68,6 @@ raw_bluesky: # this is the list we iterate over for extraction from bluesky zip
   tran_limit_gen_int: input/electricity/cem_inputs/TranLimitGenInt.csv
   # Inputs for the Supply curve pipeline
   crosswalk_tech: sample/electricity_data_pipeline/input/cw_tech.csv
-  crosswalk_county: sample/electricity_data_pipeline/input/cw_county.csv
   crosswalk_status: sample/electricity_data_pipeline/input/cw_status.csv
   crosswalk_region: sample/electricity_data_pipeline/input/cw_r.csv
   crosswalk_steps: sample/electricity_data_pipeline/input/cw_steps.csv
@@ -79,6 +78,8 @@ core_supply_curve:
   last_year: 2050
   population_year: 2022
   # when pudl inputs are used in more than one pipeline, we should probably move this
-  pudl_version: stable
+  pudl_version: stable #v2024.8.0
   use_changelog: False
+  # If using changelog, you can use May instead of Jan which PUDL defaults to
+  # for yearly tables.
   eia860m_month: 2024-01-01

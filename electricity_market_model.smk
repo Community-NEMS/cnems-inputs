@@ -32,7 +32,6 @@ rule core__supply_curve_county:
       else r2("raw/pudl/out_eia__yearly_generators.parquet")
     ),
     cwt_path=r2(f"raw/bluesky/crosswalk_tech.csv"),
-    cwc_path=r2(f"raw/bluesky/crosswalk_county.csv"),
     cws_path=r2(f"raw/bluesky/crosswalk_status.csv"),
     cw_path=r2(f"raw/bluesky/crosswalk_region.csv"),
     cwst_path=r2(f"raw/bluesky/crosswalk_steps.csv"),
@@ -45,7 +44,7 @@ rule core__supply_curve_county:
     "src/cnems_inputs/supply_curve_county.py"
 
 
-rule core__supply_curve_regional:
+rule core__supply_curve:
   input:
     supply_curve_county_path=r2("core/supply_curve_county.csv"),
     cwst_path=r2(f"raw/bluesky/crosswalk_steps.csv"),

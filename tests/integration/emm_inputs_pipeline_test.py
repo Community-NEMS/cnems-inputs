@@ -4,6 +4,7 @@ from collections.abc import Callable
 from pathlib import Path
 
 import polars as pl
+import pytest
 from polars.testing import assert_frame_equal
 
 
@@ -24,6 +25,21 @@ def test_enduse_base_shares_matches_fixture(
     expected = pl.read_csv(expected_path)
 
     assert_frame_equal(actual, expected)
+
+
+@pytest.mark.xfail()
+def test_build_supply_curve(
+    materialize_input: Callable[[str], Path],
+    test_fixture_dir: Path,
+) -> None:
+    """The supply curve pipeline should build the output.
+
+    This does not work right now! It will only work once we setup datastore-like
+    tooling such that pytest can grab all of the needed inputs (without having
+    to always use zenodo because, flaky).
+    """
+    supply_curve = pl.read_csv(materialize_input("core__supply_curve"))
+    assert not supply_curve.empty
 
 
 # NOTE (2026-09-15) we could probably add a "supply curve schema
