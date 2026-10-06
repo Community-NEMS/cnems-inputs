@@ -78,4 +78,7 @@ core_supply_curve:
   first_year: 2023
   last_year: 2050
   population_year: 2022
-  eia860m_month: "max"
+  # when pudl inputs are used in more than one pipeline, we should probably move this
+  pudl_version: stable
+  use_changelog: False
+  eia860m_month: 2024-01-01

@@ -6,18 +6,31 @@ configfile: "config/emm_inputs.yaml"
 rule emm_inputs:
   input:
     [r2(p) for p in get_published_paths("datapackage.json")],
-    r2("datapackage.json")
+    r2("datapackage.json"),
+    r2(f"raw/bluesky/supply_curve.csv")
 
+rule raw__pudl_generators:
+  input:
+    pudl(config["core_supply_curve"]["pudl_version"], "out_eia__yearly_generators")
+  output:
+    r2("raw/pudl/out_eia__yearly_generators.parquet"),
+  shell: "cp {input} {output}"
 
-rule raw_pudl:
-  input: pudl("stable", "out_eia__yearly_generators")
-  output: r2("raw/out_eia__yearly_generators.parquet")
+rule raw__pudl_changelog_generators:
+  input:
+    pudl(config["core_supply_curve"]["pudl_version"], "core_eia860m__changelog_generators")
+  output:
+    r2("raw/pudl/core_eia860m__changelog_generators.parquet")
   shell: "cp {input} {output}"
 
 
 rule core__supply_curve_county:
   input:
-    out_eia__yearly_generators_path=r2("raw/out_eia__yearly_generators.parquet"),
+    out_eia__yearly_generators_path=(
+      r2("raw/pudl/core_eia860m__changelog_generators.parquet")
+      if config["core_supply_curve"]["use_changelog"]
+      else r2("raw/pudl/out_eia__yearly_generators.parquet")
+    ),
     cwt_path=r2(f"raw/bluesky/crosswalk_tech.csv"),
     cwc_path=r2(f"raw/bluesky/crosswalk_county.csv"),
     cws_path=r2(f"raw/bluesky/crosswalk_status.csv"),

@@ -3,6 +3,7 @@
 Reads a file from GitHub (soon to be Datastore...), then publishes it to R2.
 """
 
+import datetime
 from logging import getLogger
 from pathlib import Path
 
@@ -131,7 +132,7 @@ def sum_data_cnty(df: pd.DataFrame, pop: pd.DataFrame):
 
 
 def prep_eia860m(
-    out_eia__yearly_generators: pl.DataFrame, eia860m_month
+    out_eia__yearly_generators: pl.DataFrame, eia860m_month, changelog: bool
 ) -> pd.DataFrame:
     """Prep the PUDL table for the C-NEMS.
 
@@ -139,11 +140,24 @@ def prep_eia860m(
         eia860m_month: If month is max, this will default to grabbing the most recent
             month available.
     """
-    month_filter = (
-        pl.col("report_date") == pl.col("report_date").max()
-        if eia860m_month == "max"
-        else pl.col("report_date") == eia860m_month
-    )
+    if eia860m_month == "max":
+        month_filter = pl.col("report_date") == pl.col("report_date").max()
+    else:
+        eia860m_month = (
+            datetime.datetime.strptime(str(eia860m_month), "%Y-%m-%d")
+            .astimezone(datetime.UTC)
+            .date()
+        )
+        month_filter = pl.col("report_date") == eia860m_month
+    if changelog:
+        out_eia__yearly_generators = (
+            out_eia__yearly_generators.filter(
+                (pl.col("report_date") <= eia860m_month)
+                & (pl.col("valid_until_date") >= eia860m_month)
+            )
+            .with_columns(pl.lit(eia860m_month).alias("report_date"))
+            .drop("valid_until_date")
+        )
 
     eia860m = (
         out_eia__yearly_generators.filter(month_filter)
@@ -197,7 +211,9 @@ def transform_supply_curve_county(
     Built mostly from:
     BlueSky/sample/electricity_data_pipeline/src/runner.py::create_supplycurve_cnty
     """
-    eia860m = prep_eia860m(out_eia__yearly_generators, settings["eia860m_month"])
+    eia860m = prep_eia860m(
+        out_eia__yearly_generators, settings["eia860m_month"], settings["use_changelog"]
+    )
     cwt = cwt_lf.collect().to_pandas()
     cwc = cwc_lf.collect().to_pandas()
     cws = cws_lf.collect().to_pandas()

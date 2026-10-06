@@ -11,12 +11,13 @@ storage r2:
 storage s3:
   provider="http", # 2026-10-02 S3 provider doesn't support anonymous requests so we go HTTP instead
 
+import polars as pl
+
 from cnems_inputs.zenodo import cache_path, resolve
 from cnems_inputs.helpers import get_published_paths, versioned_r2_uri
 
-import polars as pl
-
 OUTPUT_BUCKET = config["r2"]["bucket"]
+
 def r2(path: str) -> str:
     """Hook up snakemake storage.r2 plugin to the R2 URI helper.
 
@@ -59,7 +60,7 @@ def resolve_dataset(dataset: str, resource_path: str) -> str:
         return str(cache_path(url, cache_dir=storage._storages["cached_http"].settings.cache))
     raise ValueError("zenodo_source must be 'remote' or 'cache'")
 
-def pudl(version: str, table_name: str) -> str:
+def pudl(version: str, table_name: str, file_extension : str = "parquet") -> str:
     """Read a PUDL table from aws for a given version.
 
     Args:
@@ -68,7 +69,7 @@ def pudl(version: str, table_name: str) -> str:
             specific version for extra stability.
         table_name: the pudl table name.
     """
-    return storage.s3(f"https://s3.us-west-2.amazonaws.com/pudl.catalyst.coop/{version}/{table_name}.parquet")
+    return storage.s3(f"https://s3.us-west-2.amazonaws.com/pudl.catalyst.coop/{version}/{table_name}.{file_extension}")
 
 
 include: "electricity_market_model.smk"
