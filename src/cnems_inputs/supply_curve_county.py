@@ -1,6 +1,8 @@
-"""Stub transformation pipeline for SupplyCurve.csv.
+"""Transformation pipeline for supply_curve_county.csv.
 
-Reads a file from GitHub (soon to be Datastore...), then publishes it to R2.
+Build county-level capacity projections based on EIA-860 data.
+This module is a re-implementation of a portion of code from
+BlueSky/sample/electricity_data_pipeline/src/runner.py
 """
 
 import datetime
@@ -25,6 +27,8 @@ def calc_pop_cw(cw: pd.DataFrame, pop: pd.DataFrame, settings) -> pd.DataFrame:
 
     Maps user-defined region to county and calculates fraction of user-defined region
     population in each county.
+
+    Copied from BlueSky/sample/electricity_data_pipeline/src/runner.py
 
     Args:
         cw: pd.DataFrame
@@ -75,19 +79,16 @@ def calc_pop_cw(cw: pd.DataFrame, pop: pd.DataFrame, settings) -> pd.DataFrame:
 def get_names(df: pd.DataFrame, pop: pd.DataFrame):
     """Pull column names: region name, data value name, and groupby names.
 
-    Parameters
-    ----------
-    df : pd.DataFrame
-        data frame containing data by user-defined region
-    pop : pd.DataFrame
-        data frame containing population by county
+    Copied from BlueSky/sample/electricity_data_pipeline/src/runner.py
+
+    Args:
+        df: data frame containing data by user-defined region
+        pop: data frame containing population by county
 
     Returns:
-    -------
-    tuple
-       where [0] is type str: user-defined region column name
-       where [1] is type str: data column name
-       where [2] is type list (or str): column names to group by
+        tuple: where [0] is type str: user-defined region column name, where [1] is
+            type str: data column name, and where [2] is type list (or str): column
+            names to group by
     """
     # get col names
     cw_id = next(
@@ -101,19 +102,16 @@ def get_names(df: pd.DataFrame, pop: pd.DataFrame):
     return cw_id, data_id, groupby_cols
 
 
-def sum_data_cnty(df: pd.DataFrame, pop: pd.DataFrame):
+def sum_data_cnty(df: pd.DataFrame, pop: pd.DataFrame) -> pd.DataFrame:
     """Calculate population-weighted data by county.
 
-    Parameters
-    ----------
-    df : pd.DataFrame
-        data frame containing data by user-defined region
-    pop : pd.DataFrame
-        data frame containing population by county
+    Copied from BlueSky/sample/electricity_data_pipeline/src/runner.py
+
+    Args:
+        df: data frame containing data by user-defined region
+        pop: data frame containing population by county
 
     Returns:
-    -------
-    pd.DataFrame
         data frame containing population-weighted data by county
     """
     # sum_data_cnty -- get col names
