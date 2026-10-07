@@ -51,7 +51,8 @@ rule datapackage:
   output: r2("datapackage.json")
   shell: "cp {input} {output}"
 
-for resource_name in config["core_snapshots"]:
+# this iterator is super gross but it gives us much more readable yaml for storing a pair of values
+for resource_name, subtype in (next(iter(resource.items())) for resource in config["core_snapshots"]):
     rule:
         name: f"out__{resource_name}"
         input:
@@ -60,7 +61,7 @@ for resource_name in config["core_snapshots"]:
             r2(f"raw/bluesky/{resource_name}.csv"),
             "datapackage.json"
         output:
-            r2(f"out/{resource_name}.csv")
+            r2(f"out/{subtype}/{resource_name}.csv")
         params:
             resource_name=resource_name
         script:
