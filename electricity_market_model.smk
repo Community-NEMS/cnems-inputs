@@ -9,28 +9,18 @@ rule emm_inputs:
     r2("datapackage.json"),
     r2(f"raw/bluesky/supply_curve.csv")
 
-rule raw__pudl_generators:
-  input:
-    pudl(config["core_supply_curve"]["pudl_version"], "out_eia__yearly_generators")
-  output:
-    r2("raw/pudl/out_eia__yearly_generators.parquet"),
-  shell: "cp {input} {output}"
-
-rule raw__pudl_changelog_generators:
-  input:
-    pudl(config["core_supply_curve"]["pudl_version"], "core_eia860m__changelog_generators")
-  output:
-    r2("raw/pudl/core_eia860m__changelog_generators.parquet")
-  shell: "cp {input} {output}"
-
+# TODO: Once #catalyst-cooperative/pudl/pull/5688 is merged & in nightlies,
+# uncomment this out. For now this relies on a local copy.
+# rule raw__pudl_generators:
+#   input:
+#     pudl(config["core_supply_curve"]["pudl_version"], "out_eia__yearly_generators")
+#   output:
+#     r2("raw/pudl/out_eia__yearly_generators.parquet"),
+#   shell: "cp {input} {output}"
 
 rule core__supply_curve_county:
   input:
-    out_eia__yearly_generators_path=(
-      r2("raw/pudl/core_eia860m__changelog_generators.parquet")
-      if config["core_supply_curve"]["use_changelog"]
-      else r2("raw/pudl/out_eia__yearly_generators.parquet")
-    ),
+    out_eia__yearly_generators_path=r2("raw/pudl/out_eia__yearly_generators.parquet"),
     cwt_path=r2(f"raw/bluesky/crosswalk_tech.csv"),
     cws_path=r2(f"raw/bluesky/crosswalk_status.csv"),
     cw_path=r2(f"raw/bluesky/crosswalk_region.csv"),

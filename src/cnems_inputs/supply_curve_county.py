@@ -132,7 +132,7 @@ def sum_data_cnty(df: pd.DataFrame, pop: pd.DataFrame):
 
 
 def prep_eia860m(
-    out_eia__yearly_generators: pl.DataFrame, eia860m_month, changelog: bool
+    out_eia__yearly_generators: pl.DataFrame, eia860m_month
 ) -> pd.DataFrame:
     """Prep the PUDL table for the C-NEMS.
 
@@ -149,15 +149,6 @@ def prep_eia860m(
             .date()
         )
         month_filter = pl.col("report_date") == eia860m_month
-    if changelog:
-        out_eia__yearly_generators = (
-            out_eia__yearly_generators.filter(
-                (pl.col("report_date") <= eia860m_month)
-                & (pl.col("valid_until_date") >= eia860m_month)
-            )
-            .with_columns(pl.lit(eia860m_month).alias("report_date"))
-            .drop("valid_until_date")
-        )
 
     eia860m = (
         out_eia__yearly_generators.filter(month_filter)
@@ -212,9 +203,7 @@ def transform_supply_curve_county(
     Built mostly from:
     BlueSky/sample/electricity_data_pipeline/src/runner.py::create_supplycurve_cnty
     """
-    eia860m = prep_eia860m(
-        out_eia__yearly_generators, settings["eia860m_month"], settings["use_changelog"]
-    )
+    eia860m = prep_eia860m(out_eia__yearly_generators, settings["eia860m_month"])
     cwt = cwt_lf.collect().to_pandas()
     cws = cws_lf.collect().to_pandas()
     index = index_lf.collect().to_pandas()
@@ -274,11 +263,11 @@ def transform_supply_curve_county(
     df.loc[df["Ret_Year"] == " ", "Ret_Year"] = 9999
     df.loc[df["Ret_Year"].isna(), "Ret_Year"] = 9999
     df.loc[df["Ret_Year"] > settings["last_year"], "Ret_Year"] = 9999
-    # TODO: move the retirement dates forward to the first_year to cover the case where the
+    # move the retirement dates forward to the first_year to cover the case where the
     # "first year" is after the timestamp of the data file. Else, retirements that are
     # between the datafile year and the first year will be missed and we will have
     # erroneous high capacity.
-    # df.loc[df["year"] < settings["first_year"], "year"] = settings["first_year"]
+    df.loc[df["Ret_Year"] < settings["first_year"], "Ret_Year"] = settings["first_year"]
 
     df["Ret_Year"] = df["Ret_Year"].astype(pd.Int64Dtype())
 
@@ -392,7 +381,6 @@ def aggregate_supply_curve_regional(
 
 def run_supply_curve_county(
     cwt_path: str,
-    cwc_path: str,
     cws_path: str,
     index_path: str,
     cwst_path: str,
@@ -434,7 +422,6 @@ if __name__ == "__main__":
             "out_eia__yearly_generators_path"
         ],
         cwt_path=snakemake.input["cwt_path"],
-        cwc_path=snakemake.input["cwc_path"],
         cws_path=snakemake.input["cws_path"],
         # TWO INPUTS ARE THE SAME
         index_path=snakemake.input["cw_path"],

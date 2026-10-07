@@ -78,8 +78,5 @@ core_supply_curve:
   last_year: 2050
   population_year: 2022
   # when pudl inputs are used in more than one pipeline, we should probably move this
-  pudl_version: stable #v2024.8.0
-  use_changelog: False
-  # If using changelog, you can use May instead of Jan which PUDL defaults to
-  # for yearly tables.
+  pudl_version: nightly
   eia860m_month: 2024-01-01
