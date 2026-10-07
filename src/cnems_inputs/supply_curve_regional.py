@@ -20,8 +20,8 @@ logger = getLogger(__name__)
 def aggregate_supply_curve_regional(
     supply_curve_county: pl.LazyFrame,
     settings: dict,
-    cw_lf: pl.LazyFrame,
-    cwst_lf: pl.LazyFrame,
+    crosswalk_region_lf: pl.LazyFrame,
+    crosswalk_steps_lf: pl.LazyFrame,
 ):
     """Aggregates supply curves from county to user-specified regional level.
 
@@ -36,8 +36,8 @@ def aggregate_supply_curve_regional(
     """
     frame = supply_curve_county.collect().to_pandas()
     # agg the data up to the model region level
-    cwr = cw_lf.collect().to_pandas()
-    frame = pd.merge(frame, cwr, how="left", on=["FIPS_cnty"])
+    crosswalk_region = crosswalk_region_lf.collect().to_pandas()
+    frame = pd.merge(frame, crosswalk_region, how="left", on=["FIPS_cnty"])
     assert (missing_regions := frame[frame.region.isna()]).empty, (
         f"We expect there to be no missing regions by found {missing_regions['FIPS_cnty'].unique()}"
     )
@@ -46,12 +46,12 @@ def aggregate_supply_curve_regional(
     ]
 
     # create full index to merge to
-    index = cwr.drop(columns=["FIPS_cnty"]).drop_duplicates()
-    cwst = cwst_lf.collect().to_pandas().drop(columns=["count"])
+    index = crosswalk_region.drop(columns=["FIPS_cnty"]).drop_duplicates()
+    crosswalk_steps = crosswalk_steps_lf.collect().to_pandas().drop(columns=["count"])
     # TODO: ask Brian why this new row addition exists?
     new_row = pd.DataFrame({"tech": [15], "step": [2]})
-    cwst = pd.concat([cwst, new_row], ignore_index=True)
-    index = pd.merge(index, cwst, how="cross")
+    crosswalk_steps = pd.concat([crosswalk_steps, new_row], ignore_index=True)
+    index = pd.merge(index, crosswalk_steps, how="cross")
     index = pd.merge(
         index,
         pd.DataFrame(
@@ -68,16 +68,16 @@ def aggregate_supply_curve_regional(
 
 def run_supply_curve_regional(
     supply_curve_county_path: str,
-    cwst_path: str,
-    cw_path: str,
+    crosswalk_steps_path: str,
+    crosswalk_region_path: str,
     settings: dict,
     regional_output_path: Path,
 ):
     """E, T, L."""
     supply_curve_regional = aggregate_supply_curve_regional(
         supply_curve_county=extract_csv_to_pl(supply_curve_county_path),
-        cw_lf=extract_csv_to_pl(cw_path),
-        cwst_lf=extract_csv_to_pl(cwst_path),
+        crosswalk_region_lf=extract_csv_to_pl(crosswalk_region_path),
+        crosswalk_steps_lf=extract_csv_to_pl(crosswalk_steps_path),
         settings=settings,
     )
     load(supply_curve_regional, regional_output_path)
@@ -94,8 +94,8 @@ if __name__ == "__main__":
 
     run_supply_curve_regional(
         supply_curve_county_path=snakemake.input["supply_curve_county_path"],
-        cwst_path=snakemake.input["cwst_path"],
-        cw_path=snakemake.input["cw_path"],
+        crosswalk_steps_path=snakemake.input["crosswalk_steps_path"],
+        crosswalk_region_path=snakemake.input["crosswalk_region_path"],
         settings=snakemake.params["settings"],
         regional_output_path=snakemake.output[0],
     )

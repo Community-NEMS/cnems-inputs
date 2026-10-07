@@ -21,10 +21,10 @@ rule emm_inputs:
 rule core__supply_curve_county:
   input:
     out_eia__yearly_generators_path=r2("raw/pudl/out_eia__yearly_generators.parquet"),
-    cwt_path=r2(f"raw/bluesky/crosswalk_tech.csv"),
-    cws_path=r2(f"raw/bluesky/crosswalk_status.csv"),
-    cw_path=r2(f"raw/bluesky/crosswalk_region.csv"),
-    cwst_path=r2(f"raw/bluesky/crosswalk_steps.csv"),
+    crosswalk_tech_path=r2(f"raw/bluesky/crosswalk_tech.csv"),
+    crosswalk_status_path=r2(f"raw/bluesky/crosswalk_status.csv"),
+    crosswalk_region_path=r2(f"raw/bluesky/crosswalk_region.csv"),
+    crosswalk_steps_path=r2(f"raw/bluesky/crosswalk_steps.csv"),
     dg_path=r2(f"raw/bluesky/dgpv_cap.csv"),
     pop_path=r2(f"raw/bluesky/population.csv"),
   output: r2("core/supply_curve_county.csv"),
@@ -37,8 +37,8 @@ rule core__supply_curve_county:
 rule core__supply_curve:
   input:
     supply_curve_county_path=r2("core/supply_curve_county.csv"),
-    cwst_path=r2(f"raw/bluesky/crosswalk_steps.csv"),
-    cw_path=r2(f"raw/bluesky/crosswalk_region.csv"),
+    crosswalk_steps_path=r2(f"raw/bluesky/crosswalk_steps.csv"),
+    crosswalk_region_path=r2(f"raw/bluesky/crosswalk_region.csv"),
   output:
     r2("core/supply_curve.csv")
   params:

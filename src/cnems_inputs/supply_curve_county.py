@@ -22,7 +22,9 @@ from cnems_inputs.helpers import (
 logger = getLogger(__name__)
 
 
-def calc_pop_cw(cw: pd.DataFrame, pop: pd.DataFrame, settings) -> pd.DataFrame:
+def calc_pop_crosswalk_region(
+    crosswalk_region: pd.DataFrame, pop: pd.DataFrame, settings
+) -> pd.DataFrame:
     """Calculate regional population share.
 
     Maps user-defined region to county and calculates fraction of user-defined region
@@ -31,7 +33,7 @@ def calc_pop_cw(cw: pd.DataFrame, pop: pd.DataFrame, settings) -> pd.DataFrame:
     Copied from BlueSky/sample/electricity_data_pipeline/src/runner.py
 
     Args:
-        cw: pd.DataFrame
+        crosswalk_region: pd.DataFrame
             crosswalk of county and user-defined region
         pop:
         settings: input settings
@@ -41,15 +43,17 @@ def calc_pop_cw(cw: pd.DataFrame, pop: pd.DataFrame, settings) -> pd.DataFrame:
     pd.DataFrame
         data frame which contains user-defined region/county mapping and the fraction of the user-defined region population in each county
     """
-    # calc_pop_cw -- read in county population for population_year and combine w/ regional crosswalk
+    # calc_pop_crosswalk_region -- read in county population for population_year and combine w/ regional crosswalk
     population_year = settings["population_year"]
     pop = pop[pop["year"] == population_year]
     pop = pop.drop(columns=["year"])
     pop = (
-        pd.merge(cw, pop, how="right", on=["FIPS_cnty"]).dropna().reset_index(drop=True)
+        pd.merge(crosswalk_region, pop, how="right", on=["FIPS_cnty"])
+        .dropna()
+        .reset_index(drop=True)
     )
 
-    # calc_pop_cw -- account for multiple regions being assigned to one county, split up pop equally
+    # calc_pop_crosswalk_region -- account for multiple regions being assigned to one county, split up pop equally
     cnty_cnt = (
         pop[["FIPS_cnty", "population"]].copy().rename(columns={"population": "count"})
     )
@@ -57,19 +61,23 @@ def calc_pop_cw(cw: pd.DataFrame, pop: pd.DataFrame, settings) -> pd.DataFrame:
     pop = pd.merge(pop, cnty_cnt, how="left", on=["FIPS_cnty"])
     pop["population"] = pop["population"] / pop["count"]
     pop = pop.drop(columns=["count"])
-    logger.debug(f"calc_pop_cw: {pop.columns}")
+    logger.debug(f"calc_pop_crosswalk_region: {pop.columns}")
 
-    # calc_pop_cw -- get cw id column name for groupby
-    cw_id = list(cw.columns)[-1]
-    logger.debug(f"calc_pop_cw: {cw_id}")
+    # calc_pop_crosswalk_region -- get crosswalk_region id column name for groupby
+    crosswalk_region_id = list(crosswalk_region.columns)[-1]
+    logger.debug(f"calc_pop_crosswalk_region: {crosswalk_region_id}")
 
-    # calc_pop_cw -- calculate the regional population
-    reg_pop = pop[[cw_id, "population"]].groupby(by=[cw_id], as_index=False).sum()
+    # calc_pop_crosswalk_region -- calculate the regional population
+    reg_pop = (
+        pop[[crosswalk_region_id, "population"]]
+        .groupby(by=[crosswalk_region_id], as_index=False)
+        .sum()
+    )
     reg_pop = reg_pop.rename(columns={"population": "reg_pop"})
-    logger.debug(f"calc_pop_cw: {reg_pop.columns}")
+    logger.debug(f"calc_pop_crosswalk_region: {reg_pop.columns}")
 
-    # calc_pop_cw -- calculate regional share
-    pop = pd.merge(pop, reg_pop, how="left", on=[cw_id])
+    # calc_pop_crosswalk_region -- calculate regional share
+    pop = pd.merge(pop, reg_pop, how="left", on=[crosswalk_region_id])
     pop["pop_share"] = pop["population"] / pop["reg_pop"]
     pop = pop.drop(columns=["population", "reg_pop"])
 
@@ -91,15 +99,17 @@ def get_names(df: pd.DataFrame, pop: pd.DataFrame):
             names to group by
     """
     # get col names
-    cw_id = next(
+    crosswalk_region_id = next(
         item for item in list(pop.columns) if item not in ["FIPS_cnty", "pop_share"]
     )
     data_id = list(df.columns)[-1]
-    groupby_cols = [item for item in list(df.columns) if item not in [cw_id, data_id]]
-    logger.debug(f"get_names: {cw_id}")
+    groupby_cols = [
+        item for item in list(df.columns) if item not in [crosswalk_region_id, data_id]
+    ]
+    logger.debug(f"get_names: {crosswalk_region_id}")
     logger.debug(f"get_names: {data_id}")
 
-    return cw_id, data_id, groupby_cols
+    return crosswalk_region_id, data_id, groupby_cols
 
 
 def sum_data_cnty(df: pd.DataFrame, pop: pd.DataFrame) -> pd.DataFrame:
@@ -115,14 +125,14 @@ def sum_data_cnty(df: pd.DataFrame, pop: pd.DataFrame) -> pd.DataFrame:
         data frame containing population-weighted data by county
     """
     # sum_data_cnty -- get col names
-    cw_id, data_id, groupby_cols = get_names(df, pop)
+    crosswalk_region_id, data_id, groupby_cols = get_names(df, pop)
 
     # sum_data_cnty -- merge data with county pop and regional pop data, determine county share
-    df = pd.merge(pop, df, how="right", on=[cw_id])
+    df = pd.merge(pop, df, how="right", on=[crosswalk_region_id])
     df[data_id] = df[data_id] * df["pop_share"]
 
     # sum_data_cnty -- calculate total data for each county
-    df = df.drop(columns=[cw_id, "pop_share"])
+    df = df.drop(columns=[crosswalk_region_id, "pop_share"])
     df = df.groupby(by=["FIPS_cnty"] + groupby_cols, as_index=False)[[data_id]].sum()
     df["FIPS_cnty"] = df["FIPS_cnty"].astype(pd.Int64Dtype())
 
@@ -187,11 +197,11 @@ def prep_eia860m(
 
 def transform_supply_curve_county(
     out_eia__yearly_generators: pl.DataFrame,
-    cwt_lf: pl.LazyFrame,
-    cws_lf: pl.LazyFrame,
+    crosswalk_tech_lf: pl.LazyFrame,
+    crosswalk_status_lf: pl.LazyFrame,
     index_lf: pl.LazyFrame,
-    cwst_lf: pl.LazyFrame,
-    cw_lf: pl.LazyFrame,
+    crosswalk_steps_lf: pl.LazyFrame,
+    crosswalk_region_lf: pl.LazyFrame,
     dg_lf: pl.LazyFrame,
     pop_lf: pl.LazyFrame,
     settings: dict,
@@ -202,11 +212,11 @@ def transform_supply_curve_county(
     BlueSky/sample/electricity_data_pipeline/src/runner.py::create_supplycurve_cnty
     """
     eia860m = prep_eia860m(out_eia__yearly_generators, settings["eia860m_month"])
-    cwt = cwt_lf.collect().to_pandas()
-    cws = cws_lf.collect().to_pandas()
+    crosswalk_tech = crosswalk_tech_lf.collect().to_pandas()
+    crosswalk_status = crosswalk_status_lf.collect().to_pandas()
     index = index_lf.collect().to_pandas()
-    cwst = cwst_lf.collect().to_pandas()
-    cw = cw_lf.collect().to_pandas()
+    crosswalk_steps = crosswalk_steps_lf.collect().to_pandas()
+    crosswalk_region = crosswalk_region_lf.collect().to_pandas()
     dg = dg_lf.collect().to_pandas()
     pop = pop_lf.collect().to_pandas()
 
@@ -215,7 +225,7 @@ def transform_supply_curve_county(
     df["Plant ID"] = df["Plant ID"].astype(pd.Int64Dtype())
     df["ID"] = df["Plant ID"].astype(str) + "_" + df["Generator ID"].astype(str)
 
-    df = pd.merge(df, cwt, how="left", on=["Technology"])
+    df = pd.merge(df, crosswalk_tech, how="left", on=["Technology"])
     # all of these do not have a Technology
     assert len(missing_tech := df[df.tech.isna()]) < 21, (
         f"We expect next to no records should not have a tech code and we found {len(missing_tech)}:"
@@ -230,8 +240,12 @@ def transform_supply_curve_county(
     df["FIPS_cnty"] = df["FIPS_cnty"].astype(pd.Int64Dtype())
 
     # Extract just the code from inside parenthesis within the
-    cws["Status Code"] = cws["Status"].str.extract(r"\((.*?)\)")
-    df = pd.merge(df, cws, how="left", on=["Status Code"]).drop(columns=["Status Code"])
+    crosswalk_status["Status Code"] = crosswalk_status["Status"].str.extract(
+        r"\((.*?)\)"
+    )
+    df = pd.merge(df, crosswalk_status, how="left", on=["Status Code"]).drop(
+        columns=["Status Code"]
+    )
     df = df[df["Keep"] == 1]
 
     # # create_supplycurve_cnty -- clean up columns
@@ -280,7 +294,9 @@ def transform_supply_curve_county(
     df = df.groupby(by=["tech", "FIPS_cnty", "year", "Ret_Year"], as_index=False).sum()
 
     index = pd.merge(
-        index, pd.DataFrame(cwt["tech"].unique(), columns=["tech"]), how="cross"
+        index,
+        pd.DataFrame(crosswalk_tech["tech"].unique(), columns=["tech"]),
+        how="cross",
     )
     index = pd.merge(
         index,
@@ -314,7 +330,7 @@ def transform_supply_curve_county(
     frame["SupplyCurve"] = frame["Cap_Cum"] - frame["Ret_Cap_Cum"]
     frame = frame.drop(columns=["Capacity", "Ret_Capacity", "Cap_Cum", "Ret_Cap_Cum"])
 
-    frame = pd.merge(frame, cwst, how="right", on=["tech"]).fillna(0)
+    frame = pd.merge(frame, crosswalk_steps, how="right", on=["tech"]).fillna(0)
     frame["SupplyCurve"] = (frame["SupplyCurve"] / frame["count"]).apply(
         lambda x: round(x, 2)
     )
@@ -323,7 +339,7 @@ def transform_supply_curve_county(
     frame = frame[frame["year"] > 0]
 
     # create_supplycurve_cnty -- add DGPV capacity
-    pop = calc_pop_cw(cw, pop, settings)
+    pop = calc_pop_crosswalk_region(crosswalk_region, pop, settings)
 
     dg = sum_data_cnty(dg, pop)
     frame = pd.concat([frame, dg]).astype(
@@ -339,7 +355,10 @@ def transform_supply_curve_county(
 
 
 def aggregate_supply_curve_regional(
-    frame: pd.DataFrame, settings: dict, cw_lf: pl.LazyFrame, cwst_lf: pl.LazyFrame
+    frame: pd.DataFrame,
+    settings: dict,
+    crosswalk_region_lf: pl.LazyFrame,
+    crosswalk_steps_lf: pl.LazyFrame,
 ):
     """Aggregates supply curves from county to user-specified regional level.
 
@@ -353,21 +372,21 @@ def aggregate_supply_curve_regional(
         data frame containing supply curves at user-specified regional level
     """
     # agg the data up to the model region level
-    cwr = cw_lf.collect().to_pandas()
+    crosswalk_region = crosswalk_region_lf.collect().to_pandas()
     frame = (
-        pd.merge(frame, cwr, how="right", on=["FIPS_cnty"])
+        pd.merge(frame, crosswalk_region, how="right", on=["FIPS_cnty"])
         .drop(columns=["FIPS_cnty"])
         .groupby(by=["tech", "region", "year", "step"], as_index=False)
         .sum()[["region", "tech", "step", "year", "SupplyCurve"]]
     )
 
     # create full index to merge to
-    index = cwr.drop(columns=["FIPS_cnty"]).drop_duplicates()
-    cwst = cwst_lf.collect().to_pandas().drop(columns=["count"])
+    index = crosswalk_region.drop(columns=["FIPS_cnty"]).drop_duplicates()
+    crosswalk_steps = crosswalk_steps_lf.collect().to_pandas().drop(columns=["count"])
     # TODO: ask Brian why this new row addition exists?
     new_row = pd.DataFrame({"tech": [15], "step": [2]})
-    cwst = pd.concat([cwst, new_row], ignore_index=True)
-    index = pd.merge(index, cwst, how="cross")
+    crosswalk_steps = pd.concat([crosswalk_steps, new_row], ignore_index=True)
+    index = pd.merge(index, crosswalk_steps, how="cross")
     index = pd.merge(
         index, pd.DataFrame(settings["year_range"], columns=["year"]), how="cross"
     )
@@ -379,11 +398,11 @@ def aggregate_supply_curve_regional(
 
 
 def run_supply_curve_county(
-    cwt_path: str,
-    cws_path: str,
+    crosswalk_tech_path: str,
+    crosswalk_status_path: str,
     index_path: str,
-    cwst_path: str,
-    cw_path: str,
+    crosswalk_steps_path: str,
+    crosswalk_region_path: str,
     dg_path: str,
     pop_path: str,
     settings: dict,
@@ -395,11 +414,11 @@ def run_supply_curve_county(
         out_eia__yearly_generators=extract_parquet_to_pl(
             out_eia__yearly_generators_path
         ),
-        cwt_lf=extract_csv_to_pl(cwt_path),
-        cws_lf=extract_csv_to_pl(cws_path),
+        crosswalk_tech_lf=extract_csv_to_pl(crosswalk_tech_path),
+        crosswalk_status_lf=extract_csv_to_pl(crosswalk_status_path),
         index_lf=extract_csv_to_pl(index_path),
-        cwst_lf=extract_csv_to_pl(cwst_path),
-        cw_lf=extract_csv_to_pl(cw_path),
+        crosswalk_steps_lf=extract_csv_to_pl(crosswalk_steps_path),
+        crosswalk_region_lf=extract_csv_to_pl(crosswalk_region_path),
         dg_lf=extract_csv_to_pl(dg_path),
         pop_lf=extract_csv_to_pl(pop_path),
         settings=settings,
@@ -420,13 +439,13 @@ if __name__ == "__main__":
         out_eia__yearly_generators_path=snakemake.input[
             "out_eia__yearly_generators_path"
         ],
-        cwt_path=snakemake.input["cwt_path"],
-        cws_path=snakemake.input["cws_path"],
+        crosswalk_tech_path=snakemake.input["crosswalk_tech_path"],
+        crosswalk_status_path=snakemake.input["crosswalk_status_path"],
         # TWO INPUTS ARE THE SAME
-        index_path=snakemake.input["cw_path"],
-        cwst_path=snakemake.input["cwst_path"],
-        # THIS IS THE SECOND cw_r
-        cw_path=snakemake.input["cw_path"],
+        index_path=snakemake.input["crosswalk_region_path"],
+        crosswalk_steps_path=snakemake.input["crosswalk_steps_path"],
+        # THIS IS THE SECOND crosswalk_region_r
+        crosswalk_region_path=snakemake.input["crosswalk_region_path"],
         dg_path=snakemake.input["dg_path"],
         pop_path=snakemake.input["pop_path"],
         settings=snakemake.params["settings"],
