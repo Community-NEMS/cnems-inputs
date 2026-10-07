@@ -1,6 +1,8 @@
-"""Stub transformation pipeline for SupplyCurve.csv.
+"""Transformation pipeline for supply_curve.csv.
 
-Reads a file from GitHub (soon to be Datastore...), then publishes it to R2.
+This step takes the county-level supply curve and aggregates it to defined regions.
+These regions are currently made from a crosswalk coming from the original BlueSky
+repository.
 """
 
 from logging import getLogger
@@ -35,12 +37,13 @@ def aggregate_supply_curve_regional(
     frame = supply_curve_county.collect().to_pandas()
     # agg the data up to the model region level
     cwr = cw_lf.collect().to_pandas()
-    frame = (
-        pd.merge(frame, cwr, how="right", on=["FIPS_cnty"])
-        .drop(columns=["FIPS_cnty"])
-        .groupby(by=["tech", "region", "year", "step"], as_index=False)
-        .sum()[["region", "tech", "step", "year", "SupplyCurve"]]
+    frame = pd.merge(frame, cwr, how="left", on=["FIPS_cnty"])
+    assert (missing_regions := frame[frame.region.isna()]).empty, (
+        f"We expect there to be no missing regions by found {missing_regions['FIPS_cnty'].unique()}"
     )
+    frame = frame.groupby(by=["tech", "region", "year", "step"], as_index=False).sum()[
+        ["region", "tech", "step", "year", "SupplyCurve"]
+    ]
 
     # create full index to merge to
     index = cwr.drop(columns=["FIPS_cnty"]).drop_duplicates()

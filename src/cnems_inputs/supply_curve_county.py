@@ -223,7 +223,8 @@ def transform_supply_curve_county(
         f"We expect next to no records should not have a tech code and we found {len(missing_tech)}:"
         f"\n\n {missing_tech}"
     )
-    assert len(missing_fips := df.loc[df.FIPS_cnty.isna(), "County"].unique()) < 7, (
+    # Check if we are missing too many county fips ids before dropping nulls.
+    assert len(missing_fips := df.loc[df.FIPS_cnty.isna(), "County"].unique()) < 6, (
         f"We expect next to no records should not have a fips code and we found {len(missing_fips)}:"
         f"\n\n {missing_fips}"
     )
