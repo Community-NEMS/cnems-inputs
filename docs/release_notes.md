@@ -38,6 +38,8 @@ would when cutting an actual release. -->
 - Added integration test helper `materialize_input` which will use Snakemake to
     materialize an input, while pointing at a test-only Zenodo cache and a
     test-only local R2 instance. See issue #40 and PR #57
+- Added a pipeline for `supply_curve.csv` based on pipeline from `BlueSky` samples.
+    Updated using pre-processed EIA data from PUDL. See issue #51 and PR #68.
 
 ### Bug Fixes
 
