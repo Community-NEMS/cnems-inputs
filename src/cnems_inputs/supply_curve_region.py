@@ -39,7 +39,7 @@ def aggregate_supply_curve_region(
     crosswalk_region = crosswalk_region_lf.collect().to_pandas()
     frame = pd.merge(frame, crosswalk_region, how="left", on=["FIPS_cnty"])
     assert (missing_regions := frame[frame.region.isna()]).empty, (
-        f"We expect there to be no missing regions by found {missing_regions['FIPS_cnty'].unique()}"
+        f"We expect there to be no missing regions but found {missing_regions['FIPS_cnty'].unique()}"
     )
     frame = frame.groupby(by=["tech", "region", "year", "step"], as_index=False).sum()[
         ["region", "tech", "step", "year", "SupplyCurve"]

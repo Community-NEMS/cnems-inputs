@@ -31,7 +31,8 @@ def calc_pop_crosswalk_region(
     Args:
         crosswalk_region: pd.DataFrame
             crosswalk of county and user-defined region
-        pop:
+        pop: pd.DataFrame
+            population by county FIPS and year
         settings: input settings
 
     Returns:
@@ -253,7 +254,7 @@ def transform_supply_curve_county(
     )
     df = df[df["Keep"] == 1]
 
-    # # create_supplycurve_cnty -- clean up columns
+    # create_supplycurve_cnty -- clean up columns
     drop = [
         "Plant ID",
         "Generator ID",
@@ -270,7 +271,7 @@ def transform_supply_curve_county(
     }
     df = df.drop(columns=drop).rename(columns=rename)
 
-    # # create_supplycurve_cnty -- keep only online years relevant to the model
+    # create_supplycurve_cnty -- keep only online years relevant to the model
     df.loc[df["year"] < settings["first_year"], "year"] = settings["first_year"]
     df["year"] = df["year"].astype(pd.Int64Dtype())
 
@@ -292,7 +293,7 @@ def transform_supply_curve_county(
     # create_supplycurve_cnty -- remove rows with missing capacity data
     df.loc[df["Capacity"] == " ", "Capacity"] = 0
     df.loc[df["Capacity"].isna(), "Capacity"] = 0
-    df["Capacity"] = df["Capacity"].astype(float) / 1000
+    df["Capacity"] = df["Capacity"].astype(float) / 1000 # fix units
 
     # create_supplycurve_cnty -- group data by technology/county/year/retirement year
     df = df.drop(columns=["ID"])
@@ -339,7 +340,6 @@ def transform_supply_curve_county(
     frame["SupplyCurve"] = (frame["SupplyCurve"] / frame["count"]).apply(
         lambda x: round(x, 2)
     )
-    frame = frame.drop(columns=["count"])
     frame = frame[["FIPS_cnty", "tech", "step", "year", "SupplyCurve"]]
     frame = frame[frame["year"] > 0]
 
