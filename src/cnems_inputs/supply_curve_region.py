@@ -11,13 +11,13 @@ from pathlib import Path
 import pandas as pd
 import polars as pl
 
-from cnems_inputs.helpers import extract_csv_to_pl, load
+from cnems_inputs.helpers import load
 
 # Establish logger
 logger = getLogger(__name__)
 
 
-def aggregate_supply_curve_regional(
+def aggregate_supply_curve_region(
     supply_curve_county: pl.LazyFrame,
     settings: dict,
     crosswalk_region_lf: pl.LazyFrame,
@@ -66,7 +66,7 @@ def aggregate_supply_curve_regional(
     return frame
 
 
-def run_supply_curve_regional(
+def run_supply_curve_region(
     supply_curve_county_path: str,
     crosswalk_steps_path: str,
     crosswalk_region_path: str,
@@ -74,10 +74,10 @@ def run_supply_curve_regional(
     regional_output_path: Path,
 ):
     """E, T, L."""
-    supply_curve_regional = aggregate_supply_curve_regional(
-        supply_curve_county=extract_csv_to_pl(supply_curve_county_path),
-        crosswalk_region_lf=extract_csv_to_pl(crosswalk_region_path),
-        crosswalk_steps_lf=extract_csv_to_pl(crosswalk_steps_path),
+    supply_curve_regional = aggregate_supply_curve_region(
+        supply_curve_county=pl.scan_csv(supply_curve_county_path),
+        crosswalk_region_lf=pl.scan_csv(crosswalk_region_path),
+        crosswalk_steps_lf=pl.scan_csv(crosswalk_steps_path),
         settings=settings,
     )
     load(supply_curve_regional, regional_output_path)
@@ -92,7 +92,7 @@ if __name__ == "__main__":
         # so it complains about this import
         from snakemake.iocontainers import snakemake  # noqa: TC004
 
-    run_supply_curve_regional(
+    run_supply_curve_region(
         supply_curve_county_path=snakemake.input["supply_curve_county_path"],
         crosswalk_steps_path=snakemake.input["crosswalk_steps_path"],
         crosswalk_region_path=snakemake.input["crosswalk_region_path"],

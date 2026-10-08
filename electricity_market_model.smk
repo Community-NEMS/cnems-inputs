@@ -7,6 +7,7 @@ rule emm_inputs:
   input:
     [r2(p) for p in get_published_paths("datapackage.json")],
     r2("datapackage.json"),
+    # For validation purposes!
     r2(f"raw/bluesky/supply_curve.csv")
 
 # TODO: Once #catalyst-cooperative/pudl/pull/5688 is merged & in nightlies,
@@ -18,7 +19,7 @@ rule emm_inputs:
 #     r2("raw/pudl/out_eia__yearly_generators.parquet"),
 #   shell: "cp {input} {output}"
 
-rule core__supply_curve_county:
+rule core__supply_curve__county:
   input:
     out_eia__yearly_generators_path=r2("raw/pudl/out_eia__yearly_generators.parquet"),
     crosswalk_tech_path=r2(f"raw/bluesky/crosswalk_tech.csv"),
@@ -44,7 +45,7 @@ rule core__supply_curve:
   params:
     settings = config["core_supply_curve"]
   script:
-    "src/cnems_inputs/supply_curve_regional.py"
+    "src/cnems_inputs/supply_curve_region.py"
 
 
 rule datapackage:

@@ -12,11 +12,7 @@ from pathlib import Path
 import pandas as pd
 import polars as pl
 
-from cnems_inputs.helpers import (
-    extract_csv_to_pl,
-    extract_parquet_to_pl,
-    load,
-)
+from cnems_inputs.helpers import load
 
 # Establish logger
 logger = getLogger(__name__)
@@ -199,7 +195,6 @@ def transform_supply_curve_county(
     out_eia__yearly_generators: pl.DataFrame,
     crosswalk_tech_lf: pl.LazyFrame,
     crosswalk_status_lf: pl.LazyFrame,
-    index_lf: pl.LazyFrame,
     crosswalk_steps_lf: pl.LazyFrame,
     crosswalk_region_lf: pl.LazyFrame,
     dg_lf: pl.LazyFrame,
@@ -214,7 +209,6 @@ def transform_supply_curve_county(
     eia860m = prep_eia860m(out_eia__yearly_generators, settings["eia860m_month"])
     crosswalk_tech = crosswalk_tech_lf.collect().to_pandas()
     crosswalk_status = crosswalk_status_lf.collect().to_pandas()
-    index = index_lf.collect().to_pandas()
     crosswalk_steps = crosswalk_steps_lf.collect().to_pandas()
     crosswalk_region = crosswalk_region_lf.collect().to_pandas()
     dg = dg_lf.collect().to_pandas()
@@ -227,19 +221,30 @@ def transform_supply_curve_county(
 
     df = pd.merge(df, crosswalk_tech, how="left", on=["Technology"])
     # all of these do not have a Technology
-    assert len(missing_tech := df[df.tech.isna()]) < 21, (
-        f"We expect next to no records should not have a tech code and we found {len(missing_tech)}:"
-        f"\n\n {missing_tech}"
+    assert (len(missing_tech := df[df.tech.isna()]) < 21) & missing_tech[
+        missing_tech.Technology.notna()
+    ].empty, (
+        "We expect to have a small number of records with missing tech value "
+        f"and all of those should have a null Technology but we found {len(missing_tech)}:"
+        f"\n\n {missing_tech[['Plant ID', 'Generator ID', 'Technology']]}"
     )
     # Check if we are missing too many county fips ids before dropping nulls.
-    assert len(missing_fips := df.loc[df.FIPS_cnty.isna(), "County"].unique()) < 6, (
+
+    missing_fips = df.loc[
+        df.FIPS_cnty.isna()
+        & df["Plant State"].notna()
+        & df["County"].notna()
+        & (df["County"].str.lower() != "not in file")
+    ]
+    assert missing_fips.empty, (
         f"We expect next to no records should not have a fips code and we found {len(missing_fips)}:"
-        f"\n\n {missing_fips}"
+        f"\n\n {missing_fips[['PlantID', 'Plant State', 'County']]}"
     )
     df = df.dropna(subset=["FIPS_cnty"])
     df["FIPS_cnty"] = df["FIPS_cnty"].astype(pd.Int64Dtype())
 
-    # Extract just the code from inside parenthesis within the
+    # Extract just the code from inside parenthesis within the longer description of
+    # a status. Ex: (OP) Operating
     crosswalk_status["Status Code"] = crosswalk_status["Status"].str.extract(
         r"\((.*?)\)"
     )
@@ -294,7 +299,7 @@ def transform_supply_curve_county(
     df = df.groupby(by=["tech", "FIPS_cnty", "year", "Ret_Year"], as_index=False).sum()
 
     index = pd.merge(
-        index,
+        crosswalk_region,
         pd.DataFrame(crosswalk_tech["tech"].unique(), columns=["tech"]),
         how="cross",
     )
@@ -354,53 +359,9 @@ def transform_supply_curve_county(
     return frame
 
 
-def aggregate_supply_curve_regional(
-    frame: pd.DataFrame,
-    settings: dict,
-    crosswalk_region_lf: pl.LazyFrame,
-    crosswalk_steps_lf: pl.LazyFrame,
-):
-    """Aggregates supply curves from county to user-specified regional level.
-
-    This was create_supplycurve_r from BlueSky.
-
-    Args:
-        frame : data frame containing supply curves at the county-level
-        settings : input settings
-
-    Returns:
-        data frame containing supply curves at user-specified regional level
-    """
-    # agg the data up to the model region level
-    crosswalk_region = crosswalk_region_lf.collect().to_pandas()
-    frame = (
-        pd.merge(frame, crosswalk_region, how="right", on=["FIPS_cnty"])
-        .drop(columns=["FIPS_cnty"])
-        .groupby(by=["tech", "region", "year", "step"], as_index=False)
-        .sum()[["region", "tech", "step", "year", "SupplyCurve"]]
-    )
-
-    # create full index to merge to
-    index = crosswalk_region.drop(columns=["FIPS_cnty"]).drop_duplicates()
-    crosswalk_steps = crosswalk_steps_lf.collect().to_pandas().drop(columns=["count"])
-    # TODO: ask Brian why this new row addition exists?
-    new_row = pd.DataFrame({"tech": [15], "step": [2]})
-    crosswalk_steps = pd.concat([crosswalk_steps, new_row], ignore_index=True)
-    index = pd.merge(index, crosswalk_steps, how="cross")
-    index = pd.merge(
-        index, pd.DataFrame(settings["year_range"], columns=["year"]), how="cross"
-    )
-
-    frame = pd.merge(
-        index, frame, on=["region", "tech", "step", "year"], how="left"
-    ).fillna(0)
-    return frame
-
-
 def run_supply_curve_county(
     crosswalk_tech_path: str,
     crosswalk_status_path: str,
-    index_path: str,
     crosswalk_steps_path: str,
     crosswalk_region_path: str,
     dg_path: str,
@@ -411,16 +372,13 @@ def run_supply_curve_county(
 ):
     """E, T, L."""
     supply_curve_county = transform_supply_curve_county(
-        out_eia__yearly_generators=extract_parquet_to_pl(
-            out_eia__yearly_generators_path
-        ),
-        crosswalk_tech_lf=extract_csv_to_pl(crosswalk_tech_path),
-        crosswalk_status_lf=extract_csv_to_pl(crosswalk_status_path),
-        index_lf=extract_csv_to_pl(index_path),
-        crosswalk_steps_lf=extract_csv_to_pl(crosswalk_steps_path),
-        crosswalk_region_lf=extract_csv_to_pl(crosswalk_region_path),
-        dg_lf=extract_csv_to_pl(dg_path),
-        pop_lf=extract_csv_to_pl(pop_path),
+        out_eia__yearly_generators=pl.read_parquet(out_eia__yearly_generators_path),
+        crosswalk_tech_lf=pl.scan_csv(crosswalk_tech_path),
+        crosswalk_status_lf=pl.scan_csv(crosswalk_status_path),
+        crosswalk_steps_lf=pl.scan_csv(crosswalk_steps_path),
+        crosswalk_region_lf=pl.scan_csv(crosswalk_region_path),
+        dg_lf=pl.scan_csv(dg_path),
+        pop_lf=pl.scan_csv(pop_path),
         settings=settings,
     )
     load(supply_curve_county, county_output_path)
@@ -441,10 +399,7 @@ if __name__ == "__main__":
         ],
         crosswalk_tech_path=snakemake.input["crosswalk_tech_path"],
         crosswalk_status_path=snakemake.input["crosswalk_status_path"],
-        # TWO INPUTS ARE THE SAME
-        index_path=snakemake.input["crosswalk_region_path"],
         crosswalk_steps_path=snakemake.input["crosswalk_steps_path"],
-        # THIS IS THE SECOND crosswalk_region_r
         crosswalk_region_path=snakemake.input["crosswalk_region_path"],
         dg_path=snakemake.input["dg_path"],
         pop_path=snakemake.input["pop_path"],
