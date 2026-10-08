@@ -293,7 +293,7 @@ def transform_supply_curve_county(
     # create_supplycurve_cnty -- remove rows with missing capacity data
     df.loc[df["Capacity"] == " ", "Capacity"] = 0
     df.loc[df["Capacity"].isna(), "Capacity"] = 0
-    df["Capacity"] = df["Capacity"].astype(float) / 1000 # fix units
+    df["Capacity"] = df["Capacity"].astype(float) / 1000  # fix units
 
     # create_supplycurve_cnty -- group data by technology/county/year/retirement year
     df = df.drop(columns=["ID"])
