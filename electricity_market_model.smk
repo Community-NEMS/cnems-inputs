@@ -63,7 +63,7 @@ for resource_name in config["core_snapshots"]:
         params:
             resource_name=resource_name
         shell:
-            "src/cnems_inputs/load_emm_inputs.py"
+            "src/cnems_inputs/out__emm_inputs.py"
 
 
 # Make individual rules for each of the bluesky raw snapshots
@@ -79,4 +79,4 @@ for resource_name, resource_path in config["raw_bluesky"].items():
         params:
             resource_path=resource_path
         script:
-          "src/cnems_inputs/raw_emm_inputs.py"
+          "src/cnems_inputs/raw__emm_inputs.py"
