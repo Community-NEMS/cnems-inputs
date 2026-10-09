@@ -12,7 +12,7 @@ from zipfile import ZipFile
 
 import pytest
 
-from cnems_inputs.zenodo import cache_path, resolve
+from cnems_inputs.zenodo import resolve
 
 
 @pytest.fixture(scope="session")
@@ -66,11 +66,11 @@ def fake_r2(
 
 
 @pytest.fixture(scope="session")
-def cached_http_cache(
+def dataset_cache_dir(
     tmp_path_factory: pytest.TempPathFactory,
     test_fixture_dir: Path,
 ) -> Path:
-    """Warm a Zenodo cache directory with some test inputs.
+    """Warm a dataset cache directory with a manifest and some test inputs.
 
     This avoids us having to hit Zenodo during integration test. If we pull
     more data from Zenodo we'll have to rethink how we want to warm the cache
@@ -82,10 +82,14 @@ def cached_http_cache(
     We create the ZIP here so the internal structure of the ZIP is in a
     source-controlled situation instead of opaquely in a committed ZIP file.
     """
-    cache_dir = tmp_path_factory.mktemp("cached-http-cache")
+    cache_dir = tmp_path_factory.mktemp("dataset-cache")
     zip_url = resolve("eiabluesky", "eiabluesky-v1-1.zip")
-    zip_path = cache_path(zip_url, cache_dir=cache_dir)
+    zip_path = cache_dir / "eiabluesky/10.5281-zenodo.21629428/eiabluesky-v1-1.zip"
     zip_path.parent.mkdir(parents=True)
+    (zip_path.parent / "datapackage.json").write_text(
+        json.dumps({"resources": [{"name": zip_path.name, "path": zip_url}]}),
+        encoding="utf-8",
+    )
 
     source_root = test_fixture_dir / "eiabluesky"
     with ZipFile(zip_path, "w") as zf:
@@ -102,14 +106,14 @@ def cached_http_cache(
 @pytest.fixture(scope="session")
 def materialize_input(
     fake_r2: tuple[Path, dict[str, str]],
-    cached_http_cache: Path,
+    dataset_cache_dir: Path,
 ) -> Callable[[str], Path]:
     """Return a helper that runs Snakemake for one input and returns its CSV.
 
     Upstream files that you need for your resource, but don't actually want to
-    hit network for, should be cached locally via cached_http_cache.
+    hit network for, should be cached locally via dataset_cache_dir.
 
-    Points cached_http at the test cache set up in cached_http_cache above so
+    Points the dataset cache at the test cache set up above so
     we can skip Zenodo.
 
     Points r2 at the test endpoint set up in fake_r2.
@@ -127,8 +131,9 @@ def materialize_input(
                 "1",
                 resource_name,
                 "--config",
-                "zenodo_source=cache",
-                f"cached_http_cache={cached_http_cache.as_posix()}",
+                "allow_zenodo=False",
+                "dataset_s3_cache=",
+                f"dataset_cache_dir={dataset_cache_dir.as_posix()}",
                 f"r2={json.dumps(r2_config)}",
             ],
             check=True,
