@@ -90,6 +90,7 @@ mdformat-mkdocs = ">=5" # Stops mdformat from mangling zensical/MkDocs markdown 
 duckdb = ">=1.5.5,<2"
 email-validator = "*"                               # pydantic's email-validation support
 frictionless = ">=5.19.0,<6"                        # Frictionless data packages and tabular metadata validation
+filelock = ">=3.20,<4"                              # Coordinate shared dataset cache downloads across processes
 fsspec = "*"                                        # pandas' generic remote-filesystem support
 gcsfs = "*"                                         # pandas' GCS support
 openpyxl = "*"                                      # pandas' excel support
