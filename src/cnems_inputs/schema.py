@@ -11,4 +11,7 @@ def schema_for(resource_name: str) -> DataFrameSchema:
     """Look up and return the Pandera schema for the specified resource."""
     with Path("datapackage.json").open() as f:
         dpkg = json.load(f)
-    return from_frictionless_schema(dpkg["resources"][resource_name])
+    matching = [r for r in dpkg["resources"] if r["name"] == resource_name]
+    if not matching:
+        raise ValueError(f"No resource with name '{resource_name}'")
+    return from_frictionless_schema(matching[0]["schema"])

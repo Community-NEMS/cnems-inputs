@@ -62,7 +62,7 @@ for resource_name in config["core_snapshots"]:
             r2(f"out/{resource_name}.csv")
         params:
             resource_name=resource_name
-        shell:
+        script:
             "src/cnems_inputs/out__emm_inputs.py"
 
 

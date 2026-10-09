@@ -1,5 +1,7 @@
 """Ensure the configured EMM input files adhere to the datapackage schema."""
 
+from pathlib import Path
+
 import pandas as pd
 
 from cnems_inputs.helpers import load
@@ -13,6 +15,6 @@ if __name__ == "__main__":
 
     load(
         transformed=pd.read_csv(snakemake.input[0]),
-        output_path=snakemake.output[0],
+        output_path=Path(snakemake.output[0]),
         resource_name=snakemake.params["resource_name"],
     )
