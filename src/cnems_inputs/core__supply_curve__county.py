@@ -14,6 +14,7 @@ import polars as pl
 
 from cnems_inputs.helpers import load
 
+# TODO: really setup logging #73
 # Establish logger
 logger = getLogger(__name__)
 
@@ -58,23 +59,24 @@ def calc_pop_crosswalk_region(
     pop = pd.merge(pop, cnty_cnt, how="left", on=["FIPS_cnty"])
     pop["population"] = pop["population"] / pop["count"]
     pop = pop.drop(columns=["count"])
-    logger.debug(f"calc_pop_crosswalk_region: {pop.columns}")
+    logger.info(f"calc_pop_crosswalk_region: {pop.columns}")
 
     # calc_pop_crosswalk_region -- get crosswalk_region id column name for groupby
-    crosswalk_region_id = list(crosswalk_region.columns)[-1]
-    logger.debug(f"calc_pop_crosswalk_region: {crosswalk_region_id}")
+    # TODO: Remove when we validate inputs #74
+    region_column_name = list(crosswalk_region.columns)[-1]
+    logger.info(f"calc_pop_crosswalk_region: {region_column_name}")
 
     # calc_pop_crosswalk_region -- calculate the regional population
     reg_pop = (
-        pop[[crosswalk_region_id, "population"]]
-        .groupby(by=[crosswalk_region_id], as_index=False)
+        pop[[region_column_name, "population"]]
+        .groupby(by=[region_column_name], as_index=False)
         .sum()
     )
     reg_pop = reg_pop.rename(columns={"population": "reg_pop"})
-    logger.debug(f"calc_pop_crosswalk_region: {reg_pop.columns}")
+    logger.info(f"calc_pop_crosswalk_region: {reg_pop.columns}")
 
     # calc_pop_crosswalk_region -- calculate regional share
-    pop = pd.merge(pop, reg_pop, how="left", on=[crosswalk_region_id])
+    pop = pd.merge(pop, reg_pop, how="left", on=[region_column_name])
     pop["pop_share"] = pop["population"] / pop["reg_pop"]
     pop = pop.drop(columns=["population", "reg_pop"])
 
@@ -86,6 +88,8 @@ def get_names(df: pd.DataFrame, pop: pd.DataFrame):
 
     Copied from BlueSky/sample/electricity_data_pipeline/src/runner.py
 
+    TODO: Remove this when we implement validation of inputs #74.
+
     Args:
         df: data frame containing data by user-defined region
         pop: data frame containing population by county
@@ -96,17 +100,19 @@ def get_names(df: pd.DataFrame, pop: pd.DataFrame):
             names to group by
     """
     # get col names
-    crosswalk_region_id = next(
+    region_column_name = next(
         item for item in list(pop.columns) if item not in ["FIPS_cnty", "pop_share"]
     )
-    data_id = list(df.columns)[-1]
+    data_column_name = list(df.columns)[-1]
     groupby_cols = [
-        item for item in list(df.columns) if item not in [crosswalk_region_id, data_id]
+        item
+        for item in list(df.columns)
+        if item not in [region_column_name, data_column_name]
     ]
-    logger.debug(f"get_names: {crosswalk_region_id}")
-    logger.debug(f"get_names: {data_id}")
+    logger.info(f"get_names: {region_column_name}")
+    logger.info(f"get_names: {data_column_name}")
 
-    return crosswalk_region_id, data_id, groupby_cols
+    return region_column_name, data_column_name, groupby_cols
 
 
 def sum_data_cnty(df: pd.DataFrame, pop: pd.DataFrame) -> pd.DataFrame:
@@ -122,15 +128,17 @@ def sum_data_cnty(df: pd.DataFrame, pop: pd.DataFrame) -> pd.DataFrame:
         data frame containing population-weighted data by county
     """
     # sum_data_cnty -- get col names
-    crosswalk_region_id, data_id, groupby_cols = get_names(df, pop)
+    region_column_name, data_column_name, groupby_cols = get_names(df, pop)
 
     # sum_data_cnty -- merge data with county pop and regional pop data, determine county share
-    df = pd.merge(pop, df, how="right", on=[crosswalk_region_id])
-    df[data_id] = df[data_id] * df["pop_share"]
+    df = pd.merge(pop, df, how="right", on=[region_column_name])
+    df[data_column_name] = df[data_column_name] * df["pop_share"]
 
     # sum_data_cnty -- calculate total data for each county
-    df = df.drop(columns=[crosswalk_region_id, "pop_share"])
-    df = df.groupby(by=["FIPS_cnty"] + groupby_cols, as_index=False)[[data_id]].sum()
+    df = df.drop(columns=[region_column_name, "pop_share"])
+    df = df.groupby(by=["FIPS_cnty"] + groupby_cols, as_index=False)[
+        [data_column_name]
+    ].sum()
     df["FIPS_cnty"] = df["FIPS_cnty"].astype(pd.Int64Dtype())
 
     return df
@@ -283,10 +291,14 @@ def transform_supply_curve_county(
     df.loc[df["Ret_Year"].isna(), "Ret_Year"] = 9999
     df.loc[df["Ret_Year"] > settings["last_year"], "Ret_Year"] = 9999
     # move the retirement dates forward to the first_year to cover the case where the
-    # "first year" is after the timestamp of the data file. Else, retirements that are
+    # "first_year" is after the timestamp of the data file. Else, retirements that are
     # between the datafile year and the first year will be missed and we will have
     # erroneous high capacity.
-    df.loc[df["Ret_Year"] < settings["first_year"], "Ret_Year"] = settings["first_year"]
+    df.loc[
+        (df["Ret_Year"] < settings["first_year"])
+        & (df["Ret_Year"] > settings["eia860m_month"].year),
+        "Ret_Year",
+    ] = settings["first_year"]
 
     df["Ret_Year"] = df["Ret_Year"].astype(pd.Int64Dtype())
 

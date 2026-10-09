@@ -10,14 +10,12 @@ rule emm_inputs:
     # For validation purposes!
     r2(f"raw/bluesky/supply_curve.csv")
 
-# TODO: Once #catalyst-cooperative/pudl/pull/5688 is merged & in nightlies,
-# uncomment this out. For now this relies on a local copy.
-# rule raw__pudl_generators:
-#   input:
-#     pudl(config["core_supply_curve"]["pudl_version"], "out_eia__yearly_generators")
-#   output:
-#     r2("raw/pudl/out_eia__yearly_generators.parquet"),
-#   shell: "cp {input} {output}"
+rule raw__pudl_generators:
+  input:
+    pudl(config["core_supply_curve"]["pudl_version"], "out_eia__yearly_generators")
+  output:
+    r2("raw/pudl/out_eia__yearly_generators.parquet"),
+  shell: "cp {input} {output}"
 
 rule core__supply_curve__county:
   input:
@@ -28,24 +26,24 @@ rule core__supply_curve__county:
     crosswalk_steps_path=r2(f"raw/bluesky/crosswalk_steps.csv"),
     dg_path=r2(f"raw/bluesky/dgpv_cap.csv"),
     pop_path=r2(f"raw/bluesky/population.csv"),
-  output: r2("core/supply_curve_county.csv"),
+  output: r2("core/supply_curve__county.csv"),
   params:
     settings = config["core_supply_curve"]
   script:
-    "src/cnems_inputs/supply_curve_county.py"
+    "src/cnems_inputs/core__supply_curve__county.py"
 
 
-rule core__supply_curve:
+rule out__supply_curve__region:
   input:
-    supply_curve_county_path=r2("core/supply_curve_county.csv"),
+    supply_curve_county_path=r2("core/supply_curve__county.csv"),
     crosswalk_steps_path=r2(f"raw/bluesky/crosswalk_steps.csv"),
     crosswalk_region_path=r2(f"raw/bluesky/crosswalk_region.csv"),
   output:
-    r2("core/supply_curve.csv")
+    r2("out/supply_curve.csv")
   params:
     settings = config["core_supply_curve"]
   script:
-    "src/cnems_inputs/supply_curve_region.py"
+    "src/cnems_inputs/out__supply_curve__region.py"
 
 
 rule datapackage:
@@ -61,7 +59,7 @@ for resource_name in config["core_snapshots"]:
             # manage these raw/core/etc. paths
             r2(f"raw/bluesky/{resource_name}.csv")
         output:
-            r2(f"core/{resource_name}.csv")
+            r2(f"out/{resource_name}.csv")
         shell:
             "cp {input} {output}"
 
