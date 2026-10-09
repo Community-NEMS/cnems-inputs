@@ -1,7 +1,7 @@
 {
   "resources": [
     {
-      "name": "baseelecprice",
+      "name": "base_elec_price",
       "type": "table",
       "path": "out/base_elec_price.csv",
       "scheme": "file",
@@ -30,7 +30,7 @@
       }
     },
     {
-      "name": "baseload",
+      "name": "base_load",
       "type": "table",
       "path": "out/base_load.csv",
       "scheme": "file",
@@ -55,7 +55,7 @@
       }
     },
     {
-      "name": "batteryefficiency",
+      "name": "battery_efficiency",
       "type": "table",
       "path": "out/battery_efficiency.csv",
       "scheme": "file",
@@ -76,7 +76,7 @@
       }
     },
     {
-      "name": "capcost",
+      "name": "cap_cost",
       "type": "table",
       "path": "out/cap_cost.csv",
       "scheme": "file",
@@ -109,7 +109,7 @@
       }
     },
     {
-      "name": "capcostinitial",
+      "name": "cap_cost_initial",
       "type": "table",
       "path": "out/cap_cost_initial.csv",
       "scheme": "file",
@@ -138,7 +138,7 @@
       }
     },
     {
-      "name": "capfactorvre",
+      "name": "cap_factor_vre",
       "type": "table",
       "path": "out/cap_factor_vre.csv",
       "scheme": "file",
@@ -171,7 +171,7 @@
       }
     },
     {
-      "name": "endusebaseshares",
+      "name": "enduse_base_shares",
       "type": "table",
       "path": "out/enduse_base_shares.csv",
       "scheme": "file",
@@ -192,7 +192,7 @@
       }
     },
     {
-      "name": "endusescalar",
+      "name": "enduse_scalar",
       "type": "table",
       "path": "out/enduse_scalar.csv",
       "scheme": "file",
@@ -217,7 +217,7 @@
       }
     },
     {
-      "name": "enduseshapes",
+      "name": "enduse_shapes",
       "type": "table",
       "path": "out/enduse_shapes.csv",
       "scheme": "file",
@@ -242,7 +242,7 @@
       }
     },
     {
-      "name": "fomcost",
+      "name": "fom_cost",
       "type": "table",
       "path": "out/fom_cost.csv",
       "scheme": "file",
@@ -271,7 +271,7 @@
       }
     },
     {
-      "name": "h2price",
+      "name": "h2_price",
       "type": "table",
       "path": "out/h2_price.csv",
       "scheme": "file",
@@ -308,7 +308,7 @@
       }
     },
     {
-      "name": "hourstobuy",
+      "name": "hours_to_buy",
       "type": "table",
       "path": "out/hours_to_buy.csv",
       "scheme": "file",
@@ -329,7 +329,7 @@
       }
     },
     {
-      "name": "hydrocapfactor",
+      "name": "hydro_cap_factor",
       "type": "table",
       "path": "out/hydro_cap_factor.csv",
       "scheme": "file",
@@ -354,7 +354,7 @@
       }
     },
     {
-      "name": "learningrate",
+      "name": "learning_rate",
       "type": "table",
       "path": "out/learning_rate.csv",
       "scheme": "file",
@@ -375,7 +375,7 @@
       }
     },
     {
-      "name": "loadscalar",
+      "name": "load_scalar",
       "type": "table",
       "path": "out/load_scalar.csv",
       "scheme": "file",
@@ -396,7 +396,7 @@
       }
     },
     {
-      "name": "rampdowncost",
+      "name": "ramp_down_cost",
       "type": "table",
       "path": "out/ramp_down_cost.csv",
       "scheme": "file",
@@ -417,7 +417,7 @@
       }
     },
     {
-      "name": "ramprate",
+      "name": "ramp_rate",
       "type": "table",
       "path": "out/ramp_rate.csv",
       "scheme": "file",
@@ -438,7 +438,7 @@
       }
     },
     {
-      "name": "rampupcost",
+      "name": "ramp_up_cost",
       "type": "table",
       "path": "out/ramp_up_cost.csv",
       "scheme": "file",
@@ -459,7 +459,7 @@
       }
     },
     {
-      "name": "regreservescost",
+      "name": "reg_reserves_cost",
       "type": "table",
       "path": "out/reg_reserves_cost.csv",
       "scheme": "file",
@@ -480,7 +480,7 @@
       }
     },
     {
-      "name": "reservemargin",
+      "name": "reserve_margin",
       "type": "table",
       "path": "out/reserve_margin.csv",
       "scheme": "file",
@@ -501,7 +501,7 @@
       }
     },
     {
-      "name": "restechupperbound",
+      "name": "res_tech_upper_bound",
       "type": "table",
       "path": "out/res_tech_upper_bound.csv",
       "scheme": "file",
@@ -526,7 +526,7 @@
       }
     },
     {
-      "name": "supplycurve",
+      "name": "supply_curve",
       "type": "table",
       "path": "out/supply_curve.csv",
       "scheme": "file",
@@ -559,7 +559,7 @@
       }
     },
     {
-      "name": "supplycurvelearning",
+      "name": "supply_curve_learning",
       "type": "table",
       "path": "out/supply_curve_learning.csv",
       "scheme": "file",
@@ -580,7 +580,7 @@
       }
     },
     {
-      "name": "supplyprice",
+      "name": "supply_price",
       "type": "table",
       "path": "out/supply_price.csv",
       "scheme": "file",
@@ -724,7 +724,7 @@
       }
     },
     {
-      "name": "testprices",
+      "name": "test_prices",
       "type": "table",
       "path": "out/test_prices.csv",
       "scheme": "file",
@@ -753,7 +753,7 @@
       }
     },
     {
-      "name": "trancost",
+      "name": "tran_cost",
       "type": "table",
       "path": "out/tran_cost.csv",
       "scheme": "file",
@@ -782,7 +782,7 @@
       }
     },
     {
-      "name": "trancostint",
+      "name": "tran_cost_int",
       "type": "table",
       "path": "out/tran_cost_int.csv",
       "scheme": "file",
@@ -815,7 +815,7 @@
       }
     },
     {
-      "name": "tranlimitcapint",
+      "name": "tran_limit_cap_int",
       "type": "table",
       "path": "out/tran_limit_cap_int.csv",
       "scheme": "file",
@@ -848,7 +848,7 @@
       }
     },
     {
-      "name": "tranlimit",
+      "name": "tran_limit",
       "type": "table",
       "path": "out/tran_limit.csv",
       "scheme": "file",
@@ -881,7 +881,7 @@
       }
     },
     {
-      "name": "tranlimitgenint",
+      "name": "tran_limit_gen_int",
       "type": "table",
       "path": "out/tran_limit_gen_int.csv",
       "scheme": "file",

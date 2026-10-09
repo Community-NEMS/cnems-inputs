@@ -53,15 +53,17 @@ rule datapackage:
 
 for resource_name in config["core_snapshots"]:
     rule:
-        name: f"core__{resource_name}"
+        name: f"out__{resource_name}"
         input:
             # NOTE 2026-10-02: eventually we might want to have some helper
             # manage these raw/core/etc. paths
             r2(f"raw/bluesky/{resource_name}.csv")
         output:
             r2(f"out/{resource_name}.csv")
+        params:
+            resource_name=resource_name
         shell:
-            "cp {input} {output}"
+            "src/cnems_inputs/load_emm_inputs.py"
 
 
 # Make individual rules for each of the bluesky raw snapshots
@@ -77,4 +79,4 @@ for resource_name, resource_path in config["raw_bluesky"].items():
         params:
             resource_path=resource_path
         script:
-          "src/cnems_inputs/extract_emm_inputs.py"
+          "src/cnems_inputs/raw_emm_inputs.py"
