@@ -4,6 +4,8 @@ import json
 import os
 from pathlib import Path
 
+import pandas as pd
+
 
 # Set CNEMS_INPUT_VERSION_ID env var to publish to a specific version prefix.
 #
@@ -18,6 +20,16 @@ def versioned_r2_uri(bucket: str, path: str) -> str:
     """
     version = os.getenv("CNEMS_INPUT_VERSION_ID", "nightly")
     return f"s3://{bucket}/{version}/{path}"
+
+
+def load(transformed: pd.DataFrame, output_path: Path) -> None:
+    """Write DataFrame to output.
+
+    transformed: the data we want to write out.
+    output_path: a path for us to write the data out to, which may then be
+        pushed remotely via the storage backend configured for this output.
+    """
+    transformed.to_csv(output_path, index=False)
 
 
 def get_published_paths(datapackage_path: str) -> list[str]:

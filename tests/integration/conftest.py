@@ -116,7 +116,8 @@ def materialize_input(
     """
 
     @functools.cache
-    def materialize(resource_name: str) -> Path:
+    def materialize(rule_name: str) -> Path:
+        """Materialize one output using the snakemake rule name."""
         fake_r2_root, r2_config = fake_r2
         subprocess.run(  # noqa: S603
             [
@@ -125,7 +126,7 @@ def materialize_input(
                 "Snakefile",
                 "--cores",
                 "1",
-                resource_name,
+                rule_name,
                 "--config",
                 "zenodo_source=cache",
                 f"cached_http_cache={cached_http_cache.as_posix()}",
@@ -138,7 +139,7 @@ def materialize_input(
             fake_r2_root
             / r2_config["bucket"]
             / "nightly"
-            / f"{resource_name.replace('__', '/')}.csv"
+            / f"{rule_name.replace('__', '/')}.csv"
         )
         assert output_path.exists()
         return output_path
