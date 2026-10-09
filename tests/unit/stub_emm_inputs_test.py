@@ -1,7 +1,7 @@
 from pathlib import Path
 from zipfile import ZipFile
 
-from cnems_inputs.extract_emm_inputs import extract
+from cnems_inputs.raw__emm_inputs import extract
 
 
 def test_extract_emm_inputs(tmp_path: Path) -> None:
