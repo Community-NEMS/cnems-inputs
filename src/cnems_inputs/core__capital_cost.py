@@ -3,7 +3,6 @@
 Build overnight capital cost projection data from NREL ATB.
 """
 
-import datetime
 from logging import getLogger
 from pathlib import Path
 
@@ -16,6 +15,7 @@ from cnems_inputs.helpers import load
 # Establish logger
 logger = getLogger(__name__)
 
+
 def transform_supply_curve_county(
     core_nrelatb__yearly_projected_cost_performance: pl.DataFrame,
     crosswalk_tech_lf: pl.LazyFrame,
@@ -23,22 +23,26 @@ def transform_supply_curve_county(
     crosswalk_region_lf: pl.LazyFrame,
     settings: dict,
 ) -> pd.DataFrame:
-    """Build the capital cost output.
-    """
+    """Build the capital cost output."""
     # Load data and convert to pandas
-    capital_costs = core_nrelatb__yearly_projected_cost_performance.collect().to_pandas()
+    capital_costs = (
+        core_nrelatb__yearly_projected_cost_performance.collect().to_pandas()
+    )
     crosswalk_tech = crosswalk_tech_lf.collect().to_pandas()
     crosswalk_steps = crosswalk_steps_lf.collect().to_pandas()
     crosswalk_region = crosswalk_region_lf.collect().to_pandas()
-    
+
     # Filter capital cost table to only include selected model.
-    if model_selection:=settings['model'] not in capital_costs.model_case_nrelatb:
-        raise ValueError(f"Selected {model_selection} that isn't a valid NREL ATB model: specify from {capital_costs.model_case_nrelatb.unique()}")
-    capital_costs = capital_costs.loc[capital_costs.model_case_nrelatb == settings['model']]
-    
+    if model_selection := settings["model"] not in capital_costs.model_case_nrelatb:
+        raise ValueError(
+            f"Selected {model_selection} that isn't a valid NREL ATB model: specify from {capital_costs.model_case_nrelatb.unique()}"
+        )
+    capital_costs = capital_costs.loc[
+        capital_costs.model_case_nrelatb == settings["model"]
+    ]
+
     return capital_costs
-    
-    
+
     # # create_supplycurve_cnty -- create an ID column
     # df = eia860m.dropna(subset=["Plant ID"]).copy()
     # df["Plant ID"] = df["Plant ID"].astype(pd.Int64Dtype())
@@ -196,7 +200,9 @@ def run_supply_curve_county(
 ):
     """E, T, L."""
     capital_cost = transform_supply_curve_county(
-        core_nrelatb__yearly_projected_cost_performance=pl.read_parquet(core_nrelatb__yearly_projected_cost_performance_path),
+        core_nrelatb__yearly_projected_cost_performance=pl.read_parquet(
+            core_nrelatb__yearly_projected_cost_performance_path
+        ),
         crosswalk_tech_lf=pl.scan_csv(crosswalk_tech_path),
         crosswalk_steps_lf=pl.scan_csv(crosswalk_steps_path),
         crosswalk_region_lf=pl.scan_csv(crosswalk_region_path),
