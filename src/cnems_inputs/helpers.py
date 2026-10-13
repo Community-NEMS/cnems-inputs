@@ -25,7 +25,10 @@ def versioned_r2_uri(bucket: str, path: str) -> str:
 
 
 def load(
-    transformed: pd.DataFrame, output_path: Path, datapackage_path: Path | None = None, resource_name: str | None = None
+    transformed: pd.DataFrame,
+    output_path: Path,
+    datapackage_path: Path | None = None,
+    resource_name: str | None = None,
 ) -> None:
     """Write DataFrame to output.
 
@@ -38,7 +41,7 @@ def load(
     """
     if datapackage_path and resource_name:
         # then do schema enforcement
-        schema_for(datapackage_path, resource_name).validate(transformed)
+        transformed = schema_for(datapackage_path, resource_name).validate(transformed)
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     transformed.to_csv(output_path, index=False)

@@ -14,7 +14,6 @@ import pytest
 
 from cnems_inputs.zenodo import cache_path, resolve
 
-
 @pytest.fixture(scope="session")
 def test_fixture_dir(test_dir: Path) -> Path:
     """Return the test fixture data directory."""
