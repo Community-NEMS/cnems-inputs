@@ -57,7 +57,8 @@ for resource_name in config["core_snapshots"]:
         input:
             # NOTE 2026-10-02: eventually we might want to have some helper
             # manage these raw/core/etc. paths
-            r2(f"raw/bluesky/{resource_name}.csv")
+            r2(f"raw/bluesky/{resource_name}.csv"),
+            "datapackage.json"
         output:
             r2(f"out/{resource_name}.csv")
         params:

@@ -25,13 +25,14 @@ def remap_stubs(
     return out_df
 
 
-def run_emm_inputs(raw_input_path: Path, output_path: Path, resource_name: str):
+def run_emm_inputs(raw_input_path: Path, output_path: Path, datapackage_path: Path, resource_name: str):
     """E, T, L."""
     load(
         transformed=remap_stubs(
             raw_input_df=pd.read_csv(raw_input_path), resource_name=resource_name
         ),
         output_path=output_path,
+        datapackage_path=datapackage_path,
         resource_name=resource_name,
     )
 
@@ -46,5 +47,6 @@ if __name__ == "__main__":
     run_emm_inputs(
         raw_input_path=Path(snakemake.input[0]),
         output_path=Path(snakemake.output[0]),
+        datapackage_path=Path(snakemake.input[1]),
         resource_name=snakemake.params["resource_name"],
     )
