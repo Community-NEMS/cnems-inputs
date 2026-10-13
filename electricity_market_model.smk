@@ -8,14 +8,30 @@ rule emm_inputs:
     [r2(p) for p in get_published_paths("datapackage.json")],
     r2("datapackage.json"),
     # For validation purposes!
-    r2(f"raw/bluesky/supply_curve.csv")
+    r2(f"raw/bluesky/supply_curve.csv"),
+    r2("raw/pudl/core_nrelatb__yearly_projected_cost_performance.parquet") # TODO: TEMP!
+
+#####################################################################################
+################### Rules for raw assets ############################################
+#####################################################################################
 
 rule raw__pudl_generators:
   input:
-    pudl(config["core_supply_curve"]["pudl_version"], "out_eia__yearly_generators")
+    pudl(config["general"]["pudl_version"], "out_eia__yearly_generators")
   output:
     r2("raw/pudl/out_eia__yearly_generators.parquet"),
   shell: "cp {input} {output}"
+
+rule raw__pudl_projected_cost_performance:
+  input:
+    pudl(config["general"]["pudl_version"], "core_nrelatb__yearly_projected_cost_performance")
+  output:
+    r2("raw/pudl/core_nrelatb__yearly_projected_cost_performance.parquet"),
+  shell: "cp {input} {output}"
+
+#####################################################################################
+################### Rules for core assets ###########################################
+#####################################################################################
 
 rule core__supply_curve__county:
   input:
@@ -32,6 +48,17 @@ rule core__supply_curve__county:
   script:
     "src/cnems_inputs/core__supply_curve__county.py"
 
+rule core__capital_cost:
+  input:
+    core_nrelatb__yearly_projected_cost_performance_path=r2("raw/pudl/core_nrelatb__yearly_projected_cost_performance.parquet"),
+    crosswalk_tech_path=r2(f"raw/bluesky/crosswalk_tech.csv"),
+    crosswalk_region_path=r2(f"raw/bluesky/crosswalk_region.csv"),
+    crosswalk_steps_path=r2(f"raw/bluesky/crosswalk_steps.csv"),
+  output: r2("core/capital_cost.csv"),
+  params:
+    settings = config["core_capital_cost"]
+  script:
+    "src/cnems_inputs/core__capital_cost.py"
 
 rule out__supply_curve__region:
   input:
