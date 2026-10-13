@@ -17,11 +17,12 @@ def remap_stubs(
         mappings = pd.read_csv(mappings_file)
     remap_input = mappings.loc[mappings.resource_name == resource_name]
     if remap_input.empty:
-        return raw_input_df
-
-    return raw_input_df.rename(
-        columns={r["column_raw"]: r["column_out"] for r in remap_input.to_records()}
-    )
+        out_df = raw_input_df
+    else:
+        out_df = raw_input_df.rename(
+            columns={r["column_raw"]: r["column_out"] for r in remap_input.to_records()}
+        )
+    return out_df
 
 
 def run_emm_inputs(raw_input_path: Path, output_path: Path, resource_name: str):
