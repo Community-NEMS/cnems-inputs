@@ -139,6 +139,7 @@ pytest-cov = ">=7.1.0"             # Pytest plugin for working with coverage
 mkdocstrings-python = ">=2.0.5"     # Renders API docs from docstrings, used by zensical
 zensical = ">=0.0.51"               # Markdown-based static site generator for docs
 universal-pathlib = ">=0.3.10,<0.4"
+pytest-mock = ">=3.16.0,<4"
 
 [tool.ruff]
 # Configurations that apply to both the `format` and `lint` subcommands.

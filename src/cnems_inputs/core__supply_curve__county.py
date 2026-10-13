@@ -416,5 +416,5 @@ if __name__ == "__main__":
         dg_path=snakemake.input["dg_path"],
         pop_path=snakemake.input["pop_path"],
         settings=snakemake.params["settings"],
-        county_output_path=snakemake.output[0],
+        county_output_path=Path(snakemake.output[0]),
     )
