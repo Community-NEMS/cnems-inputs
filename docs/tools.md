@@ -86,9 +86,6 @@ pixi run snakemake core_supply_curve --cores 1
 
 Dataset manifests and files are read from the local cache, then the public S3 mirror, then Zenodo.
 The local cache defaults to `.snakemake/zenodo`; override it with `--config dataset_cache_dir=/path/to/cache`.
-To use the caches without falling back to Zenodo, add `--config allow_zenodo=False`.
-For fully offline dataset reads, also set `dataset_s3_cache=` (an empty value).
-Both the dataset's `datapackage.json` and requested files must already be cached for offline reads.
 Downloads can occur during DAG evaluation, including dry runs.
 
 ### In production

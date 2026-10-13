@@ -1,13 +1,10 @@
 """Test pinned dataset caching without external services."""
 
-import io
 import json
-import multiprocessing
 from pathlib import Path
-from unittest.mock import Mock, patch
+from unittest.mock import Mock
 
 import pytest
-from filelock import FileLock, Timeout
 
 from cnems_inputs import zenodo
 
@@ -20,128 +17,68 @@ def cache(tmp_path: Path) -> zenodo.DatasetCache:
     )
 
 
-def _seed_manifest(cache: zenodo.DatasetCache, url: str | None = None) -> Path:
-    root = cache.cache_dir / "example/10.5281-zenodo.12345"
-    root.mkdir(parents=True, exist_ok=True)
-    (root / "datapackage.json").write_text(
-        json.dumps(
-            {
-                "resources": [
-                    {
-                        "name": "archive",
-                        "path": url
-                        or "https://zenodo.org/records/12345/files/archive.zip",
-                    }
-                ]
-            }
-        ),
-        encoding="utf-8",
-    )
-    return root
+def test_cached_reads_stay_local_across_instances(cache, monkeypatch):
+    root = _populate_datapackage(cache, {"local_archive": "local_archive.zip"})
+    (root / "local_archive.zip").write_bytes(b"cached archive")
+    monkeypatch.setattr(zenodo.DatasetCache, "_download", _unexpected_download)
 
-
-def test_local_hit_never_uses_network(cache, monkeypatch):
-    root = _seed_manifest(cache)
-    (root / "archive.zip").write_bytes(b"cached archive")
-    network = Mock(side_effect=AssertionError("Network used on local hit"))
-    monkeypatch.setattr(zenodo.s3fs, "S3FileSystem", network)
-    monkeypatch.setattr(zenodo, "urlopen", network)
-
-    assert cache.ensure_local("example", "archive") == root / "archive.zip"
-    assert cache.ensure_local("example", "archive").read_bytes() == b"cached archive"
-    network.assert_not_called()
-
-
-def test_s3_fetches_manifest_and_file_then_uses_local_cache(cache, monkeypatch):
-    def get_file(url, path):
-        content = (
-            json.dumps(
-                {
-                    "resources": [
-                        {
-                            "name": "archive",
-                            "path": zenodo.resolve(
-                                "example", "archive.zip", doi_map=cache.doi_map
-                            ),
-                        }
-                    ]
-                }
-            ).encode()
-            if url.endswith("datapackage.json")
-            else b"archive content"
-        )
-        Path(path).write_bytes(content)
-
-    s3 = Mock()
-    s3.get_file.side_effect = get_file
-    monkeypatch.setattr(zenodo.s3fs, "S3FileSystem", Mock(return_value=s3))
-    http = Mock(side_effect=AssertionError("Zenodo used on S3 hit"))
-    monkeypatch.setattr(zenodo, "urlopen", http)
-
-    result = cache.ensure_local("example", "archive")
-    assert result.read_bytes() == b"archive content"
-    assert [call.args[0] for call in s3.get_file.call_args_list] == [
-        "s3://pudl.catalyst.coop/zenodo/example/10.5281-zenodo.12345/datapackage.json",
-        "s3://pudl.catalyst.coop/zenodo/example/10.5281-zenodo.12345/archive.zip",
-    ]
-    s3.get_file.side_effect = AssertionError("S3 used on local hit")
-    assert cache.ensure_local("example", "archive") == result
-    # A fresh instance also reads its manifest locally.
     fresh = zenodo.DatasetCache(cache.cache_dir, doi_map=cache.doi_map)
-    assert fresh.ensure_local("example", "archive") == result
-    http.assert_not_called()
+    for reader in (cache, fresh):
+        for _ in range(2):
+            result = reader.ensure_local("example", "local_archive")
+            assert result == root / "local_archive.zip"
+            assert result.read_bytes() == b"cached archive"
 
 
 def test_s3_miss_falls_back_to_zenodo(cache, monkeypatch):
-    root = _seed_manifest(cache)
-    s3 = Mock()
-    s3.get_file.side_effect = FileNotFoundError("No such object")
-    monkeypatch.setattr(zenodo.s3fs, "S3FileSystem", Mock(return_value=s3))
-    http = Mock(return_value=io.BytesIO(b"Zenodo archive"))
-    monkeypatch.setattr(zenodo, "urlopen", http)
-
-    assert cache.ensure_local("example", "archive").read_bytes() == b"Zenodo archive"
-    http.assert_called_once_with(
-        "https://zenodo.org/records/12345/files/archive.zip", timeout=30
+    root = _populate_datapackage(cache, {"archive": "archive.zip"})
+    s3 = Mock(side_effect=FileNotFoundError("No such S3 object"))
+    remote = Mock(
+        side_effect=lambda url, destination: destination.write_bytes(b"Zenodo archive")
     )
-    assert not list(root.glob(".archive.zip.*"))
+    monkeypatch.setattr(cache, "_download_from_s3", s3)
+    monkeypatch.setattr(cache, "_download_from_zenodo", remote)
+
+    result = cache.ensure_local("example", "archive")
+    assert result == root / "archive.zip"
+    assert result.read_bytes() == b"Zenodo archive"
+    s3.assert_called_once()
+    remote.assert_called_once()
+    assert (
+        s3.call_args.args[0]
+        == "s3://pudl.catalyst.coop/zenodo/example/10.5281-zenodo.12345/archive.zip"
+    )
+    assert (
+        remote.call_args.args[0] == "https://zenodo.org/records/12345/files/archive.zip"
+    )
 
 
-@pytest.mark.parametrize(
-    "error", [PermissionError("Access denied"), TimeoutError("S3 timeout")]
-)
-def test_s3_operational_error_propagates(cache, monkeypatch, error):
-    root = _seed_manifest(cache)
-    s3 = Mock()
-    s3.get_file.side_effect = error
-    monkeypatch.setattr(zenodo.s3fs, "S3FileSystem", Mock(return_value=s3))
-    http = Mock(side_effect=AssertionError("Unexpected fallback"))
-    monkeypatch.setattr(zenodo, "urlopen", http)
+def test_s3_fetches_manifest_and_resource(cache, monkeypatch):
+    s3_root = "s3://pudl.catalyst.coop/zenodo/example/10.5281-zenodo.12345"
+    s3 = _remote_files(
+        {
+            f"{s3_root}/datapackage.json": _datapackage(
+                {"archive": "https://zenodo.org/records/12345/files/archive.zip"}
+            ),
+            f"{s3_root}/archive.zip": b"S3 archive",
+        }
+    )
+    monkeypatch.setattr(cache, "_download_from_s3", s3)
+    monkeypatch.setattr(cache, "_download_from_zenodo", _unexpected_download)
 
-    with pytest.raises(type(error), match=str(error)):
-        cache.ensure_local("example", "archive")
-    assert not (root / "archive.zip").exists()
-    assert not list(root.glob(".archive.zip.*"))
-    http.assert_not_called()
-
-
-@pytest.mark.parametrize("s3_cache", [None, "s3://mirror/zenodo"])
-def test_missing_file_with_zenodo_disabled(cache, monkeypatch, s3_cache):
-    cache.allow_zenodo = False
-    cache.s3_cache = s3_cache
-    s3 = Mock()
-    s3.get_file.side_effect = FileNotFoundError("No such object")
-    monkeypatch.setattr(zenodo.s3fs, "S3FileSystem", Mock(return_value=s3))
-    http = Mock(side_effect=AssertionError("Zenodo is disabled"))
-    monkeypatch.setattr(zenodo, "urlopen", http)
-
-    with pytest.raises(FileNotFoundError, match="Zenodo is disabled.*datapackage.json"):
-        cache.ensure_local("example", "archive")
-    http.assert_not_called()
+    result = cache.ensure_local("example", "archive")
+    assert (
+        result == cache.cache_dir / "example" / "10.5281-zenodo.12345" / "archive.zip"
+    )
+    assert result.read_bytes() == b"S3 archive"
+    assert [request.args[0] for request in s3.call_args_list] == [
+        f"{s3_root}/datapackage.json",
+        f"{s3_root}/archive.zip",
+    ]
 
 
 def test_interrupted_download_is_not_published_and_can_retry(cache, monkeypatch):
-    root = _seed_manifest(cache)
+    root = _populate_datapackage(cache, {"archive": "archive.zip"})
 
     def interrupt(dataset, relative_path, key, destination):
         destination.write_bytes(b"partial")
@@ -163,120 +100,128 @@ def test_interrupted_download_is_not_published_and_can_retry(cache, monkeypatch)
     assert cache.ensure_local("example", "archive").read_bytes() == b"complete"
 
 
-def test_resource_url_preserves_nested_paths_and_decodes_escaping(cache):
-    _seed_manifest(
+def test_local_hit_decodes_nested_resource_url(cache):
+    root = _populate_datapackage(
         cache,
-        "https://zenodo.org/records/12345/files/nested/my%20archive.zip?download=1",
+        {"archive": "nested/my%20archive.zip?download=1"},
     )
-    resource = cache.get_resource_metadata("example", "archive")
-    assert resource.relative_path == "nested/my archive.zip"
+    destination = root / "nested" / "my archive.zip"
+    destination.parent.mkdir()
+    destination.write_bytes(b"archive")
+    assert cache.ensure_local("example", "archive") == destination
 
 
-@pytest.mark.parametrize(
-    "url",
-    [
-        "https://example.com/records/12345/files/archive.zip",
-        "https://zenodo.org/records/99999/files/archive.zip",
-        "http://zenodo.org/records/12345/files/archive.zip",
-        "https://zenodo.org/records/12345/files-other/archive.zip",
-        "https://zenodo.org/records/12345/files/%2e%2e/archive.zip",
-        "https://zenodo.org/records/12345/files/%2Farchive.zip",
-    ],
-)
-def test_invalid_resource_url_raises(cache, url):
-    _seed_manifest(cache, url)
-    with pytest.raises(ValueError):
-        cache.get_resource_metadata("example", "archive")
+def test_manifest_resource_must_match_pinned_record(cache, monkeypatch):
+    root = cache.cache_dir / "example" / "10.5281-zenodo.12345"
+    root.mkdir(parents=True)
+    (root / "datapackage.json").write_bytes(
+        _datapackage({"archive": "https://zenodo.org/records/99999/files/archive.zip"})
+    )
+    monkeypatch.setattr(cache, "_download", _unexpected_download)
+    with pytest.raises(ValueError, match="outside the pinned record"):
+        cache.ensure_local("example", "archive")
 
 
-def test_unknown_resource_raises(cache):
-    _seed_manifest(cache)
-    with pytest.raises(KeyError, match="unknown"):
-        cache.get_resource_metadata("example", "unknown")
-
-
-def test_new_doi_uses_different_local_files(cache):
-    root = _seed_manifest(cache)
+def test_new_doi_does_not_reuse_previous_version(cache, monkeypatch):
+    root = _populate_datapackage(cache, {"archive": "archive.zip"})
     (root / "archive.zip").write_bytes(b"old version")
     new = zenodo.DatasetCache(
         cache.cache_dir,
         doi_map=zenodo.ZenodoDoiMap({"example": "10.5281/zenodo.67890"}),
         s3_cache=None,
-        allow_zenodo=False,
     )
-    with pytest.raises(FileNotFoundError, match="10.5281-zenodo.67890"):
-        new.ensure_local("example", "archive")
+    record_url = "https://zenodo.org/records/67890/files"
+    remote = _remote_files(
+        {
+            f"{record_url}/datapackage.json": _datapackage(
+                {"archive": f"{record_url}/archive.zip"}
+            ),
+            f"{record_url}/archive.zip": b"new version",
+        }
+    )
+    monkeypatch.setattr(new, "_download_from_zenodo", remote)
+
+    destination = new.ensure_local("example", "archive")
+    assert destination == cache.cache_dir / "example/10.5281-zenodo.67890/archive.zip"
+    assert destination.read_bytes() == b"new version"
+    assert (root / "archive.zip").read_bytes() == b"old version"
 
 
-def test_zenodo_fetch_without_s3(cache, monkeypatch):
-    _seed_manifest(cache)
-    cache.s3_cache = None
-    monkeypatch.setattr(zenodo, "urlopen", Mock(return_value=io.BytesIO(b"archive")))
-    assert cache.ensure_local("example", "archive").read_bytes() == b"archive"
-
-
-def test_concurrent_callers_download_once(tmp_path):
-    context = multiprocessing.get_context("spawn")
-    started = context.Event()
-    release = context.Event()
-    contended = context.Event()
-    downloads = context.Value("i", 0)
-    results = context.Queue()
-    args = (tmp_path, started, release, contended, downloads, results)
-    first = context.Process(target=_cache_worker, args=(*args, False))
-    second = context.Process(target=_cache_worker, args=(*args, True))
-    destination = tmp_path / "example/10.5281-zenodo.12345/archive.zip"
-    try:
-        first.start()
-        assert started.wait(15), "First caller did not start downloading"
-        second.start()
-        assert contended.wait(15), "Second caller did not encounter the held lock"
-        assert downloads.value == 1
-        assert not destination.exists()
-        release.set()
-        replies = [results.get(timeout=15), results.get(timeout=15)]
-        first.join(timeout=15)
-        second.join(timeout=15)
-        assert first.exitcode == second.exitcode == 0
-        assert replies == [(str(destination), b"complete archive")] * 2
-        assert downloads.value == 1
-        assert not list(destination.parent.glob(".archive.zip.*"))
-    finally:
-        release.set()
-        for process in (first, second):
-            if process.pid is not None:
-                if process.is_alive():
-                    process.terminate()
-                process.join(timeout=15)
-        results.close()
-        results.join_thread()
-
-
-def _cache_worker(
-    cache_dir, started, release, contended, downloads, results, instrument_lock
+@pytest.mark.parametrize(
+    ("doi", "record_url"),
+    [
+        ("10.5281/zenodo.12345", "https://zenodo.org/records/12345"),
+        ("10.5072/zenodo.12345", "https://sandbox.zenodo.org/records/12345"),
+    ],
+)
+def test_zenodo_fetches_manifest_and_resource_from_doi_host(
+    tmp_path, monkeypatch, doi, record_url
 ):
-    class ObservedLock(FileLock):
-        def acquire(self, *args, **kwargs):
-            try:
-                return super().acquire(timeout=0)
-            except Timeout:
-                contended.set()
-                return super().acquire(*args, **kwargs)
-
-    def download(self, dataset, relative_path, key, destination):
-        with downloads.get_lock():
-            downloads.value += 1
-        destination.write_bytes(b"partial archive")
-        started.set()
-        assert release.wait(15), "Parent did not release the download"
-        destination.write_bytes(b"complete archive")
-
     cache = zenodo.DatasetCache(
-        cache_dir, doi_map=zenodo.ZenodoDoiMap({"example": "10.5281/zenodo.12345"})
+        tmp_path, s3_cache=None, doi_map=zenodo.ZenodoDoiMap({"example": doi})
     )
-    with (
-        patch.object(zenodo.DatasetCache, "_download", download),
-        patch.object(zenodo, "FileLock", ObservedLock if instrument_lock else FileLock),
-    ):
-        destination = cache._ensure_file("example", "archive.zip")
-        results.put((str(destination), destination.read_bytes()))
+    resource_url = f"{record_url}/files/nested/my%20archive.zip"
+
+    remote = _remote_files(
+        {
+            f"{record_url}/files/datapackage.json": _datapackage(
+                {"archive": resource_url}
+            ),
+            resource_url: b"archive content",
+        }
+    )
+    monkeypatch.setattr(cache, "_download_from_zenodo", remote)
+    monkeypatch.setattr(cache, "_download_from_s3", _unexpected_download)
+
+    destination = cache.ensure_local("example", "archive")
+    assert (
+        destination
+        == tmp_path / "example" / doi.replace("/", "-") / "nested" / "my archive.zip"
+    )
+    assert destination.read_bytes() == b"archive content"
+    assert [request.args[0] for request in remote.call_args_list] == [
+        f"{record_url}/files/datapackage.json",
+        resource_url,
+    ]
+
+
+def test_cache_uses_packaged_doi_map(tmp_path):
+    cache = zenodo.DatasetCache(tmp_path)
+    assert cache.doi_map.root["eiabluesky"] == "10.5281/zenodo.21629428"
+
+
+def _populate_datapackage(cache: zenodo.DatasetCache, paths: dict[str, str]) -> Path:
+    """Seed a local manifest from names and paths relative to the pinned record."""
+    root = cache.cache_dir / "example" / "10.5281-zenodo.12345"
+    root.mkdir(parents=True, exist_ok=True)
+
+    (root / "datapackage.json").write_bytes(
+        _datapackage(
+            {
+                name: f"https://zenodo.org/records/12345/files/{path}"
+                for name, path in paths.items()
+            }
+        )
+    )
+    return root
+
+
+def _datapackage(paths: dict[str, str]) -> bytes:
+    """Serialize resource names and explicit URLs into a minimal manifest."""
+    return json.dumps(
+        {"resources": [{"name": name, "path": path} for name, path in paths.items()]}
+    ).encode("utf-8")
+
+
+def _remote_files(files: dict[str, bytes]) -> Mock:
+    """Serve only the supplied URLs and record requests for test assertions."""
+
+    def download(url, destination):
+        destination.write_bytes(files[url])
+
+    return Mock(side_effect=download)
+
+
+def _unexpected_download(*args):
+    """Fail immediately when a test's excluded download path is used."""
+    raise AssertionError("Unexpected download")

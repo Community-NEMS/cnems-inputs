@@ -36,7 +36,6 @@ def r2(path: str) -> str:
 dataset_cache = DatasetCache(
     cache_dir=config.get("dataset_cache_dir", ".snakemake/zenodo"),
     s3_cache=config.get("dataset_s3_cache", "s3://pudl.catalyst.coop/zenodo"),
-    allow_zenodo=config.get("allow_zenodo", True),
 )
 
 def resolve_dataset(dataset: str, resource_name: str) -> Callable[[object], str]:
