@@ -25,7 +25,9 @@ def remap_stubs(
     return out_df
 
 
-def run_emm_inputs(raw_input_path: Path, output_path: Path, datapackage_path: Path, resource_name: str):
+def run_emm_inputs(
+    raw_input_path: Path, output_path: Path, datapackage_path: Path, resource_name: str
+):
     """E, T, L."""
     load(
         transformed=remap_stubs(
