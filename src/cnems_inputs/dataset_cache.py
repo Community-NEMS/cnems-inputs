@@ -1,6 +1,17 @@
-"""Resolve pinned datasets and materialize their resources in a local cache."""
+"""Cache remote dataset resources locally.
 
-import functools
+For the dataset to be cached it must:
+
+* be pinned to a Zenodo DOI (see zenodo_dois.yaml)
+* have a datapackage.json manifest at the top level
+
+We also have an S3 cache between Zenodo and local, to avoid Zenodo flakiness.
+To take advantage of this, the dataset needs to be mirrored by PUDL at
+s3://pudl.catalyst.coop/zenodo. If it is not mirrored, we skip the S3 cache
+and download the requested resource from Zenodo. It will still be locally
+cached.
+"""
+
 import json
 import logging
 import shutil
@@ -31,8 +42,6 @@ class DatasetCache:
     """Read pinned manifests and resources from local storage, S3, then Zenodo.
 
     Local and S3 paths share the layout ``dataset/doi-with-dashes/resource-path``.
-    Files in the local cache are complete and treated as immutable. Only local
-    storage is written; resources such as ZIPs are returned without extraction.
     """
 
     def __init__(
@@ -47,50 +56,54 @@ class DatasetCache:
         Set ``s3_cache=None`` to download cache misses directly from Zenodo.
         The DOI mapping defaults to the manually maintained packaged YAML file.
         """
-        self.cache_dir = Path(cache_dir)
-        self.s3_cache = s3_cache
-        self.doi_map = _default_doi_map() if doi_map is None else doi_map
-        self._manifests: dict[str, dict] = {}
+        self.cache_dir: Path = Path(cache_dir)
+        self.s3_cache: str | None = s3_cache
+        if doi_map is None:
+            config = files("cnems_inputs").joinpath("zenodo_dois.yaml")
+            loaded = yaml.safe_load(config.read_text(encoding="utf-8"))
+            self.doi_map: ZenodoDoiMap = ZenodoDoiMap.model_validate(loaded)
+        else:
+            self.doi_map: ZenodoDoiMap = doi_map
 
     def ensure_local(self, dataset: str, resource_name: str) -> Path:
-        """Return an existing local copy of the named resource, downloading on miss."""
-        relative_path = self._get_resource_path(dataset, resource_name)
-        return self._ensure_file(dataset, relative_path)
+        """Given dataset and resource name, return a local path to file.
 
-    def _get_resource_path(self, dataset: str, resource_name: str) -> Path:
-        """Return a named resource's relative path from the cached manifest.
-
-        The manifest's path must be a file URL within the pinned Zenodo record.
-        Unknown resources and malformed manifests raise their original errors.
+        * Look up the DOI for the dataset
+        * If the manifest isn't present locally, retrieve manifest for DOI
+        * Read manifest, figure out the relative path of the resource
+        * If the file isn't present locally, retrieve the resource from remote
+        * Return the path to the local file.
         """
-        manifest = self._get_manifest(dataset)
-        resource = {r["name"]: r for r in manifest["resources"]}[resource_name]
-        source_url = resource["path"]
-        file_root = urlsplit(_zenodo_record_url(self.doi_map.root[dataset]))
-        source = urlsplit(source_url)
-        prefix = f"{file_root.path}/files/"
-        if (
-            source.scheme != file_root.scheme
-            or source.netloc != file_root.netloc
-            or not source.path.startswith(prefix)
-        ):
-            raise ValueError(f"Resource URL is outside the pinned record: {source_url}")
-        return _normalize_record_path(unquote(source.path[len(prefix) :]))
-
-    def _get_manifest(self, dataset: str) -> dict:
-        """Cache parsed manifests for this instance's fixed DOI mapping."""
-        if dataset not in self._manifests:
-            path = self._ensure_file(dataset, "datapackage.json")
-            with path.open() as manifest:
-                self._manifests[dataset] = json.load(manifest)
-        return self._manifests[dataset]
-
-    def _ensure_file(self, dataset: str, relative_path: str | Path) -> Path:
-        """Reuse a cached file or publish a download only after it completes."""
-        dataset_path = _normalize_record_path(dataset)
         doi = self.doi_map.root[dataset]
+        cache_prefix = _normalize_record_path(dataset) / doi.replace("/", "-")
+        record_url = _zenodo_record_url(doi)
+        manifest_path = self._ensure_file(cache_prefix, record_url, "datapackage.json")
+        manifest = json.loads(manifest_path.read_text())
+        relative_path = _get_resource_path(manifest, resource_name, record_url)
+        return self._ensure_file(cache_prefix, record_url, relative_path)
+
+    def _ensure_file(
+        self, cache_prefix: Path, record_url: str, relative_path: str | Path
+    ) -> Path:
+        """Cache a file that's in a Zenodo record, locally.
+
+        Downloads first to a temporary file, then swaps once the download is
+        done, to avoid partial-download issues.
+
+        Doesn't do the resource-name resolution that ensure_local does, since
+        this is blissfully unaware of datapackage.json manifests.
+
+        Args:
+            cache_prefix: where we expect the local file to be.
+            record_url: the Zenodo URL that is the source of truth for this file
+            relative_path: the path relative to the Zenodo record for the
+                we want.
+
+        Returns:
+            path to the local version of this file
+        """
         relative_path = _normalize_record_path(relative_path)
-        key = dataset_path / doi.replace("/", "-") / relative_path
+        key = cache_prefix / relative_path
         destination = self.cache_dir / key
         if destination.is_file():
             return destination
@@ -101,16 +114,20 @@ class DatasetCache:
         ) as temporary:
             temporary_path = Path(temporary.name)
         try:
-            self._download(dataset, relative_path, key, temporary_path)
+            self._download(record_url, relative_path, key, temporary_path)
             temporary_path.replace(destination)
         finally:
             temporary_path.unlink(missing_ok=True)
         return destination
 
     def _download(
-        self, dataset: str, relative_path: Path, key: Path, destination: Path
+        self, record_url: str, relative_path: Path, key: Path, destination: Path
     ) -> None:
-        """Download from S3, falling through only on an object-not-found error."""
+        """Download from S3, fall back to Zenodo.
+
+        Dispatches to backend-specific helpers so we can mock backend
+        responses separately in test.
+        """
         if self.s3_cache is not None:
             s3_url = f"{self.s3_cache.rstrip('/')}/{key.as_posix()}"
             logger.info("Fetching %s from S3: %s", relative_path, s3_url)
@@ -119,17 +136,14 @@ class DatasetCache:
                 return
             except FileNotFoundError:
                 logger.info("S3 cache miss: %s", s3_url)
-        file_root = _zenodo_record_url(self.doi_map.root[dataset])
-        url = f"{file_root}/files/{quote(relative_path.as_posix(), safe='/')}"
+        url = f"{record_url}/files/{quote(relative_path.as_posix(), safe='/')}"
         logger.info("Fetching %s from Zenodo: %s", relative_path, url)
         self._download_from_zenodo(url, destination)
 
     def _download_from_s3(self, url: str, destination: Path) -> None:
-        """Copy one public S3 object to the given local temporary file."""
         s3fs.S3FileSystem(anon=True).get_file(url, str(destination))
 
     def _download_from_zenodo(self, url: str, destination: Path) -> None:
-        """Stream one pinned Zenodo file to the given local temporary file."""
         with (
             urlopen(url, timeout=30) as source,  # noqa: S310 URL constructed from a validated DOI and relative path.
             destination.open("wb") as target,
@@ -137,12 +151,23 @@ class DatasetCache:
             shutil.copyfileobj(source, target)
 
 
-@functools.cache
-def _default_doi_map() -> ZenodoDoiMap:
-    """Read the default dataset-to-Zenodo-DOI map."""
-    config = files("cnems_inputs").joinpath("zenodo_dois.yaml")
-    loaded = yaml.safe_load(config.read_text(encoding="utf-8"))
-    return ZenodoDoiMap.model_validate(loaded)
+def _get_resource_path(manifest: dict, resource_name: str, record_url: str) -> Path:
+    """Extract a named resource's relative path within the pinned record URL.
+
+    Unknown resources and malformed manifests raise their original errors.
+    """
+    resource = {r["name"]: r for r in manifest["resources"]}[resource_name]
+    source_url = resource["path"]
+    file_root = urlsplit(record_url)
+    source = urlsplit(source_url)
+    prefix = f"{file_root.path}/files/"
+    if (
+        source.scheme != file_root.scheme
+        or source.netloc != file_root.netloc
+        or not source.path.startswith(prefix)
+    ):
+        raise ValueError(f"Resource URL is outside the pinned record: {source_url}")
+    return _normalize_record_path(unquote(source.path[len(prefix) :]))
 
 
 def _zenodo_record_url(doi: ZenodoDoi) -> str:

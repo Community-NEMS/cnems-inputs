@@ -8,7 +8,7 @@ import polars as pl
 import pytest
 from polars.testing import assert_frame_equal
 
-from cnems_inputs.zenodo import DatasetCache
+from cnems_inputs.dataset_cache import DatasetCache
 
 
 def test_enduse_base_shares_matches_archived_source(

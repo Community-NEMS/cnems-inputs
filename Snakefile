@@ -9,14 +9,14 @@ storage s3:
 
 import polars as pl
 
-from cnems_inputs.zenodo import DatasetCache
+from cnems_inputs.dataset_cache import DatasetCache
 from cnems_inputs.helpers import get_published_paths, versioned_r2_uri
 from collections.abc import Callable
 import logging
 
-dataset_logger = logging.getLogger("cnems_inputs.zenodo")
+dataset_logger = logging.getLogger("cnems_inputs.dataset_cache")
 dataset_logger.setLevel(logging.INFO)
-if not dataset_logger.hasHandlers():
+if not dataset_logger.handlers:
     dataset_logger.addHandler(logging.StreamHandler())
 
 OUTPUT_BUCKET = config["r2"]["bucket"]
@@ -39,7 +39,12 @@ dataset_cache = DatasetCache(
 )
 
 def resolve_dataset(dataset: str, resource_name: str) -> Callable[[object], str]:
-    """Return an input callable that materializes the named file during DAG evaluation."""
+    """Return input function that ensures a resource is cached locally.
+
+    We don't just call ensure_local and return a string here, since that would
+    mean *all* inputs are checked at DAG collection time whenever we run any
+    rule. This way, merely all inputs *for the upstream subgraph* get checked.
+    """
     return lambda wildcards: str(dataset_cache.ensure_local(dataset, resource_name))
 
 def pudl(version: str, table_name: str) -> str:

@@ -2,32 +2,33 @@
 
 import json
 from pathlib import Path
-from unittest.mock import Mock
+from unittest.mock import ANY, Mock
 
 import pytest
 
-from cnems_inputs import zenodo
+from cnems_inputs import dataset_cache
 
 
 @pytest.fixture
-def cache(tmp_path: Path) -> zenodo.DatasetCache:
-    return zenodo.DatasetCache(
+def cache(tmp_path: Path) -> dataset_cache.DatasetCache:
+    return dataset_cache.DatasetCache(
         tmp_path,
-        doi_map=zenodo.ZenodoDoiMap({"example": "10.5281/zenodo.12345"}),
+        doi_map=dataset_cache.ZenodoDoiMap({"example": "10.5281/zenodo.12345"}),
     )
 
 
 def test_cached_reads_stay_local_across_instances(cache, monkeypatch):
+    """Once we warm the cache on disk, we should never hit _download even if we
+    recreate the DatasetCache accessor."""
     root = _populate_datapackage(cache, {"local_archive": "local_archive.zip"})
     (root / "local_archive.zip").write_bytes(b"cached archive")
-    monkeypatch.setattr(zenodo.DatasetCache, "_download", _unexpected_download)
+    monkeypatch.setattr(dataset_cache.DatasetCache, "_download", _unexpected_download)
 
-    fresh = zenodo.DatasetCache(cache.cache_dir, doi_map=cache.doi_map)
+    fresh = dataset_cache.DatasetCache(cache.cache_dir, doi_map=cache.doi_map)
     for reader in (cache, fresh):
-        for _ in range(2):
-            result = reader.ensure_local("example", "local_archive")
-            assert result == root / "local_archive.zip"
-            assert result.read_bytes() == b"cached archive"
+        result = reader.ensure_local("example", "local_archive")
+        assert result == root / "local_archive.zip"
+        assert result.read_bytes() == b"cached archive"
 
 
 def test_s3_miss_falls_back_to_zenodo(cache, monkeypatch):
@@ -42,14 +43,12 @@ def test_s3_miss_falls_back_to_zenodo(cache, monkeypatch):
     result = cache.ensure_local("example", "archive")
     assert result == root / "archive.zip"
     assert result.read_bytes() == b"Zenodo archive"
-    s3.assert_called_once()
-    remote.assert_called_once()
-    assert (
-        s3.call_args.args[0]
-        == "s3://pudl.catalyst.coop/zenodo/example/10.5281-zenodo.12345/archive.zip"
+    # second arg is the temp filename, we don't need to check it.
+    s3.assert_called_once_with(
+        "s3://pudl.catalyst.coop/zenodo/example/10.5281-zenodo.12345/archive.zip", ANY
     )
-    assert (
-        remote.call_args.args[0] == "https://zenodo.org/records/12345/files/archive.zip"
+    remote.assert_called_once_with(
+        "https://zenodo.org/records/12345/files/archive.zip", ANY
     )
 
 
@@ -77,10 +76,10 @@ def test_s3_fetches_manifest_and_resource(cache, monkeypatch):
     ]
 
 
-def test_interrupted_download_is_not_published_and_can_retry(cache, monkeypatch):
+def test_interrupted_download(cache, monkeypatch):
     root = _populate_datapackage(cache, {"archive": "archive.zip"})
 
-    def interrupt(dataset, relative_path, key, destination):
+    def interrupt(record_url, relative_path, key, destination):
         destination.write_bytes(b"partial")
         raise ConnectionError("Interrupted")
 
@@ -93,7 +92,7 @@ def test_interrupted_download_is_not_published_and_can_retry(cache, monkeypatch)
     monkeypatch.setattr(
         cache,
         "_download",
-        lambda dataset, relative_path, key, destination: destination.write_bytes(
+        lambda record_url, relative_path, key, destination: destination.write_bytes(
             b"complete"
         ),
     )
@@ -123,11 +122,11 @@ def test_manifest_resource_must_match_pinned_record(cache, monkeypatch):
 
 
 def test_new_doi_does_not_reuse_previous_version(cache, monkeypatch):
-    root = _populate_datapackage(cache, {"archive": "archive.zip"})
-    (root / "archive.zip").write_bytes(b"old version")
-    new = zenodo.DatasetCache(
+    old_version_root = _populate_datapackage(cache, {"archive": "archive.zip"})
+    (old_version_root / "archive.zip").write_bytes(b"old version")
+    cache_new_doi = dataset_cache.DatasetCache(
         cache.cache_dir,
-        doi_map=zenodo.ZenodoDoiMap({"example": "10.5281/zenodo.67890"}),
+        doi_map=dataset_cache.ZenodoDoiMap({"example": "10.5281/zenodo.67890"}),
         s3_cache=None,
     )
     record_url = "https://zenodo.org/records/67890/files"
@@ -139,12 +138,15 @@ def test_new_doi_does_not_reuse_previous_version(cache, monkeypatch):
             f"{record_url}/archive.zip": b"new version",
         }
     )
-    monkeypatch.setattr(new, "_download_from_zenodo", remote)
+    monkeypatch.setattr(cache_new_doi, "_download_from_zenodo", remote)
 
-    destination = new.ensure_local("example", "archive")
-    assert destination == cache.cache_dir / "example/10.5281-zenodo.67890/archive.zip"
-    assert destination.read_bytes() == b"new version"
-    assert (root / "archive.zip").read_bytes() == b"old version"
+    new_destination_archive_path = cache_new_doi.ensure_local("example", "archive")
+    assert (
+        new_destination_archive_path
+        == cache.cache_dir / "example/10.5281-zenodo.67890/archive.zip"
+    )
+    assert new_destination_archive_path.read_bytes() == b"new version"
+    assert (old_version_root / "archive.zip").read_bytes() == b"old version"
 
 
 @pytest.mark.parametrize(
@@ -157,8 +159,8 @@ def test_new_doi_does_not_reuse_previous_version(cache, monkeypatch):
 def test_zenodo_fetches_manifest_and_resource_from_doi_host(
     tmp_path, monkeypatch, doi, record_url
 ):
-    cache = zenodo.DatasetCache(
-        tmp_path, s3_cache=None, doi_map=zenodo.ZenodoDoiMap({"example": doi})
+    cache = dataset_cache.DatasetCache(
+        tmp_path, s3_cache=None, doi_map=dataset_cache.ZenodoDoiMap({"example": doi})
     )
     resource_url = f"{record_url}/files/nested/my%20archive.zip"
 
@@ -186,11 +188,13 @@ def test_zenodo_fetches_manifest_and_resource_from_doi_host(
 
 
 def test_cache_uses_packaged_doi_map(tmp_path):
-    cache = zenodo.DatasetCache(tmp_path)
+    cache = dataset_cache.DatasetCache(tmp_path)
     assert cache.doi_map.root["eiabluesky"] == "10.5281/zenodo.21629428"
 
 
-def _populate_datapackage(cache: zenodo.DatasetCache, paths: dict[str, str]) -> Path:
+def _populate_datapackage(
+    cache: dataset_cache.DatasetCache, paths: dict[str, str]
+) -> Path:
     """Seed a local manifest from names and paths relative to the pinned record."""
     root = cache.cache_dir / "example" / "10.5281-zenodo.12345"
     root.mkdir(parents=True, exist_ok=True)

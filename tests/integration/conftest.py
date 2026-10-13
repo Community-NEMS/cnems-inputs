@@ -11,7 +11,7 @@ from pathlib import Path
 
 import pytest
 
-from cnems_inputs.zenodo import DatasetCache
+from cnems_inputs.dataset_cache import DatasetCache
 
 
 @pytest.fixture(scope="session")

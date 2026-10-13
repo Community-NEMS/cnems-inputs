@@ -84,9 +84,14 @@ To run the pipeline for one specific input, just run its rule instead:
 pixi run snakemake core_supply_curve --cores 1
 ```
 
-Dataset manifests and files are read from the local cache, then the public S3 mirror, then Zenodo.
+Many of our datasets are pinned to Zenodo DOIs. Unfortunately, Zenodo has reliability issues.
+We have a local cache that allows us to avoid hitting Zenodo if the requested DOI has already been cached.
 The local cache defaults to `.snakemake/zenodo`; override it with `--config dataset_cache_dir=/path/to/cache`.
-Downloads can occur during DAG evaluation, including dry runs.
+
+On local cache miss, we first try to download the requested version from a mirror of our Zenodo archives on S3.
+Only if that fails do we try to request from Zenodo directly.
+
+Note that downloads occur *during DAG evaluation* - so it can be slow to run even a dry-run if the cache is cold.
 
 ### In production
 
