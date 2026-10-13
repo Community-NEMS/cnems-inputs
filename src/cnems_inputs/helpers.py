@@ -32,12 +32,14 @@ def load(
 ) -> None:
     """Write DataFrame to output.
 
-    transformed: the data we want to write out.
-    output_path: a path for us to write the data out to, which may then be
-        pushed remotely via the storage backend configured for this output.
-    resource_name[optional]: if specified, validate the transformed data frame
-        against the corresponding datapackage schema before writing out the file
-        to the output path.
+    Parameters:
+        transformed: the data we want to write out.
+        output_path: a path for us to write the data out to, which may then be
+            pushed remotely via the storage backend configured for this output.
+        datapackage_path: Optional; if specified, path to datapackage for validation.
+        resource_name: Optional; if specified, validate the transformed data frame
+            against the corresponding datapackage schema before writing out the file
+            to the output path.
     """
     if datapackage_path and resource_name:
         # then do schema enforcement
