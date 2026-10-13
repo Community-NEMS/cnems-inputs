@@ -1,6 +1,9 @@
 from pathlib import Path
 from zipfile import ZipFile
 
+import pandas as pd
+
+from cnems_inputs.out__emm_inputs import remap_stubs
 from cnems_inputs.raw__emm_inputs import extract
 
 
@@ -24,3 +27,26 @@ def test_extract_emm_inputs(tmp_path: Path) -> None:
     )
 
     assert output_path.read_bytes() == content
+
+
+def test_remap_stubs(mocker):
+    """Ensure column names are getting remapped properly in the stub pipeline."""
+    mocker.patch(
+        # replace mapping file with a stub for testing
+        "cnems_inputs.out__emm_inputs.pd.read_csv",
+        return_value=pd.DataFrame(
+            {
+                "resource_name": ["test"],
+                "column_raw": ["raw"],
+                "column_out": ["out"],
+            }
+        ),
+    )
+    actual = remap_stubs(
+        pd.DataFrame({"raw": [0], "untouched": [1]}),
+        "test",
+    )
+    pd.testing.assert_frame_equal(
+        actual,
+        pd.DataFrame({"out": [0], "untouched": [1]}),
+    )
