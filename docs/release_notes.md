@@ -29,7 +29,7 @@ would when cutting an actual release. -->
 
 - It's also good to list any remaining known problems, and link to their issues too.
 
-## 2026.9.0 (YYYY-MM-DD)
+## 2026.10.0 (YYYY-MM-DD)
 
 ### What's New?
 
@@ -40,6 +40,8 @@ would when cutting an actual release. -->
     test-only local R2 instance. See issue #40 and PR !57
 - Added a pipeline for `supply_curve.csv` based on pipeline from `BlueSky` samples.
     Updated using pre-processed EIA data from PUDL. See issue #51 and PR !68.
+- Enforced datapackage schemas at load time (when files are written to their final
+    location). See issue #43 and PR !77.
 
 ### Bug Fixes
 
