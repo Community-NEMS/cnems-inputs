@@ -5,7 +5,7 @@ This module is a re-implementation of a portion of code from
 BlueSky/sample/electricity_data_pipeline/src/runner.py
 """
 
-import datetime
+import datetime as dt
 from logging import getLogger
 from pathlib import Path
 
@@ -157,8 +157,8 @@ def prep_eia860m(
         month_filter = pl.col("report_date") == pl.col("report_date").max()
     else:
         eia860m_month = (
-            datetime.datetime.strptime(str(eia860m_month), "%Y-%m-%d")
-            .astimezone(datetime.UTC)
+            dt.datetime.strptime(str(eia860m_month), "%Y-%m-%d")
+            .astimezone(dt.UTC)
             .date()
         )
         month_filter = pl.col("report_date") == eia860m_month
@@ -416,5 +416,5 @@ if __name__ == "__main__":
         dg_path=snakemake.input["dg_path"],
         pop_path=snakemake.input["pop_path"],
         settings=snakemake.params["settings"],
-        county_output_path=snakemake.output[0],
+        county_output_path=Path(snakemake.output[0]),
     )
