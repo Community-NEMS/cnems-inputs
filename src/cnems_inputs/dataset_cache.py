@@ -18,7 +18,7 @@ import shutil
 from importlib.resources import files
 from pathlib import Path
 from tempfile import NamedTemporaryFile
-from typing import Annotated
+from typing import IO, Annotated, cast
 from urllib.parse import quote, unquote, urlsplit
 from urllib.request import urlopen
 
@@ -107,22 +107,21 @@ class DatasetCache:
         if destination.is_file():
             return destination
         destination.parent.mkdir(parents=True, exist_ok=True)
-        # Readers only see the final name after the entire download succeeds.
         with NamedTemporaryFile(
-            dir=destination.parent, prefix=f".{destination.name}.", delete=False
+            dir=destination.parent,
+            prefix=f".{destination.name}.",
+            delete_on_close=False,
         ) as temporary:
             temporary_path = Path(temporary.name)
-        try:
-            self._download(record_url, relative_path, key, temporary_path)
+            self._download(record_url, relative_path, key, temporary.file)
+            temporary.close()
             temporary_path.replace(destination)
-        finally:
-            temporary_path.unlink(missing_ok=True)
         return destination
 
     def _download(
-        self, record_url: str, relative_path: Path, key: Path, destination: Path
+        self, record_url: str, relative_path: Path, key: Path, destination: IO[bytes]
     ) -> None:
-        """Download from S3, fall back to Zenodo.
+        """Write to an open binary file from S3, falling back to Zenodo.
 
         Dispatches to backend-specific helpers so we can mock backend
         responses separately in test.
@@ -138,21 +137,19 @@ class DatasetCache:
         logger.info("Fetching %s from Zenodo: %s", relative_path, url)
         self._download_from_zenodo(url, destination)
 
-    def _download_from_s3(self, url: str, destination: Path) -> None:
-        s3fs.S3FileSystem(anon=True).get_file(url, str(destination))
+    def _download_from_s3(self, url: str, destination: IO[bytes]) -> None:
+        with s3fs.S3FileSystem(anon=True).open(url, "rb") as source:
+            shutil.copyfileobj(cast(IO[bytes], source), destination)
 
-    def _download_from_zenodo(self, url: str, destination: Path) -> None:
-        with (
-            urlopen(url, timeout=30) as source,  # noqa: S310 URL constructed from a validated DOI and relative path.
-            destination.open("wb") as target,
-        ):
-            shutil.copyfileobj(source, target)
+    def _download_from_zenodo(self, url: str, destination: IO[bytes]) -> None:
+        with urlopen(url, timeout=30) as source:  # noqa: S310 URL constructed from a validated DOI and relative path.
+            shutil.copyfileobj(source, destination)
 
 
 def _get_resource_path(manifest: dict, resource_name: str, record_url: str) -> Path:
     """Extract a named resource's relative path within the pinned record URL.
 
-    Unknown resources and malformed manifests raise their original errors.
+    Make sure that the file referenced is within the same record.
     """
     resource = {r["name"]: r for r in manifest["resources"]}[resource_name]
     source_url = resource["path"]
@@ -169,7 +166,7 @@ def _get_resource_path(manifest: dict, resource_name: str, record_url: str) -> P
 
 
 def _zenodo_record_url(doi: ZenodoDoi) -> str:
-    """Resolve a validated Zenodo DOI to the record's URL."""
+    """Resolve a Zenodo DOI to the record's URL."""
     doi_prefix, record_id = doi.split("/zenodo.")
     record_roots = {
         "10.5072": "https://sandbox.zenodo.org",
@@ -181,8 +178,7 @@ def _zenodo_record_url(doi: ZenodoDoi) -> str:
 def _normalize_record_path(relative_path: str | Path) -> Path:
     """Validate and normalize a relative record path for local cache storage.
 
-    Reject URLs, absolute paths, empty paths, and paths with .. since those are not
-    valid paths for Zenodo file access API.
+    Reject URLs, absolute paths, empty paths, and paths with `..`.
     """
     path = Path(relative_path)
     parsed_url = urlsplit(str(relative_path))

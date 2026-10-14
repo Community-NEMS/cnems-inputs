@@ -55,7 +55,6 @@ def resolve_dataset(dataset: str, resource_name: str) -> Callable[[object], str]
     the function itself (and not its return value) is passed into the rule's
     `inputs:` block. But we need a *different* function for each resolved
     dataset, so we have this higher-order function instead.
-
     """
     return lambda wildcards: str(dataset_cache.ensure_local(dataset, resource_name))
 

@@ -4,6 +4,7 @@ import json
 from collections.abc import Iterator
 from contextlib import contextmanager
 from pathlib import Path
+from typing import IO
 from unittest.mock import ANY, Mock, call, patch
 
 import pytest
@@ -37,10 +38,10 @@ def _remote_files(files: dict[str, str]) -> Mock:
     we can make assertions about them.
     """
 
-    def download(url: str, destination: Path) -> None:
+    def download(url: str, destination: IO[bytes]) -> None:
         if url not in files:
             raise FileNotFoundError(url)
-        destination.write_text(files[url])
+        destination.write(files[url].encode())
 
     return Mock(side_effect=download)
 
@@ -172,9 +173,9 @@ def test_interrupted_download_leaves_no_trace(
     _populate_local(cache, manifest_file)
 
     def interrupt(
-        record_url: str, relative_path: Path, key: Path, destination: Path
+        record_url: str, relative_path: Path, key: Path, destination: IO[bytes]
     ) -> None:
-        destination.write_text("partial")
+        destination.write(b"partial")
         raise ConnectionError("Interrupted")
 
     monkeypatch.setattr(cache, "_download", interrupt)
