@@ -1,0 +1,54 @@
+---
+name: run-pipeline
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        type: string
+        description: "Version to publish? nightly, stable, vYYYY.MM.xx, or some_descriptive_name"
+        default: "nightly"
+  schedule:
+    - cron: "0 20 * * 0" # Sundays at 8PM UTC
+
+# What branch does this action run on?
+# - workflow_dispatch: Whatever branch it was run against.
+# - schedule: Always runs on main
+
+jobs:
+  run-pipeline:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash -l {0}
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up pixi
+        uses: prefix-dev/setup-pixi@v0.11.0
+        with:
+          cache: true
+
+      - name: Configure prod settings
+        env:
+          R2_ENDPOINT_URL: ${{ secrets.PROD_R2_ENDPOINT_URL }}
+          R2_ACCESS_KEY: ${{ secrets.PROD_R2_ACCESS_KEY }}
+          R2_SECRET_KEY: ${{ secrets.PROD_R2_SECRET_KEY }}
+        run: |
+          cat << EOF >config/prod.yaml
+          environment: prod
+          r2:
+            endpoint_url: "$R2_ENDPOINT_URL"
+            access_key: "$R2_ACCESS_KEY"
+            secret_key: "$R2_SECRET_KEY"
+            bucket: cnems-inputs
+          EOF
+
+      - name: Run input pipeline
+        env:
+          CNEMS_INPUT_VERSION_ID: ${{ inputs.version || 'nightly' }}
+        run: |-
+          pixi run snakemake \
+            --cores 4 \
+            --profile profiles/prod.yaml \
+            emm_inputs

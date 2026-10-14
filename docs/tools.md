@@ -70,19 +70,44 @@ If you want to use `staging` or `prod`, you'll need to:
 
 ## Running the pipeline
 
-To run the pipeline for the electricity model inputs:
+### Locally
+
+To run the pipeline for the electricity model inputs in your local development environment:
 
 ```bash
 pixi run snakemake emm_inputs --cores 1
 ```
 
-To run the pipeline for one specific input that has a wildcard in it
-(e.g. `extract_from_zip` with the `{resource}` wildcard) we can use the
-`--target-jobs` argument:
+To run the pipeline for one specific input, just run its rule instead:
 
 ```bash
-pixi run snakemake --target-jobs extract_from_zip:resource=supply_curve --cores 1
+pixi run snakemake core_supply_curve --cores 1
 ```
+
+To use already-cached Zenodo downloads without touching the network, add
+`--config zenodo_source=cache` to the Snakemake command.
+This reads from the configured cached-http storage cache, so the files need to
+have been downloaded in an earlier online run.
+
+### In production
+
+To run the pipeline for the electricity model inputs in production and publish the
+results to R2, go to the [cnems-inputs Actions
+tab](https://github.com/Community-NEMS/cnems-inputs/actions), select `run-pipeline`, and
+click `Run workflow`. The default branch it runs from is `main`, but you may select a
+different branch if you are testing changes. The default version it publishes is
+`nightly`, but you may specify a different version (and if you're not running from
+`main` you probably should).
+
+This GHA also runs automatically every Sunday evening (from `main`, publishing to
+`nightly`).
+
+## Publishing a specific version of the outputs
+
+By default, we write outputs to a bucket with a versioned prefix - i.e.,
+`test-catalyst-coop/nightly/your_file_here`. This defaults to `nightly`, but
+when you need to publish a different version like `v2026.9.1`, or `stable`, set
+the `CNEMS_INPUT_VERSION_ID` to whatever prefix you'd like.
 
 ## Pytest Testing Framework
 
