@@ -48,16 +48,15 @@ class DatasetCache:
         self,
         cache_dir: str | Path = ".snakemake/zenodo",
         *,
-        s3_cache: str | None = "s3://pudl.catalyst.coop/zenodo",
+        s3_cache: str = "s3://pudl.catalyst.coop/zenodo",
         doi_map: ZenodoDoiMap | None = None,
     ) -> None:
         """Configure cache locations and the pinned DOI mapping.
 
-        Set ``s3_cache=None`` to download cache misses directly from Zenodo.
         The DOI mapping defaults to the manually maintained packaged YAML file.
         """
         self.cache_dir: Path = Path(cache_dir)
-        self.s3_cache: str | None = s3_cache
+        self.s3_cache: str = s3_cache
         if doi_map is None:
             config = files("cnems_inputs").joinpath("zenodo_dois.yaml")
             loaded = yaml.safe_load(config.read_text(encoding="utf-8"))
@@ -128,14 +127,13 @@ class DatasetCache:
         Dispatches to backend-specific helpers so we can mock backend
         responses separately in test.
         """
-        if self.s3_cache is not None:
-            s3_url = f"{self.s3_cache.rstrip('/')}/{key.as_posix()}"
-            logger.info("Fetching %s from S3: %s", relative_path, s3_url)
-            try:
-                self._download_from_s3(s3_url, destination)
-                return
-            except FileNotFoundError:
-                logger.info("S3 cache miss: %s", s3_url)
+        s3_url = f"{self.s3_cache.rstrip('/')}/{key.as_posix()}"
+        logger.info("Fetching %s from S3: %s", relative_path, s3_url)
+        try:
+            self._download_from_s3(s3_url, destination)
+            return
+        except FileNotFoundError:
+            logger.info("S3 cache miss: %s", s3_url)
         url = f"{record_url}/files/{quote(relative_path.as_posix(), safe='/')}"
         logger.info("Fetching %s from Zenodo: %s", relative_path, url)
         self._download_from_zenodo(url, destination)

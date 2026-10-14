@@ -1,12 +1,77 @@
 """Test pinned dataset caching without external services."""
 
 import json
+from collections.abc import Iterator
+from contextlib import contextmanager
 from pathlib import Path
-from unittest.mock import ANY, Mock
+from unittest.mock import ANY, Mock, call, patch
 
 import pytest
 
 from cnems_inputs import dataset_cache
+
+
+def _populate_local(
+    cache: dataset_cache.DatasetCache,
+    files: dict[str, str],
+    *,
+    dataset: str = "example",
+    doi: str = "10.5281/zenodo.12345",
+) -> None:
+    """Dump files where local cache expects them."""
+    root = cache.cache_dir / dataset / doi.replace("/", "-")
+    for name, content in files.items():
+        destination = root / name
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        destination.write_text(content)
+
+
+def _remote_files(files: dict[str, str]) -> Mock:
+    """Return helper to mock out remote file access.
+
+    It's a Mock, not just a normal function, so the calls are instrumented and
+    we can make assertions about them.
+    """
+
+    def download(url: str, destination: Path) -> None:
+        if url not in files:
+            raise FileNotFoundError(url)
+        destination.write_text(files[url])
+
+    return Mock(side_effect=download)
+
+
+@contextmanager
+def _mock_s3(
+    cache: dataset_cache.DatasetCache,
+    files: dict[str, str],
+    *,
+    dataset: str = "example",
+    doi: str = "10.5281/zenodo.12345",
+) -> Iterator[Mock]:
+    """Mock out S3 file access and expose the downloader within a context."""
+    prefix = f"{cache.s3_cache}/{dataset}/{doi.replace('/', '-')}"
+    mock = _remote_files(
+        {f"{prefix}/{name}": content for name, content in files.items()}
+    )
+    with patch.object(type(cache), "_download_from_s3", mock):
+        yield mock
+
+
+@contextmanager
+def _mock_zenodo(
+    cache: dataset_cache.DatasetCache,
+    files: dict[str, str],
+    *,
+    doi: str = "10.5281/zenodo.12345",
+) -> Iterator[Mock]:
+    """Mock out Zenodo file access and expose the downloader within a context."""
+    record_url = dataset_cache._zenodo_record_url(doi)
+    mock = _remote_files(
+        {f"{record_url}/files/{name}": content for name, content in files.items()}
+    )
+    with patch.object(type(cache), "_download_from_zenodo", mock):
+        yield mock
 
 
 @pytest.fixture
@@ -17,136 +82,136 @@ def cache(tmp_path: Path) -> dataset_cache.DatasetCache:
     )
 
 
-def test_cached_reads_stay_local_across_instances(cache, monkeypatch):
-    """Once we warm the cache on disk, we should never hit _download even if we
-    recreate the DatasetCache accessor."""
-    root = _populate_datapackage(cache, {"local_archive": "local_archive.zip"})
-    (root / "local_archive.zip").write_bytes(b"cached archive")
-    monkeypatch.setattr(dataset_cache.DatasetCache, "_download", _unexpected_download)
+def _datapackagify(
+    resources: dict[str, str],
+    record_url: str = "https://zenodo.org/records/12345/files",
+) -> str:
+    """Make a stripped-down datapackage JSON.
 
-    fresh = dataset_cache.DatasetCache(cache.cache_dir, doi_map=cache.doi_map)
-    for reader in (cache, fresh):
-        result = reader.ensure_local("example", "local_archive")
-        assert result == root / "local_archive.zip"
-        assert result.read_bytes() == b"cached archive"
-
-
-def test_s3_miss_falls_back_to_zenodo(cache, monkeypatch):
-    root = _populate_datapackage(cache, {"archive": "archive.zip"})
-    s3 = Mock(side_effect=FileNotFoundError("No such S3 object"))
-    remote = Mock(
-        side_effect=lambda url, destination: destination.write_bytes(b"Zenodo archive")
-    )
-    monkeypatch.setattr(cache, "_download_from_s3", s3)
-    monkeypatch.setattr(cache, "_download_from_zenodo", remote)
-
-    result = cache.ensure_local("example", "archive")
-    assert result == root / "archive.zip"
-    assert result.read_bytes() == b"Zenodo archive"
-    # second arg is the temp filename, we don't need to check it.
-    s3.assert_called_once_with(
-        "s3://pudl.catalyst.coop/zenodo/example/10.5281-zenodo.12345/archive.zip", ANY
-    )
-    remote.assert_called_once_with(
-        "https://zenodo.org/records/12345/files/archive.zip", ANY
-    )
-
-
-def test_s3_fetches_manifest_and_resource(cache, monkeypatch):
-    s3_root = "s3://pudl.catalyst.coop/zenodo/example/10.5281-zenodo.12345"
-    s3 = _remote_files(
+    - `resources` looks like `{"archive_name": "relpath"}`
+    - `record_url` is the base URL to glue that onto
+    """
+    return json.dumps(
         {
-            f"{s3_root}/datapackage.json": _datapackage(
-                {"archive": "https://zenodo.org/records/12345/files/archive.zip"}
-            ),
-            f"{s3_root}/archive.zip": b"S3 archive",
+            "resources": [
+                {"name": name, "path": f"{record_url}/{relpath}"}
+                for name, relpath in resources.items()
+            ]
         }
     )
-    monkeypatch.setattr(cache, "_download_from_s3", s3)
-    monkeypatch.setattr(cache, "_download_from_zenodo", _unexpected_download)
-
-    result = cache.ensure_local("example", "archive")
-    assert (
-        result == cache.cache_dir / "example" / "10.5281-zenodo.12345" / "archive.zip"
-    )
-    assert result.read_bytes() == b"S3 archive"
-    assert [request.args[0] for request in s3.call_args_list] == [
-        f"{s3_root}/datapackage.json",
-        f"{s3_root}/archive.zip",
-    ]
 
 
-def test_interrupted_download(cache, monkeypatch):
-    root = _populate_datapackage(cache, {"archive": "archive.zip"})
+# Set up some useful file records for parametrizing
+manifest_file = {"datapackage.json": _datapackagify({"archive": "archive.zip"})}
+archive_file = {"archive.zip": "archive content"}
+both_files = manifest_file | archive_file
 
-    def interrupt(record_url, relative_path, key, destination):
-        destination.write_bytes(b"partial")
+
+@pytest.mark.parametrize(
+    ("local_files", "s3_files", "zenodo_files"),
+    [
+        pytest.param(both_files, {}, {}, id="local-hit"),
+        pytest.param({}, both_files, {}, id="s3-hit"),
+        pytest.param({}, {}, both_files, id="zenodo-hit"),
+        pytest.param(manifest_file, both_files, {}, id="local-manifest-s3-resource"),
+        pytest.param({}, manifest_file, both_files, id="s3-manifest-zenodo-resource"),
+    ],
+)
+def test_cache_always_populates_local(
+    cache: dataset_cache.DatasetCache,
+    local_files: dict[str, str],
+    s3_files: dict[str, str],
+    zenodo_files: dict[str, str],
+) -> None:
+    """Make sure ensure_local does populates the local cache.
+
+    * initialize the apparent local/s3/zenodo caches
+    * see if first ensure_local() call gets expected content
+    * call ensure_local() again and make sure no s3/zenodo access happens
+    """
+    root = cache.cache_dir / "example/10.5281-zenodo.12345"
+    _populate_local(cache, local_files)
+    with _mock_s3(cache, s3_files) as s3, _mock_zenodo(cache, zenodo_files) as zenodo:
+        result = cache.ensure_local("example", "archive")
+        assert result == root / "archive.zip"
+        assert result.read_text() == "archive content"
+        assert (root / "datapackage.json").read_text() == manifest_file[
+            "datapackage.json"
+        ]
+
+        s3.reset_mock()
+        zenodo.reset_mock()
+        assert cache.ensure_local("example", "archive") == result
+        assert result.read_text() == "archive content"
+
+        fresh = dataset_cache.DatasetCache(cache.cache_dir, doi_map=cache.doi_map)
+        assert fresh.ensure_local("example", "archive") == result
+        assert result.read_text() == "archive content"
+
+        # should not have been called either by old *or* new cache
+        s3.assert_not_called()
+        zenodo.assert_not_called()
+
+
+def test_interrupted_download_leaves_no_trace(
+    cache: dataset_cache.DatasetCache, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """If you interrupt a download it shouldn't leave a corrupt file behind.
+
+    Mock out the download method to fail partway through a download.
+
+    Then make sure:
+    * no file is at the final-download location
+    * the temp file doesn't exist either
+    """
+    root = cache.cache_dir / "example/10.5281-zenodo.12345"
+    _populate_local(cache, manifest_file)
+
+    def interrupt(
+        record_url: str, relative_path: Path, key: Path, destination: Path
+    ) -> None:
+        destination.write_text("partial")
         raise ConnectionError("Interrupted")
 
     monkeypatch.setattr(cache, "_download", interrupt)
     with pytest.raises(ConnectionError, match="Interrupted"):
         cache.ensure_local("example", "archive")
     assert not (root / "archive.zip").exists()
-    assert not list(root.glob(".archive.zip.*"))
+    assert sorted(path.name for path in root.iterdir()) == ["datapackage.json"]
 
-    monkeypatch.setattr(
+
+def test_new_doi_doesnt_collide(cache: dataset_cache.DatasetCache) -> None:
+    """Even if the dataset/resource are the same, new DOI triggers re-cache.
+
+    * add old and new content corresponding to different DOIs to local cache
+    * make a new DatasetCache instance pointing at new DOI
+    * old/new DatasetCache instances see different content
+    """
+    old_root = cache.cache_dir / "example/10.5281-zenodo.12345"
+    new_root = cache.cache_dir / "example/10.5281-zenodo.67890"
+    _populate_local(cache, {**manifest_file, "archive.zip": "old version"})
+    _populate_local(
         cache,
-        "_download",
-        lambda record_url, relative_path, key, destination: destination.write_bytes(
-            b"complete"
-        ),
+        {
+            "datapackage.json": _datapackagify(
+                {"archive": "archive.zip"},
+                record_url="https://zenodo.org/records/67890/files",
+            ),
+            "archive.zip": "new version",
+        },
+        doi="10.5281/zenodo.67890",
     )
-    assert cache.ensure_local("example", "archive").read_bytes() == b"complete"
-
-
-def test_local_hit_decodes_nested_resource_url(cache):
-    root = _populate_datapackage(
-        cache,
-        {"archive": "nested/my%20archive.zip?download=1"},
-    )
-    destination = root / "nested" / "my archive.zip"
-    destination.parent.mkdir()
-    destination.write_bytes(b"archive")
-    assert cache.ensure_local("example", "archive") == destination
-
-
-def test_manifest_resource_must_match_pinned_record(cache, monkeypatch):
-    root = cache.cache_dir / "example" / "10.5281-zenodo.12345"
-    root.mkdir(parents=True)
-    (root / "datapackage.json").write_bytes(
-        _datapackage({"archive": "https://zenodo.org/records/99999/files/archive.zip"})
-    )
-    monkeypatch.setattr(cache, "_download", _unexpected_download)
-    with pytest.raises(ValueError, match="outside the pinned record"):
-        cache.ensure_local("example", "archive")
-
-
-def test_new_doi_does_not_reuse_previous_version(cache, monkeypatch):
-    old_version_root = _populate_datapackage(cache, {"archive": "archive.zip"})
-    (old_version_root / "archive.zip").write_bytes(b"old version")
-    cache_new_doi = dataset_cache.DatasetCache(
+    new_cache = dataset_cache.DatasetCache(
         cache.cache_dir,
         doi_map=dataset_cache.ZenodoDoiMap({"example": "10.5281/zenodo.67890"}),
-        s3_cache=None,
     )
-    record_url = "https://zenodo.org/records/67890/files"
-    remote = _remote_files(
-        {
-            f"{record_url}/datapackage.json": _datapackage(
-                {"archive": f"{record_url}/archive.zip"}
-            ),
-            f"{record_url}/archive.zip": b"new version",
-        }
-    )
-    monkeypatch.setattr(cache_new_doi, "_download_from_zenodo", remote)
-
-    new_destination_archive_path = cache_new_doi.ensure_local("example", "archive")
-    assert (
-        new_destination_archive_path
-        == cache.cache_dir / "example/10.5281-zenodo.67890/archive.zip"
-    )
-    assert new_destination_archive_path.read_bytes() == b"new version"
-    assert (old_version_root / "archive.zip").read_bytes() == b"old version"
+    with _mock_s3(cache, {}), _mock_zenodo(cache, {}):
+        old_path = cache.ensure_local("example", "archive")
+        new_path = new_cache.ensure_local("example", "archive")
+        assert old_path == old_root / "archive.zip"
+        assert new_path == new_root / "archive.zip"
+        assert old_path.read_text() == "old version"
+        assert new_path.read_text() == "new version"
 
 
 @pytest.mark.parametrize(
@@ -156,76 +221,63 @@ def test_new_doi_does_not_reuse_previous_version(cache, monkeypatch):
         ("10.5072/zenodo.12345", "https://sandbox.zenodo.org/records/12345"),
     ],
 )
-def test_zenodo_fetches_manifest_and_resource_from_doi_host(
-    tmp_path, monkeypatch, doi, record_url
-):
+def test_manifest_url_conversion(tmp_path: Path, doi: str, record_url: str) -> None:
+    """We want to get the right local/s3/zenodo URLs out of the manifest.
+
+    Manifest paths are always absolute URLs, we try to split it into fragments
+    and recombine.
+
+    So let's throw it something CRAZY with slashes and spaces and make sure it
+    still works.
+    """
     cache = dataset_cache.DatasetCache(
-        tmp_path, s3_cache=None, doi_map=dataset_cache.ZenodoDoiMap({"example": doi})
+        tmp_path, doi_map=dataset_cache.ZenodoDoiMap({"example": doi})
     )
-    resource_url = f"{record_url}/files/nested/my%20archive.zip"
+    remote_files = {
+        "datapackage.json": _datapackagify(
+            {"archive": "nested/my%20archive.zip?download=1"},
+            record_url=f"{record_url}/files",
+        ),
+        "nested/my%20archive.zip": "archive content",
+    }
 
-    remote = _remote_files(
-        {
-            f"{record_url}/files/datapackage.json": _datapackage(
-                {"archive": resource_url}
-            ),
-            resource_url: b"archive content",
-        }
-    )
-    monkeypatch.setattr(cache, "_download_from_zenodo", remote)
-    monkeypatch.setattr(cache, "_download_from_s3", _unexpected_download)
-
-    destination = cache.ensure_local("example", "archive")
-    assert (
-        destination
-        == tmp_path / "example" / doi.replace("/", "-") / "nested" / "my archive.zip"
-    )
-    assert destination.read_bytes() == b"archive content"
-    assert [request.args[0] for request in remote.call_args_list] == [
-        f"{record_url}/files/datapackage.json",
-        resource_url,
-    ]
-
-
-def test_cache_uses_packaged_doi_map(tmp_path):
-    cache = dataset_cache.DatasetCache(tmp_path)
-    assert cache.doi_map.root["eiabluesky"] == "10.5281/zenodo.21629428"
-
-
-def _populate_datapackage(
-    cache: dataset_cache.DatasetCache, paths: dict[str, str]
-) -> Path:
-    """Seed a local manifest from names and paths relative to the pinned record."""
-    root = cache.cache_dir / "example" / "10.5281-zenodo.12345"
-    root.mkdir(parents=True, exist_ok=True)
-
-    (root / "datapackage.json").write_bytes(
-        _datapackage(
-            {
-                name: f"https://zenodo.org/records/12345/files/{path}"
-                for name, path in paths.items()
-            }
+    # Don't populate local or S3, only Zenodo - force us to go through every cache layer
+    with (
+        _mock_s3(cache, {}, doi=doi) as s3,
+        _mock_zenodo(cache, remote_files, doi=doi) as zenodo,
+    ):
+        result = cache.ensure_local("example", "archive")
+        assert (
+            result
+            == tmp_path / "example" / doi.replace("/", "-") / "nested/my archive.zip"
         )
+        assert result.read_text() == "archive content"
+        s3_prefix = f"s3://pudl.catalyst.coop/zenodo/example/{doi.replace('/', '-')}"
+        assert s3.call_args_list == [
+            call(f"{s3_prefix}/datapackage.json", ANY),
+            call(f"{s3_prefix}/nested/my archive.zip", ANY),
+        ]
+        assert zenodo.call_args_list == [
+            call(f"{record_url}/files/datapackage.json", ANY),
+            call(f"{record_url}/files/nested/my%20archive.zip", ANY),
+        ]
+
+
+def test_manifest_resource_must_match_pinned_record(
+    cache: dataset_cache.DatasetCache,
+) -> None:
+    """Don't want to allow mismatched DOI paths in the datapackage."""
+    _populate_local(
+        cache,
+        {
+            "datapackage.json": _datapackagify(
+                {"archive": "archive.zip"},
+                record_url="https://zenodo.org/records/99999/files",
+            )
+        },
     )
-    return root
-
-
-def _datapackage(paths: dict[str, str]) -> bytes:
-    """Serialize resource names and explicit URLs into a minimal manifest."""
-    return json.dumps(
-        {"resources": [{"name": name, "path": path} for name, path in paths.items()]}
-    ).encode("utf-8")
-
-
-def _remote_files(files: dict[str, bytes]) -> Mock:
-    """Serve only the supplied URLs and record requests for test assertions."""
-
-    def download(url, destination):
-        destination.write_bytes(files[url])
-
-    return Mock(side_effect=download)
-
-
-def _unexpected_download(*args):
-    """Fail immediately when a test's excluded download path is used."""
-    raise AssertionError("Unexpected download")
+    with _mock_s3(cache, {}) as s3, _mock_zenodo(cache, {}) as zenodo:
+        with pytest.raises(ValueError, match="outside the pinned record"):
+            cache.ensure_local("example", "archive")
+        s3.assert_not_called()
+        zenodo.assert_not_called()

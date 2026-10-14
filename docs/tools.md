@@ -88,10 +88,11 @@ Many of our datasets are pinned to Zenodo DOIs. Unfortunately, Zenodo has reliab
 We have a local cache that allows us to avoid hitting Zenodo if the requested DOI has already been cached.
 The local cache defaults to `.snakemake/zenodo`; override it with `--config dataset_cache_dir=/path/to/cache`.
 
-On local cache miss, we first try to download the requested version from a mirror of our Zenodo archives on S3.
-Only if that fails do we try to request from Zenodo directly.
+On local cache miss, we first try to download the requested version from a
+mirror of our Zenodo archives on S3 (`s3://pudl.catalyst.coop/zenodo`). Only if
+that fails do we try to request from Zenodo directly.
 
-Note that downloads occur *during DAG evaluation* - so it can be slow to run even a dry-run if the cache is cold.
+Note that downloads occur _during DAG evaluation_ - so it can be slow to run even a dry-run if the cache is cold.
 
 ### In production
 
@@ -168,7 +169,7 @@ defined under the `tool.ruff` section of `pyproject.toml`.
 We use [pyrefly](https://pyrefly.org/), a fast Rust-based type checker. It's
 configured under the `tool.pyrefly` section of `pyproject.toml` and run via
 `pixi run lint`. It also runs as a pre-commit hook, and unlike `pytest`, that hook
-*is* run by pre-commit.ci, so type errors are caught there too.
+_is_ run by pre-commit.ci, so type errors are caught there too.
 
 ## Code & Documentation Linters
 
