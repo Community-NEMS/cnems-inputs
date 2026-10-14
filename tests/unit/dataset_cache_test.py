@@ -18,7 +18,11 @@ def _populate_local(
     dataset: str = "example",
     doi: str = "10.5281/zenodo.12345",
 ) -> None:
-    """Dump files where local cache expects them."""
+    """Dump files where local cache expects them.
+
+    This doesn't spit out a Mock like the remote cache guys below, because we
+    are actually writing to disk, just in a temporary location.
+    """
     root = cache.cache_dir / dataset / doi.replace("/", "-")
     for name, content in files.items():
         destination = root / name
@@ -123,7 +127,7 @@ def test_cache_always_populates_local(
     s3_files: dict[str, str],
     zenodo_files: dict[str, str],
 ) -> None:
-    """Make sure ensure_local does populates the local cache.
+    """Make sure ensure_local does populate the local cache.
 
     * initialize the apparent local/s3/zenodo caches
     * see if first ensure_local() call gets expected content

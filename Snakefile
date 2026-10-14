@@ -44,6 +44,18 @@ def resolve_dataset(dataset: str, resource_name: str) -> Callable[[object], str]
     We don't just call ensure_local and return a string here, since that would
     mean *all* inputs are checked at DAG collection time whenever we run any
     rule. This way, merely all inputs *for the upstream subgraph* get checked.
+
+    See
+    https://snakemake.readthedocs.io/en/stable/tutorial/advanced.html#step-3-input-functions
+    for details on input functions. Relevant is that the input function is only
+    called once the wildcards are resolved and Snakemake has determined this
+    rule needs to be evaluated.
+
+    NOTE 2026-10-14 - their example is just a vanilla function, but note that
+    the function itself (and not its return value) is passed into the rule's
+    `inputs:` block. But we need a *different* function for each resolved
+    dataset, so we have this higher-order function instead.
+
     """
     return lambda wildcards: str(dataset_cache.ensure_local(dataset, resource_name))
 
