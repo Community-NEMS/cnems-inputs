@@ -9,7 +9,7 @@ rule emm_inputs:
     r2("datapackage.json"),
     # For validation purposes!
     r2(f"raw/bluesky/supply_curve.csv"),
-    r2("raw/pudl/core_nrelatb__yearly_projected_cost_performance.parquet") # TODO: TEMP!
+    r2("core/capital_cost.csv") # TODO: TEMP!
 
 #####################################################################################
 ################### Rules for raw assets ############################################
