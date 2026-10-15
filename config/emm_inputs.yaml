@@ -83,6 +83,8 @@ core_supply_curve:
   eia860m_month: 2024-01-01
 core_capital_cost:
   model: Market
-  atb_year: 2024 # TODO: generalize?
+  scenario: Moderate
+  atb_year: 2024 # TODO: generalize if using for more than one table?
   first_year: 2023 # TODO: generalize
   last_year: 2050 # TODO: generalize
+  cost_recovery_period: 30
