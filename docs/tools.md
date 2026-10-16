@@ -84,10 +84,15 @@ To run the pipeline for one specific input, just run its rule instead:
 pixi run snakemake core_supply_curve --cores 1
 ```
 
-To use already-cached Zenodo downloads without touching the network, add
-`--config zenodo_source=cache` to the Snakemake command.
-This reads from the configured cached-http storage cache, so the files need to
-have been downloaded in an earlier online run.
+Many of our datasets are pinned to Zenodo DOIs. Unfortunately, Zenodo has reliability issues.
+We have a local cache that allows us to avoid hitting Zenodo if the requested DOI has already been cached.
+The local cache defaults to `.snakemake/zenodo`; override it with `--config dataset_cache_dir=/path/to/cache`.
+
+On local cache miss, we first try to download the requested version from a
+mirror of our Zenodo archives on S3 (`s3://pudl.catalyst.coop/zenodo`). Only if
+that fails do we try to request from Zenodo directly.
+
+Note that downloads occur _during DAG evaluation_ - so it can be slow to run even a dry-run if the cache is cold.
 
 ### In production
 
@@ -164,7 +169,7 @@ defined under the `tool.ruff` section of `pyproject.toml`.
 We use [pyrefly](https://pyrefly.org/), a fast Rust-based type checker. It's
 configured under the `tool.pyrefly` section of `pyproject.toml` and run via
 `pixi run lint`. It also runs as a pre-commit hook, and unlike `pytest`, that hook
-*is* run by pre-commit.ci, so type errors are caught there too.
+_is_ run by pre-commit.ci, so type errors are caught there too.
 
 ## Code & Documentation Linters
 
