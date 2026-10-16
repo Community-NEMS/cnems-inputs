@@ -1,3 +1,6 @@
+general: # high-level parameters for generating all tables
+  pudl_version: nightly
+
 core_snapshots: # this is the list we iterate over for the "snapshot" approach
   - base_elec_price # ok grab raw/bluesky/base_elec_price.csv
   - base_load
@@ -77,6 +80,9 @@ core_supply_curve:
   first_year: 2023
   last_year: 2050
   population_year: 2022
-  # when pudl inputs are used in more than one pipeline, we should probably move this
-  pudl_version: nightly
   eia860m_month: 2024-01-01
+core_capital_cost:
+  model: Market
+  atb_year: 2024 # TODO: generalize?
+  first_year: 2023 # TODO: generalize
+  last_year: 2050 # TODO: generalize
