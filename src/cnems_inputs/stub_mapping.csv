@@ -1,7 +1,7 @@
 resource_name,column_raw,column_out,unit_factor
 battery_efficiency,BatteryEfficiency,efficiency,1
-cap_cost_initial,CapCostInitial,cost,0.001
-cap_cost,CapCost,cost,0.001
+capital_cost_initial,CapCostInitial,cost,0.001
+capital_cost,CapCost,cost,0.001
 cap_factor_vre,CapFactorVRE,value,1
 fom_cost,FOMCost,cost,0.001
 h2_price,H2Price,cost,1
@@ -11,9 +11,9 @@ learning_rate,LearningRate,rate,1
 ramp_down_cost,RampDownCost,cost,0.001
 ramp_rate,RampRate,rate,1
 ramp_up_cost,RampUpCost,cost,0.001
-reg_reserves_cost,RegReservesCost,cost,0.001
+reserve_cost,RegReservesCost,cost,0.001
 res_tech_upper_bound,ResTechUpperBound,value,1
-reserve_margin,ReserveMargin,margin,1
+planning_reserve_margin,ReserveMargin,margin,1
 supply_curve_learning,SupplyCurveLearning,capacity,1
 supply_curve,SupplyCurve,capacity,1000
 supply_price,SupplyPrice,cost,0.001

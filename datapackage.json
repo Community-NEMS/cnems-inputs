@@ -78,9 +78,9 @@
       }
     },
     {
-      "name": "cap_cost",
+      "name": "capital_cost",
       "type": "table",
-      "path": "out/cap_cost.csv",
+      "path": "out/capital_cost.csv",
       "scheme": "file",
       "format": "csv",
       "mediatype": "text/csv",
@@ -112,9 +112,9 @@
       }
     },
     {
-      "name": "cap_cost_initial",
+      "name": "capital_cost_initial",
       "type": "table",
-      "path": "out/cap_cost_initial.csv",
+      "path": "out/capital_cost_initial.csv",
       "scheme": "file",
       "format": "csv",
       "mediatype": "text/csv",
@@ -467,9 +467,9 @@
       }
     },
     {
-      "name": "reg_reserves_cost",
+      "name": "reserve_cost",
       "type": "table",
-      "path": "out/reg_reserves_cost.csv",
+      "path": "out/reserve_cost.csv",
       "scheme": "file",
       "format": "csv",
       "mediatype": "text/csv",
@@ -489,9 +489,9 @@
       }
     },
     {
-      "name": "reserve_margin",
+      "name": "planning_reserve_margin",
       "type": "table",
-      "path": "out/reserve_margin.csv",
+      "path": "out/planning_reserve_margin.csv",
       "scheme": "file",
       "format": "csv",
       "mediatype": "text/csv",

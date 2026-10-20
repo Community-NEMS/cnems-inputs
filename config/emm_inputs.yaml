@@ -2,8 +2,8 @@ core_snapshots: # this is the list we iterate over for the "snapshot" approach
   - base_elec_price # ok grab raw/bluesky/base_elec_price.csv
   - base_load
   - battery_efficiency
-  - cap_cost
-  - cap_cost_initial
+  - capital_cost
+  - capital_cost_initial
   - cap_factor_vre
   - enduse_base_shares
   - enduse_scalar
@@ -17,8 +17,8 @@ core_snapshots: # this is the list we iterate over for the "snapshot" approach
   - ramp_down_cost
   - ramp_rate
   - ramp_up_cost
-  - reg_reserves_cost
-  - reserve_margin
+  - reserve_cost
+  - planning_reserve_margin
   - res_tech_upper_bound
   - supply_curve_learning
   - supply_price
@@ -36,8 +36,8 @@ raw_bluesky: # this is the list we iterate over for extraction from bluesky zip
   base_elec_price: input/residential/BaseElecPrice.csv
   base_load: input/residential/BaseLoad.csv
   battery_efficiency: input/electricity/cem_inputs/BatteryEfficiency.csv
-  cap_cost: input/electricity/cem_inputs/CapCost.csv
-  cap_cost_initial: input/electricity/cem_inputs/CapCostInitial.csv
+  capital_cost: input/electricity/cem_inputs/CapCost.csv
+  capital_cost_initial: input/electricity/cem_inputs/CapCostInitial.csv
   cap_factor_vre: input/electricity/cem_inputs/CapFactorVRE.csv
   enduse_base_shares: input/residential/EnduseBaseShares.csv
   enduse_scalar: input/residential/EnduseScalar.csv
@@ -51,8 +51,8 @@ raw_bluesky: # this is the list we iterate over for extraction from bluesky zip
   ramp_down_cost: input/electricity/cem_inputs/RampDownCost.csv
   ramp_rate: input/electricity/cem_inputs/RampRate.csv
   ramp_up_cost: input/electricity/cem_inputs/RampUpCost.csv
-  reg_reserves_cost: input/electricity/cem_inputs/RegReservesCost.csv
-  reserve_margin: input/electricity/cem_inputs/ReserveMargin.csv
+  reserve_cost: input/electricity/cem_inputs/RegReservesCost.csv
+  planning_reserve_margin: input/electricity/cem_inputs/ReserveMargin.csv
   res_tech_upper_bound: input/electricity/cem_inputs/ResTechUpperBound.csv
   supply_curve: input/electricity/cem_inputs/SupplyCurve.csv
   supply_curve_learning: input/electricity/cem_inputs/SupplyCurveLearning.csv
