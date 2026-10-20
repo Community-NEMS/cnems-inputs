@@ -16,7 +16,7 @@ res_tech_upper_bound,ResTechUpperBound,value,1
 planning_reserve_margin,ReserveMargin,margin,1
 supply_curve_learning,SupplyCurveLearning,capacity,1
 supply_curve,SupplyCurve,capacity,1000
-supply_price,SupplyPrice,cost,0.001
+generation_cost,SupplyPrice,cost,0.001
 tran_cost_int,region1,region_international,1
 tran_cost_int,TranCostInt,cost,0.001
 tran_cost,region,destination_region,1

@@ -590,9 +590,9 @@
       }
     },
     {
-      "name": "supply_price",
+      "name": "generation_cost",
       "type": "table",
-      "path": "out/supply_price.csv",
+      "path": "out/generation_cost.csv",
       "scheme": "file",
       "format": "csv",
       "mediatype": "text/csv",
