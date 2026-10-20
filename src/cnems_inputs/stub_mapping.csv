@@ -1,5 +1,5 @@
 resource_name,column_raw,column_out,unit_factor
-battery_efficiency,BatteryEfficiency,efficiency,1
+storage_efficiency,BatteryEfficiency,efficiency,1
 capital_cost_initial,CapCostInitial,cost,0.001
 capital_cost,CapCost,cost,0.001
 cap_factor_vre,CapFactorVRE,value,1

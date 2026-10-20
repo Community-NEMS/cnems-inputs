@@ -1,7 +1,7 @@
 core_snapshots: # this is the list we iterate over for the "snapshot" approach
   - base_elec_price # ok grab raw/bluesky/base_elec_price.csv
   - base_load
-  - battery_efficiency
+  - storage_efficiency
   - capital_cost
   - capital_cost_initial
   - cap_factor_vre
@@ -34,7 +34,7 @@ core_snapshots: # this is the list we iterate over for the "snapshot" approach
 raw_bluesky: # this is the list we iterate over for extraction from bluesky zip
   base_elec_price: input/residential/BaseElecPrice.csv
   base_load: input/residential/BaseLoad.csv
-  battery_efficiency: input/electricity/cem_inputs/BatteryEfficiency.csv
+  storage_efficiency: input/electricity/cem_inputs/BatteryEfficiency.csv
   capital_cost: input/electricity/cem_inputs/CapCost.csv
   capital_cost_initial: input/electricity/cem_inputs/CapCostInitial.csv
   cap_factor_vre: input/electricity/cem_inputs/CapFactorVRE.csv

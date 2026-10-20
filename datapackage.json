@@ -57,9 +57,9 @@
       }
     },
     {
-      "name": "battery_efficiency",
+      "name": "storage_efficiency",
       "type": "table",
-      "path": "out/battery_efficiency.csv",
+      "path": "out/storage_efficiency.csv",
       "scheme": "file",
       "format": "csv",
       "mediatype": "text/csv",
