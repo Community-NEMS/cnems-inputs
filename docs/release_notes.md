@@ -46,7 +46,7 @@ would when cutting an actual release. -->
     vendor input data; this necessitated replacing `cached_http` with our own
     bespoke `dataset_cache` module. See issue #20 and PR !79.
 - Applied schema changes requested by modelers, including: resource names, units. See
-    issues #86, #88 and PRs !87, !89.
+    issues #86, #88 and PRs !87, !90.
 
 ### Bug Fixes
 
