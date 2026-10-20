@@ -875,9 +875,9 @@
       }
     },
     {
-      "name": "tran_limit_gen_int",
+      "name": "supply_limit_intl",
       "type": "table",
-      "path": "out/tran_limit_gen_int.csv",
+      "path": "out/supply_limit_intl.csv",
       "scheme": "file",
       "format": "csv",
       "mediatype": "text/csv",

@@ -29,7 +29,7 @@ core_snapshots: # this is the list we iterate over for the "snapshot" approach
   - tran_cost_intl
   - tran_limit
   - tran_limit_cap_intl
-  - tran_limit_gen_int
+  - supply_limit_intl
 
 raw_bluesky: # this is the list we iterate over for extraction from bluesky zip
   base_elec_price: input/residential/BaseElecPrice.csv
@@ -63,7 +63,7 @@ raw_bluesky: # this is the list we iterate over for extraction from bluesky zip
   tran_cost_intl: input/electricity/cem_inputs/TranCostInt.csv
   tran_limit: input/electricity/cem_inputs/TranLimit.csv
   tran_limit_cap_intl: input/electricity/cem_inputs/TranLimitCapInt.csv
-  tran_limit_gen_int: input/electricity/cem_inputs/TranLimitGenInt.csv
+  supply_limit_intl: input/electricity/cem_inputs/TranLimitGenInt.csv
   # Inputs for the Supply curve pipeline
   crosswalk_tech: sample/electricity_data_pipeline/input/cw_tech.csv
   crosswalk_status: sample/electricity_data_pipeline/input/cw_status.csv
