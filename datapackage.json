@@ -313,9 +313,9 @@
       }
     },
     {
-      "name": "hours_to_buy",
+      "name": "storage_duration",
       "type": "table",
-      "path": "out/hours_to_buy.csv",
+      "path": "out/storage_duration.csv",
       "scheme": "file",
       "format": "csv",
       "mediatype": "text/csv",

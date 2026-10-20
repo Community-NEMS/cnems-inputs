@@ -10,7 +10,7 @@ core_snapshots: # this is the list we iterate over for the "snapshot" approach
   - enduse_shape
   - fom_cost
   - h2_price
-  - hours_to_buy
+  - storage_duration
   - hydro_cap_factor
   - learning_rate
   - load_scalar
@@ -43,7 +43,7 @@ raw_bluesky: # this is the list we iterate over for extraction from bluesky zip
   enduse_shape: input/residential/EnduseShapes.csv
   fom_cost: input/electricity/cem_inputs/FOMCost.csv
   h2_price: input/electricity/cem_inputs/H2Price.csv
-  hours_to_buy: input/electricity/cem_inputs/HourstoBuy.csv
+  storage_duration: input/electricity/cem_inputs/HourstoBuy.csv
   hydro_cap_factor: input/electricity/cem_inputs/HydroCapFactor.csv
   learning_rate: input/electricity/cem_inputs/LearningRate.csv
   load_scalar: input/residential/LoadScalar.csv

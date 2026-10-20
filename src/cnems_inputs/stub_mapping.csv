@@ -5,7 +5,7 @@ capital_cost,CapCost,cost,0.001
 cap_factor_vre,CapFactorVRE,value,1
 fom_cost,FOMCost,cost,0.001
 h2_price,H2Price,cost,1
-hours_to_buy,HourstoBuy,hours,1
+storage_duration,HourstoBuy,hours,1
 hydro_cap_factor,HydroCapFactor,value,1
 learning_rate,LearningRate,rate,1
 ramp_down_cost,RampDownCost,cost,0.001
