@@ -335,9 +335,9 @@
       }
     },
     {
-      "name": "hydro_cap_factor",
+      "name": "hydro_capacity_factor",
       "type": "table",
-      "path": "out/hydro_cap_factor.csv",
+      "path": "out/hydro_capacity_factor.csv",
       "scheme": "file",
       "format": "csv",
       "mediatype": "text/csv",
