@@ -8,17 +8,20 @@ import sysconfig
 import time
 from collections.abc import Callable, Iterator
 from pathlib import Path
-from zipfile import ZipFile
 
 import pytest
 
-from cnems_inputs.zenodo import cache_path, resolve
+from cnems_inputs.dataset_cache import DatasetCache
 
 
 @pytest.fixture(scope="session")
-def test_fixture_dir(test_dir: Path) -> Path:
-    """Return the test fixture data directory."""
-    return test_dir / "fixtures"
+def dataset_cache(test_dir: Path) -> DatasetCache:
+    """Set up a dataset cache for the test session.
+
+    Grabs datasets by Zenodo DOI from Zenodo mirror hosted on the PUDL S3 bucket.
+    If the dataset's not cached on S3, still falls back to Zenodo.
+    """
+    return DatasetCache(test_dir.parent / ".snakemake" / "zenodo")
 
 
 @pytest.fixture(scope="session")
@@ -66,53 +69,14 @@ def fake_r2(
 
 
 @pytest.fixture(scope="session")
-def cached_http_cache(
-    tmp_path_factory: pytest.TempPathFactory,
-    test_fixture_dir: Path,
-) -> Path:
-    """Warm a Zenodo cache directory with some test inputs.
-
-    This avoids us having to hit Zenodo during integration test. If we pull
-    more data from Zenodo we'll have to rethink how we want to warm the cache
-    but for now manual creation like this should be OK (2026-09-15).
-
-    We include everything in the test/fixtures/eiabluesky directory, which is
-    much less than what's actually archived right now.
-
-    We create the ZIP here so the internal structure of the ZIP is in a
-    source-controlled situation instead of opaquely in a committed ZIP file.
-    """
-    cache_dir = tmp_path_factory.mktemp("cached-http-cache")
-    zip_url = resolve("eiabluesky", "eiabluesky-v1-1.zip")
-    zip_path = cache_path(zip_url, cache_dir=cache_dir)
-    zip_path.parent.mkdir(parents=True)
-
-    source_root = test_fixture_dir / "eiabluesky"
-    with ZipFile(zip_path, "w") as zf:
-        for source_path in source_root.rglob("*"):
-            if source_path.is_file():
-                zf.write(
-                    source_path,
-                    arcname=source_path.relative_to(source_root).as_posix(),
-                )
-
-    return cache_dir
-
-
-@pytest.fixture(scope="session")
 def materialize_input(
     fake_r2: tuple[Path, dict[str, str]],
-    cached_http_cache: Path,
+    dataset_cache: DatasetCache,
 ) -> Callable[[str], Path]:
     """Return a helper that runs Snakemake for one input and returns its CSV.
 
-    Upstream files that you need for your resource, but don't actually want to
-    hit network for, should be cached locally via cached_http_cache.
-
-    Points cached_http at the test cache set up in cached_http_cache above so
-    we can skip Zenodo.
-
-    Points r2 at the test endpoint set up in fake_r2.
+    Inputs come from the real S3 mirror through the persistent local dataset cache.
+    Only published outputs use the fake R2 endpoint.
     """
 
     @functools.cache
@@ -128,8 +92,7 @@ def materialize_input(
                 "1",
                 rule_name,
                 "--config",
-                "zenodo_source=cache",
-                f"cached_http_cache={cached_http_cache.as_posix()}",
+                f"dataset_cache_dir={dataset_cache.cache_dir.as_posix()}",
                 f"r2={json.dumps(r2_config)}",
             ],
             check=True,

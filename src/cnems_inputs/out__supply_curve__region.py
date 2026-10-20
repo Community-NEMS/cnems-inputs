@@ -97,5 +97,5 @@ if __name__ == "__main__":
         crosswalk_steps_path=snakemake.input["crosswalk_steps_path"],
         crosswalk_region_path=snakemake.input["crosswalk_region_path"],
         settings=snakemake.params["settings"],
-        regional_output_path=snakemake.output[0],
+        regional_output_path=Path(snakemake.output[0]),
     )

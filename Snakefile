@@ -1,7 +1,3 @@
-storage cached_http:
-  provider="cached-http",
-  cache=config.get("cached_http_cache", ".snakemake/storage/cached-http/cache")
-
 storage r2:
   provider="s3",
   endpoint_url=config["r2"]["endpoint_url"],
@@ -13,8 +9,15 @@ storage s3:
 
 import polars as pl
 
-from cnems_inputs.zenodo import cache_path, resolve
+from cnems_inputs.dataset_cache import DatasetCache
 from cnems_inputs.helpers import get_published_paths, versioned_r2_uri
+from collections.abc import Callable
+import logging
+
+dataset_logger = logging.getLogger("cnems_inputs.dataset_cache")
+dataset_logger.setLevel(logging.INFO)
+if not dataset_logger.handlers:
+    dataset_logger.addHandler(logging.StreamHandler())
 
 OUTPUT_BUCKET = config["r2"]["bucket"]
 
@@ -30,35 +33,30 @@ def r2(path: str) -> str:
     """
     return storage.r2(versioned_r2_uri(config["r2"]["bucket"], path))
 
-def resolve_dataset(dataset: str, resource_path: str) -> str:
-    """Resolve a resource within a dataset to its URL.
+dataset_cache = DatasetCache(
+    cache_dir=config.get("dataset_cache_dir", ".snakemake/zenodo"),
+    s3_cache=config.get("dataset_s3_cache", "s3://pudl.catalyst.coop/zenodo"),
+)
 
-    The dataset is matched up with its DOI defined in
-    src/cnems_inputs/zenodo_dois.yaml.
+def resolve_dataset(dataset: str, resource_name: str) -> Callable[[object], str]:
+    """Return input function that ensures a resource is cached locally.
 
-    If zenodo_source config is set to "remote", the default, we register these
-    URLs with Snakemake storage.
+    We don't just call ensure_local and return a string here, since that would
+    mean *all* inputs are checked at DAG collection time whenever we run any
+    rule. This way, merely all inputs *for the upstream subgraph* get checked.
 
-    If it is set to "cache" (via `--config zenodo_source=cache`) we return the
-    path to the existing local cache instead, avoiding network calls.
+    See
+    https://snakemake.readthedocs.io/en/stable/tutorial/advanced.html#step-3-input-functions
+    for details on input functions. Relevant is that the input function is only
+    called once the wildcards are resolved and Snakemake has determined this
+    rule needs to be evaluated.
 
-    Most of the actual logic lives in `cnems_inputs.zenodo.resolve` - this just
-    provides the glue to Snakemake storage.
-
-    Args:
-        dataset: Dataset name configured in the DOI map.
-        resource_path: Path to desired resource relative to the dataset's
-            Zenodo record.
+    NOTE 2026-10-14 - their example is just a vanilla function, but note that
+    the function itself (and not its return value) is passed into the rule's
+    `inputs:` block. But we need a *different* function for each resolved
+    dataset, so we have this higher-order function instead.
     """
-    # NOTE (2026-08-26): If we ever use non-Zenodo DOI providers we'll need to
-    # dispatch properly.
-    url = resolve(dataset, resource_path)
-    zenodo_source = config.get("zenodo_source", "remote")
-    if zenodo_source == "remote":
-        return storage.cached_http(url)
-    if zenodo_source == "cache":
-        return str(cache_path(url, cache_dir=storage._storages["cached_http"].settings.cache))
-    raise ValueError("zenodo_source must be 'remote' or 'cache'")
+    return lambda wildcards: str(dataset_cache.ensure_local(dataset, resource_name))
 
 def pudl(version: str, table_name: str) -> str:
     """Read a PUDL table from aws for a given version.

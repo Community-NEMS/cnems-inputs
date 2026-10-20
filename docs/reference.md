@@ -1,9 +1,9 @@
 # API Reference
 
-::: cnems_inputs
+## ::: cnems_inputs
 
-::: cnems_inputs.dummy
+### ::: cnems_inputs.dataset_cache
 
-::: cnems_inputs.cli
+### ::: cnems_inputs.helpers
 
-::: cnems_inputs.zenodo
+### ::: cnems_inputs.schema
