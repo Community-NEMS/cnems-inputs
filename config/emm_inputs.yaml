@@ -1,5 +1,7 @@
 general: # high-level parameters for generating all tables
   pudl_version: nightly
+  first_year: 2023
+  last_year: 2050
 
 core_snapshots: # this is the list we iterate over for the "snapshot" approach
   - base_elec_price # ok grab raw/bluesky/base_elec_price.csv
@@ -77,14 +79,10 @@ raw_bluesky: # this is the list we iterate over for extraction from bluesky zip
   dgpv_cap: sample/electricity_data_pipeline/input/dgpv_cap.csv
   population: sample/electricity_data_pipeline/input/County_Population_2010-2022.csv
 core_supply_curve:
-  first_year: 2023
-  last_year: 2050
   population_year: 2022
   eia860m_month: 2024-01-01
 core_capital_cost:
   model: Market
   scenario: Moderate
-  atb_year: 2024 # TODO: generalize if using for more than one table?
-  first_year: 2023 # TODO: generalize
-  last_year: 2050 # TODO: generalize
+  atb_year: 2024 # TODO: generalize if using for more than one table
   cost_recovery_period: 30

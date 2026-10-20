@@ -44,7 +44,7 @@ rule core__supply_curve__county:
     pop_path=r2(f"raw/bluesky/population.csv"),
   output: r2("core/supply_curve__county.csv"),
   params:
-    settings = config["core_supply_curve"]
+    settings = config["core_supply_curve"] | config["general"]
   script:
     "src/cnems_inputs/core__supply_curve__county.py"
 
@@ -54,9 +54,12 @@ rule core__capital_cost:
     crosswalk_tech_path=r2(f"raw/bluesky/crosswalk_tech.csv"),
     crosswalk_region_path=r2(f"raw/bluesky/crosswalk_region.csv"),
     crosswalk_steps_path=r2(f"raw/bluesky/crosswalk_steps.csv"),
-  output: r2("core/capital_cost.csv"),
+    crosswalk_eia_nrel_tech_types_path="src/cnems_inputs/eia_nrelatb_tech_type_crosswalk.csv",
+  output:
+    r2("core/capital_cost.csv"),
+    r2("core/capital_cost_initial.csv")
   params:
-    settings = config["core_capital_cost"]
+    settings = config["core_capital_cost"] | config["general"]
   script:
     "src/cnems_inputs/core__capital_cost.py"
 
@@ -68,7 +71,7 @@ rule out__supply_curve__region:
   output:
     r2("out/supply_curve.csv")
   params:
-    settings = config["core_supply_curve"]
+    settings = config["core_supply_curve"] | config["general"]
   script:
     "src/cnems_inputs/out__supply_curve__region.py"
 
