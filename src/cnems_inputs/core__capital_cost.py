@@ -208,6 +208,6 @@ if __name__ == "__main__":
             "crosswalk_eia_nrel_tech_types_path"
         ],
         settings=snakemake.params["settings"],
-        capital_cost_output_path=snakemake.output[0],
-        capital_cost_initial_output_path=snakemake.output[1],
+        capital_cost_output_path=Path(snakemake.output[0]),
+        capital_cost_initial_output_path=Path(snakemake.output[1]),
     )
