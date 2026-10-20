@@ -16,8 +16,8 @@ reserve_tech_limit,ResTechUpperBound,value,1
 planning_reserve_margin,ReserveMargin,margin,1
 available_capacity,SupplyCurve,capacity,1000
 generation_cost,SupplyPrice,cost,0.001
-tran_cost_int,region1,region_international,1
-tran_cost_int,TranCostInt,cost,0.001
+tran_cost_intl,region1,region_international,1
+tran_cost_intl,TranCostInt,cost,0.001
 tran_cost,region,destination_region,1
 tran_cost,region1,source_region,1
 tran_cost,TranCost,cost,0.001

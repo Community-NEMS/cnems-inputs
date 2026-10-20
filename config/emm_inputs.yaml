@@ -26,7 +26,7 @@ core_snapshots: # this is the list we iterate over for the "snapshot" approach
   - tech_subsets
   - test_prices
   - tran_cost
-  - tran_cost_int
+  - tran_cost_intl
   - tran_limit
   - tran_limit_cap_int
   - tran_limit_gen_int
@@ -60,7 +60,7 @@ raw_bluesky: # this is the list we iterate over for extraction from bluesky zip
   tech_subsets: input/electricity/tech_subsets.csv
   test_prices: input/residential/testPrices.csv
   tran_cost: input/electricity/cem_inputs/TranCost.csv
-  tran_cost_int: input/electricity/cem_inputs/TranCostInt.csv
+  tran_cost_intl: input/electricity/cem_inputs/TranCostInt.csv
   tran_limit: input/electricity/cem_inputs/TranLimit.csv
   tran_limit_cap_int: input/electricity/cem_inputs/TranLimitCapInt.csv
   tran_limit_gen_int: input/electricity/cem_inputs/TranLimitGenInt.csv

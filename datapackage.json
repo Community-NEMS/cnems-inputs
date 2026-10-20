@@ -773,9 +773,9 @@
       }
     },
     {
-      "name": "tran_cost_int",
+      "name": "tran_cost_intl",
       "type": "table",
-      "path": "out/tran_cost_int.csv",
+      "path": "out/tran_cost_intl.csv",
       "scheme": "file",
       "format": "csv",
       "mediatype": "text/csv",
