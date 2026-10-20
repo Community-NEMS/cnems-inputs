@@ -5,9 +5,9 @@ core_snapshots: # this is the list we iterate over for the "snapshot" approach
   - capital_cost
   - capital_cost_initial
   - cap_factor_vre
-  - enduse_base_shares
+  - enduse_base_share
   - enduse_scalar
-  - enduse_shapes
+  - enduse_shape
   - fom_cost
   - h2_price
   - hours_to_buy
@@ -39,9 +39,9 @@ raw_bluesky: # this is the list we iterate over for extraction from bluesky zip
   capital_cost: input/electricity/cem_inputs/CapCost.csv
   capital_cost_initial: input/electricity/cem_inputs/CapCostInitial.csv
   cap_factor_vre: input/electricity/cem_inputs/CapFactorVRE.csv
-  enduse_base_shares: input/residential/EnduseBaseShares.csv
+  enduse_base_share: input/residential/EnduseBaseShares.csv
   enduse_scalar: input/residential/EnduseScalar.csv
-  enduse_shapes: input/residential/EnduseShapes.csv
+  enduse_shape: input/residential/EnduseShapes.csv
   fom_cost: input/electricity/cem_inputs/FOMCost.csv
   h2_price: input/electricity/cem_inputs/H2Price.csv
   hours_to_buy: input/electricity/cem_inputs/HourstoBuy.csv

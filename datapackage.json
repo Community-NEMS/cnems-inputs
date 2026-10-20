@@ -175,9 +175,9 @@
       }
     },
     {
-      "name": "enduse_base_shares",
+      "name": "enduse_base_share",
       "type": "table",
-      "path": "out/enduse_base_shares.csv",
+      "path": "out/enduse_base_share.csv",
       "scheme": "file",
       "format": "csv",
       "mediatype": "text/csv",
@@ -221,9 +221,9 @@
       }
     },
     {
-      "name": "enduse_shapes",
+      "name": "enduse_shape",
       "type": "table",
-      "path": "out/enduse_shapes.csv",
+      "path": "out/enduse_shape.csv",
       "scheme": "file",
       "format": "csv",
       "mediatype": "text/csv",
