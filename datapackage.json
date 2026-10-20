@@ -510,9 +510,9 @@
       }
     },
     {
-      "name": "res_tech_upper_bound",
+      "name": "reserve_tech_limit",
       "type": "table",
-      "path": "out/res_tech_upper_bound.csv",
+      "path": "out/reserve_tech_limit.csv",
       "scheme": "file",
       "format": "csv",
       "mediatype": "text/csv",

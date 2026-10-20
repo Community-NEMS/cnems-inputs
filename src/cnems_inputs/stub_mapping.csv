@@ -12,7 +12,7 @@ ramp_down_cost,RampDownCost,cost,0.001
 ramp_rate,RampRate,rate,1
 ramp_up_cost,RampUpCost,cost,0.001
 reserve_cost,RegReservesCost,cost,0.001
-res_tech_upper_bound,ResTechUpperBound,value,1
+reserve_tech_limit,ResTechUpperBound,value,1
 planning_reserve_margin,ReserveMargin,margin,1
 available_capacity,SupplyCurve,capacity,1000
 generation_cost,SupplyPrice,cost,0.001
