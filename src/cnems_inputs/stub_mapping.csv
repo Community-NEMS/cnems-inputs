@@ -21,8 +21,8 @@ tran_cost_intl,TranCostInt,cost,0.001
 tran_cost,region,destination_region,1
 tran_cost,region1,source_region,1
 tran_cost,TranCost,cost,0.001
-tran_limit_cap_int,region1,region_international,1
-tran_limit_cap_int,TranLimitCapInt,capacity,1000
+tran_limit_cap_intl,region1,region_international,1
+tran_limit_cap_intl,TranLimitCapInt,capacity,1000
 tran_limit_gen_int,region1,region_international,1
 tran_limit_gen_int,TranLimitGenInt,generation,1000
 tran_limit,region,destination_region,1

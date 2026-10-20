@@ -807,9 +807,9 @@
       }
     },
     {
-      "name": "tran_limit_cap_int",
+      "name": "tran_limit_cap_intl",
       "type": "table",
-      "path": "out/tran_limit_cap_int.csv",
+      "path": "out/tran_limit_cap_intl.csv",
       "scheme": "file",
       "format": "csv",
       "mediatype": "text/csv",
