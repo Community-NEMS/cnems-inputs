@@ -22,6 +22,12 @@ def remap_stubs(
         out_df = raw_input_df.rename(
             columns={r["column_raw"]: r["column_out"] for r in remap_input.to_records()}
         )
+        out_df = out_df.assign(
+            **{
+                r["column_out"]: (out_df[r["column_out"]] * r["unit_factor"])
+                for r in remap_input.to_records()
+            }
+        )
     return out_df
 
 
