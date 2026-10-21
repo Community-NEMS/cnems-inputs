@@ -1,71 +1,71 @@
 core_snapshots: # this is the list we iterate over for the "snapshot" approach
   - base_elec_price # ok grab raw/bluesky/base_elec_price.csv
   - base_load
-  - battery_efficiency
-  - cap_cost
-  - cap_cost_initial
-  - cap_factor_vre
-  - enduse_base_shares
+  - storage_efficiency
+  - capital_cost
+  - capital_cost_initial
+  - capacity_factor_vre
+  - enduse_base_share
   - enduse_scalar
-  - enduse_shapes
+  - enduse_shape
   - fom_cost
   - h2_price
-  - hours_to_buy
-  - hydro_cap_factor
+  - storage_duration
+  - hydro_capacity_factor
   - learning_rate
   - load_scalar
   - ramp_down_cost
   - ramp_rate
   - ramp_up_cost
-  - reg_reserves_cost
-  - reserve_margin
-  - res_tech_upper_bound
+  - reserve_cost
+  - planning_reserve_margin
+  - reserve_tech_limit
   - supply_curve_learning
-  - supply_price
+  - generation_cost
   - sw_builds
   - sw_retires
   - tech_subsets
   - test_prices
   - tran_cost
-  - tran_cost_int
+  - tran_cost_intl
   - tran_limit
-  - tran_limit_cap_int
-  - tran_limit_gen_int
+  - tran_limit_cap_intl
+  - supply_limit_intl
 
 raw_bluesky: # this is the list we iterate over for extraction from bluesky zip
   base_elec_price: input/residential/BaseElecPrice.csv
   base_load: input/residential/BaseLoad.csv
-  battery_efficiency: input/electricity/cem_inputs/BatteryEfficiency.csv
-  cap_cost: input/electricity/cem_inputs/CapCost.csv
-  cap_cost_initial: input/electricity/cem_inputs/CapCostInitial.csv
-  cap_factor_vre: input/electricity/cem_inputs/CapFactorVRE.csv
-  enduse_base_shares: input/residential/EnduseBaseShares.csv
+  storage_efficiency: input/electricity/cem_inputs/BatteryEfficiency.csv
+  capital_cost: input/electricity/cem_inputs/CapCost.csv
+  capital_cost_initial: input/electricity/cem_inputs/CapCostInitial.csv
+  capacity_factor_vre: input/electricity/cem_inputs/CapFactorVRE.csv
+  enduse_base_share: input/residential/EnduseBaseShares.csv
   enduse_scalar: input/residential/EnduseScalar.csv
-  enduse_shapes: input/residential/EnduseShapes.csv
+  enduse_shape: input/residential/EnduseShapes.csv
   fom_cost: input/electricity/cem_inputs/FOMCost.csv
   h2_price: input/electricity/cem_inputs/H2Price.csv
-  hours_to_buy: input/electricity/cem_inputs/HourstoBuy.csv
-  hydro_cap_factor: input/electricity/cem_inputs/HydroCapFactor.csv
+  storage_duration: input/electricity/cem_inputs/HourstoBuy.csv
+  hydro_capacity_factor: input/electricity/cem_inputs/HydroCapFactor.csv
   learning_rate: input/electricity/cem_inputs/LearningRate.csv
   load_scalar: input/residential/LoadScalar.csv
   ramp_down_cost: input/electricity/cem_inputs/RampDownCost.csv
   ramp_rate: input/electricity/cem_inputs/RampRate.csv
   ramp_up_cost: input/electricity/cem_inputs/RampUpCost.csv
-  reg_reserves_cost: input/electricity/cem_inputs/RegReservesCost.csv
-  reserve_margin: input/electricity/cem_inputs/ReserveMargin.csv
-  res_tech_upper_bound: input/electricity/cem_inputs/ResTechUpperBound.csv
-  supply_curve: input/electricity/cem_inputs/SupplyCurve.csv
+  reserve_cost: input/electricity/cem_inputs/RegReservesCost.csv
+  planning_reserve_margin: input/electricity/cem_inputs/ReserveMargin.csv
+  reserve_tech_limit: input/electricity/cem_inputs/ResTechUpperBound.csv
+  available_capacity: input/electricity/cem_inputs/SupplyCurve.csv
   supply_curve_learning: input/electricity/cem_inputs/SupplyCurveLearning.csv
-  supply_price: input/electricity/cem_inputs/SupplyPrice.csv
+  generation_cost: input/electricity/cem_inputs/SupplyPrice.csv
   sw_builds: input/electricity/sw_builds.csv
   sw_retires: input/electricity/sw_retires.csv
   tech_subsets: input/electricity/tech_subsets.csv
   test_prices: input/residential/testPrices.csv
   tran_cost: input/electricity/cem_inputs/TranCost.csv
-  tran_cost_int: input/electricity/cem_inputs/TranCostInt.csv
+  tran_cost_intl: input/electricity/cem_inputs/TranCostInt.csv
   tran_limit: input/electricity/cem_inputs/TranLimit.csv
-  tran_limit_cap_int: input/electricity/cem_inputs/TranLimitCapInt.csv
-  tran_limit_gen_int: input/electricity/cem_inputs/TranLimitGenInt.csv
+  tran_limit_cap_intl: input/electricity/cem_inputs/TranLimitCapInt.csv
+  supply_limit_intl: input/electricity/cem_inputs/TranLimitGenInt.csv
   # Inputs for the Supply curve pipeline
   crosswalk_tech: sample/electricity_data_pipeline/input/cw_tech.csv
   crosswalk_status: sample/electricity_data_pipeline/input/cw_status.csv
@@ -73,7 +73,7 @@ raw_bluesky: # this is the list we iterate over for extraction from bluesky zip
   crosswalk_steps: sample/electricity_data_pipeline/input/cw_steps.csv
   dgpv_cap: sample/electricity_data_pipeline/input/dgpv_cap.csv
   population: sample/electricity_data_pipeline/input/County_Population_2010-2022.csv
-core_supply_curve:
+core_available_capacity:
   first_year: 2023
   last_year: 2050
   population_year: 2022

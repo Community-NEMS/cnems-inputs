@@ -19,7 +19,7 @@ def test_extract_emm_inputs(tmp_path: Path) -> None:
     with ZipFile(archive_path, "w") as archive:
         archive.writestr(resource_path, content)
 
-    output_path = tmp_path / "raw/bluesky/supply_curve.csv"
+    output_path = tmp_path / "raw/bluesky/available_capacity.csv"
     extract(
         str(archive_path),
         str(output_path),
