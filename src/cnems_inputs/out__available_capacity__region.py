@@ -42,7 +42,7 @@ def aggregate_available_capacity_region(
         f"We expect there to be no missing regions but found {missing_regions['FIPS_cnty'].unique()}"
     )
     frame = frame.groupby(by=["tech", "region", "year", "step"], as_index=False).sum()[
-        ["region", "tech", "step", "year", "SupplyCurve"]
+        ["region", "tech", "step", "year", "available_capacity_mw"]
     ]
 
     # create full index to merge to
