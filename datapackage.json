@@ -569,6 +569,27 @@
       }
     },
     {
+      "name": "supply_curve_learning",
+      "type": "table",
+      "path": "out/supply_curve_learning.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv",
+      "encoding": "utf-8",
+      "schema": {
+        "fields": [
+          {
+            "name": "tech",
+            "type": "integer"
+          },
+          {
+            "name": "capacity",
+            "type": "number"
+          }
+        ]
+      }
+    },
+    {
       "name": "generation_cost",
       "type": "table",
       "path": "out/generation_cost.csv",

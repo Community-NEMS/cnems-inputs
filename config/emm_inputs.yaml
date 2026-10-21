@@ -20,6 +20,7 @@ core_snapshots: # this is the list we iterate over for the "snapshot" approach
   - reserve_cost
   - planning_reserve_margin
   - reserve_tech_limit
+  - supply_curve_learning
   - generation_cost
   - sw_builds
   - sw_retires
@@ -54,6 +55,7 @@ raw_bluesky: # this is the list we iterate over for extraction from bluesky zip
   planning_reserve_margin: input/electricity/cem_inputs/ReserveMargin.csv
   reserve_tech_limit: input/electricity/cem_inputs/ResTechUpperBound.csv
   available_capacity: input/electricity/cem_inputs/SupplyCurve.csv
+  supply_curve_learning: input/electricity/cem_inputs/SupplyCurveLearning.csv
   generation_cost: input/electricity/cem_inputs/SupplyPrice.csv
   sw_builds: input/electricity/sw_builds.csv
   sw_retires: input/electricity/sw_retires.csv
