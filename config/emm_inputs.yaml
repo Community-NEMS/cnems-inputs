@@ -85,3 +85,4 @@ core_supply_curve:
 base_load:
   # based on sm_years in create_inputs.py
   eia930_years: [2018, 2019, 2020, 2021, 2022, 2023]
+  use_pudl_imputed_demand: True
