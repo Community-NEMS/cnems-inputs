@@ -20,11 +20,13 @@
           },
           {
             "name": "hour",
-            "type": "integer"
+            "type": "integer",
+            "unit": "hour"
           },
           {
             "name": "price_wt",
-            "type": "number"
+            "type": "number",
+            "unit": "USD / MWh"
           }
         ]
       }
@@ -45,11 +47,13 @@
           },
           {
             "name": "hour",
-            "type": "integer"
+            "type": "integer",
+            "unit": "hour"
           },
           {
             "name": "Load",
-            "type": "number"
+            "type": "number",
+            "unit": "MWh"
           }
         ]
       }
@@ -103,7 +107,8 @@
           },
           {
             "name": "cost",
-            "type": "integer"
+            "type": "integer",
+            "unit": "USD / MW"
           }
         ]
       }
@@ -132,7 +137,8 @@
           },
           {
             "name": "cost",
-            "type": "integer"
+            "type": "integer",
+            "unit": "USD / MW"
           }
         ]
       }
@@ -161,7 +167,8 @@
           },
           {
             "name": "hour",
-            "type": "number"
+            "type": "number",
+            "unit": "hour"
           },
           {
             "name": "value",
@@ -228,7 +235,8 @@
         "fields": [
           {
             "name": "hour",
-            "type": "integer"
+            "type": "integer",
+            "unit": "hour"
           },
           {
             "name": "enduse_cat",
@@ -265,7 +273,8 @@
           },
           {
             "name": "cost",
-            "type": "integer"
+            "type": "integer",
+            "unit": "USD / (MW yr)"
           }
         ]
       }
@@ -323,7 +332,8 @@
           },
           {
             "name": "hours",
-            "type": "number"
+            "type": "number",
+            "unit": "hour"
           }
         ]
       }
@@ -411,7 +421,8 @@
           },
           {
             "name": "cost",
-            "type": "number"
+            "type": "number",
+            "unit": "USD / MWh"
           }
         ]
       }
@@ -432,7 +443,8 @@
           },
           {
             "name": "rate",
-            "type": "number"
+            "type": "number",
+            "unit": "1 / hour"
           }
         ]
       }
@@ -453,7 +465,8 @@
           },
           {
             "name": "cost",
-            "type": "number"
+            "type": "number",
+            "unit": "USD / MWh"
           }
         ]
       }
@@ -474,7 +487,8 @@
           },
           {
             "name": "cost",
-            "type": "number"
+            "type": "number",
+            "unit": "USD / MWh"
           }
         ]
       }
@@ -553,7 +567,8 @@
           },
           {
             "name": "capacity",
-            "type": "number"
+            "type": "number",
+            "unit": "MW"
           }
         ]
       }
@@ -611,7 +626,8 @@
           },
           {
             "name": "cost",
-            "type": "number"
+            "type": "number",
+            "unit": "USD / MWh"
           }
         ]
       }
@@ -743,7 +759,8 @@
           },
           {
             "name": "hour",
-            "type": "integer"
+            "type": "integer",
+            "unit": "hour"
           },
           {
             "name": "Dual",
@@ -776,7 +793,8 @@
           },
           {
             "name": "cost",
-            "type": "integer"
+            "type": "integer",
+            "unit": "USD / MWh"
           }
         ]
       }
@@ -809,7 +827,8 @@
           },
           {
             "name": "cost",
-            "type": "number"
+            "type": "number",
+            "unit": "USD / MWh"
           }
         ]
       }
@@ -842,7 +861,8 @@
           },
           {
             "name": "capacity",
-            "type": "number"
+            "type": "number",
+            "unit": "MW"
           }
         ]
       }
@@ -875,7 +895,8 @@
           },
           {
             "name": "value",
-            "type": "number"
+            "type": "number",
+            "unit": "MW"
           }
         ]
       }
@@ -908,7 +929,8 @@
           },
           {
             "name": "generation",
-            "type": "number"
+            "type": "number",
+            "unit": "MW"
           }
         ]
       }
