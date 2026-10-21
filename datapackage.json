@@ -444,7 +444,7 @@
           {
             "name": "rate",
             "type": "number",
-            "unit": "1 / hr"
+            "unit": "1 / hour"
           }
         ]
       }
