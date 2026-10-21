@@ -8,7 +8,7 @@ rule emm_inputs:
     [r2(p) for p in get_published_paths("datapackage.json")],
     r2("datapackage.json"),
     # For validation purposes!
-    r2(f"raw/bluesky/supply_curve.csv")
+    r2(f"raw/bluesky/available_capacity.csv")
 
 pudl_tables = [
   "out_eia930__hourly_operations",
@@ -20,7 +20,7 @@ pudl_tables = [
 for pudl_table in pudl_tables:
   rule:
     name: f"raw__pudl__{pudl_table}"
-    input: pudl(config["core_supply_curve"]["pudl_version"], pudl_table)
+    input: pudl(config["core_available_capacity"]["pudl_version"], pudl_table)
     output: r2(f"raw/pudl/{pudl_table}.parquet")
     shell: "cp {input} {output}"
 
@@ -45,7 +45,7 @@ rule out__base_load__region:
     "src/cnems_inputs/out__base_load__region.py"
 
 
-rule core__supply_curve__county:
+rule core__available_capacity__county:
   input:
     out_eia__yearly_generators_path=r2("raw/pudl/out_eia__yearly_generators.parquet"),
     crosswalk_tech_path=r2(f"raw/bluesky/crosswalk_tech.csv"),
@@ -54,24 +54,24 @@ rule core__supply_curve__county:
     crosswalk_steps_path=r2(f"raw/bluesky/crosswalk_steps.csv"),
     dg_path=r2(f"raw/bluesky/dgpv_cap.csv"),
     pop_path=r2(f"raw/bluesky/population.csv"),
-  output: r2("core/supply_curve__county.csv"),
+  output: r2("core/available_capacity__county.csv"),
   params:
-    settings = config["core_supply_curve"]
+    settings = config["core_available_capacity"]
   script:
-    "src/cnems_inputs/core__supply_curve__county.py"
+    "src/cnems_inputs/core__available_capacity__county.py"
 
 
-rule out__supply_curve__region:
+rule out__available_capacity__region:
   input:
-    supply_curve_county_path=r2("core/supply_curve__county.csv"),
+    available_capacity_county_path=r2("core/available_capacity__county.csv"),
     crosswalk_steps_path=r2(f"raw/bluesky/crosswalk_steps.csv"),
     crosswalk_region_path=r2(f"raw/bluesky/crosswalk_region.csv"),
   output:
-    r2("out/supply_curve.csv")
+    r2("out/available_capacity.csv")
   params:
-    settings = config["core_supply_curve"]
+    settings = config["core_available_capacity"]
   script:
-    "src/cnems_inputs/out__supply_curve__region.py"
+    "src/cnems_inputs/out__available_capacity__region.py"
 
 
 rule datapackage:

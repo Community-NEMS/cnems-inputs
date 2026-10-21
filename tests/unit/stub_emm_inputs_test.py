@@ -19,7 +19,7 @@ def test_extract_emm_inputs(tmp_path: Path) -> None:
     with ZipFile(archive_path, "w") as archive:
         archive.writestr(resource_path, content)
 
-    output_path = tmp_path / "raw/bluesky/supply_curve.csv"
+    output_path = tmp_path / "raw/bluesky/available_capacity.csv"
     extract(
         str(archive_path),
         str(output_path),
@@ -39,14 +39,15 @@ def test_remap_stubs(mocker):
                 "resource_name": ["test"],
                 "column_raw": ["raw"],
                 "column_out": ["out"],
+                "unit_factor": 2,
             }
         ),
     )
     actual = remap_stubs(
-        pd.DataFrame({"raw": [0], "untouched": [1]}),
+        pd.DataFrame({"raw": [1], "untouched": [3]}),
         "test",
     )
     pd.testing.assert_frame_equal(
         actual,
-        pd.DataFrame({"out": [0], "untouched": [1]}),
+        pd.DataFrame({"out": [2], "untouched": [3]}),
     )

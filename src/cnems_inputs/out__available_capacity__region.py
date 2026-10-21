@@ -1,8 +1,8 @@
-"""Transformation pipeline for supply_curve.csv.
+"""Transformation pipeline for available_capacity.csv.
 
-This step takes the county-level supply curve and aggregates it to defined regions.
-These regions are currently made from a crosswalk coming from the original BlueSky
-repository.
+This step takes the county-level available capacity (FKA: supply curve) and aggregates
+it to defined regions. These regions are currently made from a crosswalk coming from the
+original BlueSky repository.
 """
 
 from logging import getLogger
@@ -17,24 +17,24 @@ from cnems_inputs.helpers import load
 logger = getLogger(__name__)
 
 
-def aggregate_supply_curve_region(
-    supply_curve_county: pl.LazyFrame,
+def aggregate_available_capacity_region(
+    available_capacity_county: pl.LazyFrame,
     settings: dict,
     crosswalk_region_lf: pl.LazyFrame,
     crosswalk_steps_lf: pl.LazyFrame,
 ):
-    """Aggregates supply curves from county to user-specified regional level.
+    """Aggregates available capacity from county to user-specified regional level.
 
     This was create_supplycurve_r from BlueSky.
 
     Args:
-        supply_curve_county : data frame containing supply curves at the county-level
+        available_capacity_county : data frame containing available capacity at the county-level
         settings : input settings
 
     Returns:
-        data frame containing supply curves at user-specified regional level
+        data frame containing available capacity at user-specified regional level
     """
-    frame = supply_curve_county.collect().to_pandas()
+    frame = available_capacity_county.collect().to_pandas()
     # agg the data up to the model region level
     crosswalk_region = crosswalk_region_lf.collect().to_pandas()
     frame = pd.merge(frame, crosswalk_region, how="left", on=["FIPS_cnty"])
@@ -66,21 +66,21 @@ def aggregate_supply_curve_region(
     return frame
 
 
-def run_supply_curve_region(
-    supply_curve_county_path: str,
+def run_available_capacity_region(
+    available_capacity_county_path: str,
     crosswalk_steps_path: str,
     crosswalk_region_path: str,
     settings: dict,
     regional_output_path: Path,
 ):
     """E, T, L."""
-    supply_curve_regional = aggregate_supply_curve_region(
-        supply_curve_county=pl.scan_csv(supply_curve_county_path),
+    available_capacity_regional = aggregate_available_capacity_region(
+        available_capacity_county=pl.scan_csv(available_capacity_county_path),
         crosswalk_region_lf=pl.scan_csv(crosswalk_region_path),
         crosswalk_steps_lf=pl.scan_csv(crosswalk_steps_path),
         settings=settings,
     )
-    load(supply_curve_regional, regional_output_path)
+    load(available_capacity_regional, regional_output_path)
 
 
 if __name__ == "__main__":
@@ -92,8 +92,10 @@ if __name__ == "__main__":
         # so it complains about this import
         from snakemake.iocontainers import snakemake  # noqa: TC004
 
-    run_supply_curve_region(
-        supply_curve_county_path=snakemake.input["supply_curve_county_path"],
+    run_available_capacity_region(
+        available_capacity_county_path=snakemake.input[
+            "available_capacity_county_path"
+        ],
         crosswalk_steps_path=snakemake.input["crosswalk_steps_path"],
         crosswalk_region_path=snakemake.input["crosswalk_region_path"],
         settings=snakemake.params["settings"],
