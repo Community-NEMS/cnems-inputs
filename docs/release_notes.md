@@ -42,6 +42,9 @@ would when cutting an actual release. -->
     Updated using pre-processed EIA data from PUDL. See issue #51 and PR !68.
 - Enforced datapackage schemas at load time (when files are written to their final
     location). See issue #43 and PR !77.
+- Now we use real live input data in our integration tests, and don't need to
+    vendor input data; this necessitated replacing `cached_http` with our own
+    bespoke `dataset_cache` module. See issue #20 and PR !79.
 
 ### Bug Fixes
 

@@ -2,27 +2,27 @@
 
 from collections.abc import Callable
 from pathlib import Path
+from zipfile import ZipFile
 
 import polars as pl
 import pytest
 from polars.testing import assert_frame_equal
 
+from cnems_inputs.dataset_cache import DatasetCache
 
-def test_enduse_base_shares_matches_fixture(
+
+def test_enduse_base_shares_matches_archived_source(
     materialize_input: Callable[[str], Path],
-    test_fixture_dir: Path,
+    dataset_cache: DatasetCache,
 ) -> None:
     """The enduse_base_shares pipeline should publish the source data unchanged."""
-    expected_path = (
-        test_fixture_dir
-        / "eiabluesky"
-        / "input"
-        / "residential"
-        / "EnduseBaseShares.csv"
-    )
-
     actual = pl.read_csv(materialize_input("out__enduse_base_shares"))
-    expected = pl.read_csv(expected_path)
+    archive_path = dataset_cache.ensure_local("eiabluesky", "eiabluesky-v1-1.zip")
+    with (
+        ZipFile(archive_path) as archive,
+        archive.open("input/residential/EnduseBaseShares.csv") as source,
+    ):
+        expected = pl.read_csv(source)
 
     assert_frame_equal(actual, expected)
 
