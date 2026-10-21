@@ -142,9 +142,9 @@
       }
     },
     {
-      "name": "cap_factor_vre",
+      "name": "capacity_factor_vre",
       "type": "table",
-      "path": "out/cap_factor_vre.csv",
+      "path": "out/capacity_factor_vre.csv",
       "scheme": "file",
       "format": "csv",
       "mediatype": "text/csv",

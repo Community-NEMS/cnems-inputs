@@ -4,7 +4,7 @@ core_snapshots: # this is the list we iterate over for the "snapshot" approach
   - storage_efficiency
   - capital_cost
   - capital_cost_initial
-  - cap_factor_vre
+  - capacity_factor_vre
   - enduse_base_share
   - enduse_scalar
   - enduse_shape
@@ -38,7 +38,7 @@ raw_bluesky: # this is the list we iterate over for extraction from bluesky zip
   storage_efficiency: input/electricity/cem_inputs/BatteryEfficiency.csv
   capital_cost: input/electricity/cem_inputs/CapCost.csv
   capital_cost_initial: input/electricity/cem_inputs/CapCostInitial.csv
-  cap_factor_vre: input/electricity/cem_inputs/CapFactorVRE.csv
+  capacity_factor_vre: input/electricity/cem_inputs/CapFactorVRE.csv
   enduse_base_share: input/residential/EnduseBaseShares.csv
   enduse_scalar: input/residential/EnduseScalar.csv
   enduse_shape: input/residential/EnduseShapes.csv

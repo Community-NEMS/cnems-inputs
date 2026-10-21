@@ -2,7 +2,7 @@ resource_name,column_raw,column_out,unit_factor
 storage_efficiency,BatteryEfficiency,efficiency,1
 capital_cost_initial,CapCostInitial,cost,1
 capital_cost,CapCost,cost,1
-cap_factor_vre,CapFactorVRE,value,1
+capacity_factor_vre,CapFactorVRE,value,1
 fom_cost,FOMCost,cost,1
 h2_price,H2Price,cost,1
 storage_duration,HourstoBuy,hours,1
