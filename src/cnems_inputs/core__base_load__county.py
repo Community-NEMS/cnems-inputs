@@ -30,7 +30,20 @@ def convert_datetime_utc_to_local(
     out_eia930__hourly_operations: pl.DataFrame,
     core_eia__codes_balancing_authorities: pl.DataFrame,
 ):
-    """Convert a UTC datetime to a local datetime by merging timezones with UTC offsets."""
+    """Convert a UTC datetime to a local datetime by merging timezones with UTC offsets.
+
+    We need to do this because base load output will represent time as with an hour
+    column, which is an 8760 representation of a year. So hour 1 should represent hour
+    1 in any given region. We also need to select the subset of years to include in
+    this output. If we do not change the time to local time before filtering on years,
+    we will loose the beginning or ends of the years we are selecting for.
+
+    Instead of relying on `STANDARD_UTC_OFFSETS`, first tried `pl.dt.convert_time_zone`
+    but that method only takes one timezone option so it requires looping through each
+    timezone AND the real kicker is that polars does not allow multiple different
+    timezones within one column.
+    """
+    # Add UTC offsets to the balancing authorities' timezone's
     balancing_authorities_with_utc_offsets = core_eia__codes_balancing_authorities.join(
         pl.DataFrame(
             data={
@@ -42,17 +55,17 @@ def convert_datetime_utc_to_local(
         on="report_timezone",
         how="left",
     )
-    base_load_county = out_eia930__hourly_operations.join(
+    out_eia930__hourly_operations = out_eia930__hourly_operations.join(
         balancing_authorities_with_utc_offsets.select(["code", "utc_offset"]),
         left_on="balancing_authority_code_eia",
         right_on="code",
         how="left",
-    )
-    return base_load_county.with_columns(
+    ).with_columns(
         (pl.col("datetime_utc") + pl.duration(hours="utc_offset")).alias(
             "datetime_local"
         )
     )
+    return out_eia930__hourly_operations
 
 
 def calculate_balancing_authority_population_share_per_county(
@@ -118,26 +131,14 @@ def transform_base_load_county(
     out_eia861__yearly_balancing_authority_service_territory: pl.DataFrame,
     settings: dict,
 ) -> pd.DataFrame:
-    """Transform."""
-    sm_years = settings["eia930_years"]
+    """Transform EIA-930 hourly, balancing authority data into county, 8760-hours data."""
+    eia930_years = settings["eia930_years"]
     demand_column_name = (
         "demand_imputed_pudl_mwh"
         if settings["use_pudl_imputed_demand"]
         else "demand_reported_mwh"
     )
-    ops_cols = [
-        "datetime_utc",
-        "balancing_authority_code_eia",
-        "demand_reported_mwh",
-        "demand_imputed_pudl_mwh",
-    ]
-    out_eia930__hourly_operations = (
-        out_eia930__hourly_operations.select(ops_cols)
-        .pipe(convert_datetime_utc_to_local, core_eia__codes_balancing_authorities)
-        .filter(pl.col("datetime_local").dt.year().is_in(sm_years))
-    )
-
-    # Prep the service territories. the out service territory table does not have
+    # Prep the service territories. the service territory table does not have
     # a `balancing_authority_code_eia` column, so grab that from the balancing authority
     # table. Then use the county level population data in the service territory table
     # to calculate a population share
@@ -147,12 +148,18 @@ def transform_base_load_county(
             on=["balancing_authority_id_eia", "report_date"],
             how="left",
         )
-        .filter(pl.col("report_date").dt.year().is_in(sm_years))
+        .filter(pl.col("report_date").dt.year().is_in(eia930_years))
         .pipe(calculate_balancing_authority_population_share_per_county)
     )
 
+    # Select only the columns we need, convert to local time and then filter the years
     base_load_county = (
-        out_eia930__hourly_operations.join(
+        out_eia930__hourly_operations.select(
+            ["datetime_utc", "balancing_authority_code_eia", demand_column_name]
+        )
+        .pipe(convert_datetime_utc_to_local, core_eia__codes_balancing_authorities)
+        .filter(pl.col("datetime_local").dt.year().is_in(eia930_years))
+        .join(
             service_territory_w_balancing_authority_population,
             left_on=[
                 "balancing_authority_code_eia",
@@ -184,6 +191,8 @@ def run_base_load__county(
     """E, T, L.
 
     Attempting to be analogous to: BlueSky/sample/baseload_data_pipeline/outputs/LoadCleaned.csv
+    but without the weather normalization. Removing weather normalization obviates the need for
+    balancing authority subregions.
     """
     base_load_county = transform_base_load_county(
         out_eia930__hourly_operations=pl.read_parquet(
