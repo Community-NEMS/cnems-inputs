@@ -1,37 +1,6 @@
 {
   "resources": [
     {
-      "name": "base_elec_price",
-      "type": "table",
-      "path": "out/base_elec_price.csv",
-      "scheme": "file",
-      "format": "csv",
-      "mediatype": "text/csv",
-      "encoding": "utf-8",
-      "schema": {
-        "fields": [
-          {
-            "name": "region",
-            "type": "integer"
-          },
-          {
-            "name": "year",
-            "type": "integer"
-          },
-          {
-            "name": "hour",
-            "type": "integer",
-            "unit": "hour"
-          },
-          {
-            "name": "price_wt",
-            "type": "number",
-            "unit": "USD / MWh"
-          }
-        ]
-      }
-    },
-    {
       "name": "base_load",
       "type": "table",
       "path": "out/parameters/base_load.csv",
@@ -349,43 +318,6 @@
             "name": "notes",
             "type": "string",
             "description": "Free-text notes."
-          }
-        ]
-      }
-    },
-    {
-      "name": "h2_price",
-      "type": "table",
-      "path": "out/h2_price.csv",
-      "scheme": "file",
-      "format": "csv",
-      "mediatype": "text/csv",
-      "encoding": "utf-8",
-      "schema": {
-        "fields": [
-          {
-            "name": "region",
-            "type": "integer"
-          },
-          {
-            "name": "season",
-            "type": "integer"
-          },
-          {
-            "name": "tech",
-            "type": "integer"
-          },
-          {
-            "name": "step",
-            "type": "integer"
-          },
-          {
-            "name": "year",
-            "type": "integer"
-          },
-          {
-            "name": "cost",
-            "type": "number"
           }
         ]
       }

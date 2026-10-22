@@ -4,7 +4,6 @@ capital_cost_initial,CapCostInitial,capital_cost_initial_usd_per_mw,1
 capital_cost,CapCost,capital_cost_usd_per_mw,1
 capacity_factor_vre,CapFactorVRE,capacity_factor_vre_frac,1
 fom_cost,FOMCost,fom_cost_usd_per_mw_yr,1
-h2_price,H2Price,cost,1
 storage_duration,HourstoBuy,storage_duration_hr,1
 hydro_capacity_factor,HydroCapFactor,hydro_capacity_factor_frac,1
 learning_rate,LearningRate,learning_exponent,1
