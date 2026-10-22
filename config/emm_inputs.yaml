@@ -20,9 +20,9 @@ core_snapshots: # this is the list we iterate over for the "snapshot" approach
   - reserve_tech_limit: parameters
   - supply_curve_learning: parameters
   - generation_cost: parameters
-  - sw_builds: unk
-  - sw_retires: unk
-  - tech_subsets: unk
+  - tech_build: properties
+  - tech_retire: properties
+  - tech: properties
   - test_prices: unk
   - tran_cost: parameters
   - tran_cost_intl: parameters
@@ -53,9 +53,9 @@ raw_bluesky: # this is the list we iterate over for extraction from bluesky zip
   available_capacity: input/electricity/cem_inputs/SupplyCurve.csv
   supply_curve_learning: input/electricity/cem_inputs/SupplyCurveLearning.csv
   generation_cost: input/electricity/cem_inputs/SupplyPrice.csv
-  sw_builds: input/electricity/sw_builds.csv
-  sw_retires: input/electricity/sw_retires.csv
-  tech_subsets: input/electricity/tech_subsets.csv
+  tech_build: input/electricity/sw_builds.csv
+  tech_retire: input/electricity/sw_retires.csv
+  tech: input/electricity/tech_subsets.csv
   test_prices: input/residential/testPrices.csv
   tran_cost: input/electricity/cem_inputs/TranCost.csv
   tran_cost_intl: input/electricity/cem_inputs/TranCostInt.csv

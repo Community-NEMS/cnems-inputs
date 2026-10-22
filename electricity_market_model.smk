@@ -39,12 +39,16 @@ rule out__available_capacity__region:
     crosswalk_steps_path=r2(f"raw/bluesky/crosswalk_steps.csv"),
     crosswalk_region_path=r2(f"raw/bluesky/crosswalk_region.csv"),
   output:
-    r2("out/available_capacity.csv")
+    r2("out/parameters/available_capacity.csv")
   params:
     settings = config["core_available_capacity"]
   script:
     "src/cnems_inputs/out__available_capacity__region.py"
 
+rule out__region:
+  input: r2(f"raw/bluesky/crosswalk_region.csv")
+  output: r2("out/properties/region.csv")
+  shell: "cp {input} {output}"
 
 rule datapackage:
   input: "datapackage.json"
