@@ -1,6 +1,5 @@
 core_snapshots: # this is the list we iterate over for the "snapshot" approach
   - base_elec_price # ok grab raw/bluesky/base_elec_price.csv
-  - base_load
   - storage_efficiency
   - capital_cost
   - capital_cost_initial
