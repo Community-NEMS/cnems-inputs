@@ -174,7 +174,7 @@ def transform_base_load_county(
         )
         .pipe(convert_datetime_to_hour_of_year, datetime_col_name="datetime_local")
         .group_by(["county_id_fips", "balancing_authority_code_eia", "hour"])
-        .agg(pl.col("demand_mwh").sum())
+        .agg(pl.col("demand_mwh").mean())
     )
 
     return base_load_county.to_pandas()
