@@ -10,7 +10,7 @@ storage s3:
 import polars as pl
 
 from cnems_inputs.dataset_cache import DatasetCache
-from cnems_inputs.helpers import get_published_paths, versioned_r2_uri
+from cnems_inputs.helpers import get_published_paths, get_published_path_for_resource, versioned_r2_uri
 from collections.abc import Callable
 import logging
 

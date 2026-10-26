@@ -6,13 +6,16 @@ from pathlib import Path
 import pandas as pd
 
 from cnems_inputs.helpers import load
+from cnems_inputs.schema import schema_for
 
 
 def remap_stubs(
     raw_input_df: pd.DataFrame,
     resource_name: str,
+    datapackage_path: Path,
 ):
-    """Remap column names from raw BlueSky sources to datapackage schema."""
+    """Remap columns from raw BlueSky sources to datapackage schema."""
+    # rename columns
     with as_file(files("cnems_inputs").joinpath("stub_mapping.csv")) as mappings_file:
         mappings = pd.read_csv(mappings_file)
     remap_input = mappings.loc[mappings.resource_name == resource_name]
@@ -28,7 +31,25 @@ def remap_stubs(
                 for r in remap_input.to_records()
             }
         )
-    return out_df
+
+    # add new columns
+    schema = schema_for(datapackage_path, resource_name)
+    missing_columns = [c for c in schema.columns if c not in out_df.columns]
+    out_df[missing_columns] = pd.NA
+
+    # TODO: False is really not a good boolean default but it'll do for now
+    missing_bools = [c for c in missing_columns if schema.dtypes[c].type == "bool"]
+    out_df[missing_bools] = False
+
+    # coerce types
+    for c, dtype in schema.dtypes.items():
+        if dtype.type == "bool" and out_df.dtypes[c] != "bool":
+            # R(?) reads T_* as TRUE and empty as FALSE, but dtype.coerce reads empty as TRUE
+            out_df[c] = out_df[c].str.startswith("T_")
+        out_df[c] = dtype.coerce(out_df[c])
+
+    # correct column order
+    return out_df[list(schema.dtypes)]
 
 
 def run_emm_inputs(
@@ -37,7 +58,9 @@ def run_emm_inputs(
     """E, T, L."""
     load(
         transformed=remap_stubs(
-            raw_input_df=pd.read_csv(raw_input_path), resource_name=resource_name
+            raw_input_df=pd.read_csv(raw_input_path),
+            resource_name=resource_name,
+            datapackage_path=datapackage_path,
         ),
         output_path=output_path,
         datapackage_path=datapackage_path,

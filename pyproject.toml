@@ -224,6 +224,9 @@ python-version = "3.14"
 # Add words that should be excepted from spell-checking
 FOM = "FOM"
 
+[tool.typos.files]
+extend-exclude = ["*.csv"]
+
 [tool.pixi.activation.env]
 SNAKEMAKE_PROFILE = "profiles/dev.yaml" # set default snakemake profile to dev - can be overridden with --profile
 

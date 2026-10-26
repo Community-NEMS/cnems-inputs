@@ -1,7 +1,9 @@
+import json
 from pathlib import Path
 from zipfile import ZipFile
 
 import pandas as pd
+import pytest
 
 from cnems_inputs.out__emm_inputs import remap_stubs
 from cnems_inputs.raw__emm_inputs import extract
@@ -29,7 +31,45 @@ def test_extract_emm_inputs(tmp_path: Path) -> None:
     assert output_path.read_bytes() == content
 
 
-def test_remap_stubs(mocker):
+@pytest.fixture
+def toy_datapackage(tmpdir):
+    """A datapackage with one resource, test."""
+    datapackage_path = Path(tmpdir) / "datapackage.json"
+    datapackage_path.write_text(
+        json.dumps(
+            {
+                "resources": [
+                    {
+                        "name": "test",
+                        "schema": {
+                            "fields": [
+                                {
+                                    "name": "out",
+                                    "type": "integer",
+                                },
+                                {
+                                    "name": "flag",
+                                    "type": "boolean",
+                                },
+                                {
+                                    "name": "missing",
+                                    "type": "string",
+                                },
+                                {
+                                    "name": "untouched",
+                                    "type": "integer",
+                                },
+                            ],
+                        },
+                    },
+                ],
+            }
+        )
+    )
+    return datapackage_path
+
+
+def test_remap_stubs(mocker, toy_datapackage):
     """Ensure column names are getting remapped properly in the stub pipeline."""
     mocker.patch(
         # replace mapping file with a stub for testing
@@ -44,10 +84,18 @@ def test_remap_stubs(mocker):
         ),
     )
     actual = remap_stubs(
-        pd.DataFrame({"raw": [1], "untouched": [3]}),
+        pd.DataFrame({"raw": [1], "untouched": [3], "flag": ["T_flag"]}),
         "test",
+        toy_datapackage,
     )
     pd.testing.assert_frame_equal(
         actual,
-        pd.DataFrame({"out": [2], "untouched": [3]}),
+        pd.DataFrame(
+            {
+                "out": [2],
+                "flag": [True],
+                "missing": pd.Series([None], dtype="str"),
+                "untouched": [3],
+            }
+        ),
     )
