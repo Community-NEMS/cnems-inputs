@@ -785,108 +785,239 @@
       }
     },
     {
-      "name": "sw_builds",
+      "name": "tech_build",
       "type": "table",
-      "path": "out/sw_builds.csv",
+      "path": "out/properties/tech_build.csv",
       "scheme": "file",
       "format": "csv",
       "mediatype": "text/csv",
       "encoding": "utf-8",
+      "description": "Which (tech, step) pairs are eligible for new capacity construction.",
       "schema": {
         "fields": [
           {
             "name": "tech",
-            "type": "integer"
+            "type": "string"
           },
           {
             "name": "step",
             "type": "integer"
           },
           {
-            "name": "builds",
-            "type": "integer"
+            "name": "is_buildable",
+            "type": "boolean",
+            "trueValues": [
+              "True"
+            ],
+            "falseValues": [
+              "False"
+            ]
           }
         ]
       }
     },
     {
-      "name": "sw_retires",
+      "name": "tech_retire",
       "type": "table",
-      "path": "out/sw_retires.csv",
+      "path": "out/properties/tech_retire.csv",
       "scheme": "file",
       "format": "csv",
       "mediatype": "text/csv",
       "encoding": "utf-8",
+      "description": "Which (tech, step) pairs are eligible for early retirement.",
       "schema": {
         "fields": [
           {
             "name": "tech",
-            "type": "integer"
+            "type": "string"
           },
           {
             "name": "step",
             "type": "integer"
           },
           {
-            "name": "retires",
-            "type": "integer"
+            "name": "is_retirable",
+            "type": "boolean",
+            "trueValues": [
+              "True"
+            ],
+            "falseValues": [
+              "False"
+            ]
           }
         ]
       }
     },
     {
-      "name": "tech_subsets",
+      "name": "tech",
       "type": "table",
-      "path": "out/tech_subsets.csv",
+      "path": "out/properties/tech.csv",
       "scheme": "file",
       "format": "csv",
       "mediatype": "text/csv",
       "encoding": "utf-8",
+      "description": "Valid technologies, their valid supply steps, display attributes and subset membership (conventional, renewable, hydro, storage, VRE, wind, solar, hydrogen, dispatchable, generator).",
       "schema": {
         "fields": [
           {
             "name": "tech",
-            "type": "integer"
-          },
-          {
-            "name": "T_conv",
             "type": "string"
           },
           {
-            "name": "T_re",
+            "name": "steps",
             "type": "string"
           },
           {
-            "name": "T_hydro",
+            "name": "label",
             "type": "string"
           },
           {
-            "name": "T_stor",
+            "name": "abbreviation",
             "type": "string"
           },
           {
-            "name": "T_vre",
+            "name": "color",
             "type": "string"
           },
           {
-            "name": "T_wind",
-            "type": "string"
+            "name": "is_conventional",
+            "type": "boolean",
+            "trueValues": [
+              "True"
+            ],
+            "falseValues": [
+              "False"
+            ]
           },
           {
-            "name": "T_solar",
-            "type": "string"
+            "name": "is_renewable",
+            "type": "boolean",
+            "trueValues": [
+              "True"
+            ],
+            "falseValues": [
+              "False"
+            ]
           },
           {
-            "name": "T_h2",
-            "type": "string"
+            "name": "is_hydro",
+            "type": "boolean",
+            "trueValues": [
+              "True"
+            ],
+            "falseValues": [
+              "False"
+            ]
           },
           {
-            "name": "T_disp",
-            "type": "string"
+            "name": "is_hydro_seasonal",
+            "type": "boolean",
+            "trueValues": [
+              "True"
+            ],
+            "falseValues": [
+              "False"
+            ]
           },
           {
-            "name": "T_gen",
-            "type": "string"
+            "name": "is_hydro_regular",
+            "type": "boolean",
+            "trueValues": [
+              "True"
+            ],
+            "falseValues": [
+              "False"
+            ]
+          },
+          {
+            "name": "is_storage",
+            "type": "boolean",
+            "trueValues": [
+              "True"
+            ],
+            "falseValues": [
+              "False"
+            ]
+          },
+          {
+            "name": "is_vre",
+            "type": "boolean",
+            "trueValues": [
+              "True"
+            ],
+            "falseValues": [
+              "False"
+            ]
+          },
+          {
+            "name": "is_wind",
+            "type": "boolean",
+            "trueValues": [
+              "True"
+            ],
+            "falseValues": [
+              "False"
+            ]
+          },
+          {
+            "name": "is_solar",
+            "type": "boolean",
+            "trueValues": [
+              "True"
+            ],
+            "falseValues": [
+              "False"
+            ]
+          },
+          {
+            "name": "is_solar_utility",
+            "type": "boolean",
+            "trueValues": [
+              "True"
+            ],
+            "falseValues": [
+              "False"
+            ]
+          },
+          {
+            "name": "is_solar_end_use",
+            "type": "boolean",
+            "trueValues": [
+              "True"
+            ],
+            "falseValues": [
+              "False"
+            ]
+          },
+          {
+            "name": "is_hydrogen",
+            "type": "boolean",
+            "trueValues": [
+              "True"
+            ],
+            "falseValues": [
+              "False"
+            ]
+          },
+          {
+            "name": "is_dispatchable",
+            "type": "boolean",
+            "trueValues": [
+              "True"
+            ],
+            "falseValues": [
+              "False"
+            ]
+          },
+          {
+            "name": "is_generator",
+            "type": "boolean",
+            "trueValues": [
+              "True"
+            ],
+            "falseValues": [
+              "False"
+            ]
           }
         ]
       }
@@ -1168,244 +1299,6 @@
           },
           {
             "name": "is_international",
-            "type": "boolean",
-            "trueValues": [
-              "True"
-            ],
-            "falseValues": [
-              "False"
-            ]
-          }
-        ]
-      }
-    },
-    {
-      "name": "tech",
-      "type": "table",
-      "path": "out/properties/tech.csv",
-      "scheme": "file",
-      "format": "csv",
-      "mediatype": "text/csv",
-      "encoding": "utf-8",
-      "description": "Valid technologies, their valid supply steps, display attributes and subset membership (conventional, renewable, hydro, storage, VRE, wind, solar, hydrogen, dispatchable, generator).",
-      "schema": {
-        "fields": [
-          {
-            "name": "tech",
-            "type": "string"
-          },
-          {
-            "name": "steps",
-            "type": "string"
-          },
-          {
-            "name": "label",
-            "type": "string"
-          },
-          {
-            "name": "abbreviation",
-            "type": "string"
-          },
-          {
-            "name": "color",
-            "type": "string"
-          },
-          {
-            "name": "is_conventional",
-            "type": "boolean",
-            "trueValues": [
-              "True"
-            ],
-            "falseValues": [
-              "False"
-            ]
-          },
-          {
-            "name": "is_renewable",
-            "type": "boolean",
-            "trueValues": [
-              "True"
-            ],
-            "falseValues": [
-              "False"
-            ]
-          },
-          {
-            "name": "is_hydro",
-            "type": "boolean",
-            "trueValues": [
-              "True"
-            ],
-            "falseValues": [
-              "False"
-            ]
-          },
-          {
-            "name": "is_hydro_seasonal",
-            "type": "boolean",
-            "trueValues": [
-              "True"
-            ],
-            "falseValues": [
-              "False"
-            ]
-          },
-          {
-            "name": "is_hydro_regular",
-            "type": "boolean",
-            "trueValues": [
-              "True"
-            ],
-            "falseValues": [
-              "False"
-            ]
-          },
-          {
-            "name": "is_storage",
-            "type": "boolean",
-            "trueValues": [
-              "True"
-            ],
-            "falseValues": [
-              "False"
-            ]
-          },
-          {
-            "name": "is_vre",
-            "type": "boolean",
-            "trueValues": [
-              "True"
-            ],
-            "falseValues": [
-              "False"
-            ]
-          },
-          {
-            "name": "is_wind",
-            "type": "boolean",
-            "trueValues": [
-              "True"
-            ],
-            "falseValues": [
-              "False"
-            ]
-          },
-          {
-            "name": "is_solar",
-            "type": "boolean",
-            "trueValues": [
-              "True"
-            ],
-            "falseValues": [
-              "False"
-            ]
-          },
-          {
-            "name": "is_solar_utility",
-            "type": "boolean",
-            "trueValues": [
-              "True"
-            ],
-            "falseValues": [
-              "False"
-            ]
-          },
-          {
-            "name": "is_solar_end_use",
-            "type": "boolean",
-            "trueValues": [
-              "True"
-            ],
-            "falseValues": [
-              "False"
-            ]
-          },
-          {
-            "name": "is_hydrogen",
-            "type": "boolean",
-            "trueValues": [
-              "True"
-            ],
-            "falseValues": [
-              "False"
-            ]
-          },
-          {
-            "name": "is_dispatchable",
-            "type": "boolean",
-            "trueValues": [
-              "True"
-            ],
-            "falseValues": [
-              "False"
-            ]
-          },
-          {
-            "name": "is_generator",
-            "type": "boolean",
-            "trueValues": [
-              "True"
-            ],
-            "falseValues": [
-              "False"
-            ]
-          }
-        ]
-      }
-    },
-    {
-      "name": "tech_build",
-      "type": "table",
-      "path": "out/properties/tech_build.csv",
-      "scheme": "file",
-      "format": "csv",
-      "mediatype": "text/csv",
-      "encoding": "utf-8",
-      "description": "Which (tech, step) pairs are eligible for new capacity construction.",
-      "schema": {
-        "fields": [
-          {
-            "name": "tech",
-            "type": "string"
-          },
-          {
-            "name": "step",
-            "type": "integer"
-          },
-          {
-            "name": "is_buildable",
-            "type": "boolean",
-            "trueValues": [
-              "True"
-            ],
-            "falseValues": [
-              "False"
-            ]
-          }
-        ]
-      }
-    },
-    {
-      "name": "tech_retire",
-      "type": "table",
-      "path": "out/properties/tech_retire.csv",
-      "scheme": "file",
-      "format": "csv",
-      "mediatype": "text/csv",
-      "encoding": "utf-8",
-      "description": "Which (tech, step) pairs are eligible for early retirement.",
-      "schema": {
-        "fields": [
-          {
-            "name": "tech",
-            "type": "string"
-          },
-          {
-            "name": "step",
-            "type": "integer"
-          },
-          {
-            "name": "is_retirable",
             "type": "boolean",
             "trueValues": [
               "True"
