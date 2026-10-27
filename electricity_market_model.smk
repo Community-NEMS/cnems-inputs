@@ -34,7 +34,7 @@ rule core__base_load__county:
   script:
     "src/cnems_inputs/core__base_load__county.py"
 
-rule out__base_load__region:
+rule out__base_load:
   input:
     core__base_load_county_path=r2("core/base_load__county.csv"),
     crosswalk_region_path=r2("raw/bluesky/crosswalk_region.csv"),
@@ -60,7 +60,7 @@ rule core__available_capacity__county:
     "src/cnems_inputs/core__available_capacity__county.py"
 
 
-rule out__available_capacity__region:
+rule out__available_capacity:
   input:
     available_capacity_county_path=r2("core/available_capacity__county.csv"),
     crosswalk_steps_path=r2(f"raw/bluesky/crosswalk_steps.csv"),

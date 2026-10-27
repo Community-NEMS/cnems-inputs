@@ -102,9 +102,16 @@ def materialize_input(
             fake_r2_root
             / r2_config["bucket"]
             / "nightly"
+            # TODO: This assumes all rules are {stage}__{output_name}.csv
+            # which isn't how the multi-stage rules have been working.
+            # Either accept this naming convention or make this into a
+            # split that takes the second element using the convention of:
+            # {stage}__{output_name}(|__{aggregation}).csv
             / f"{rule_name.replace('__', '/')}.csv"
         )
-        assert output_path.exists()
+        assert output_path.exists(), (
+            f"We expected the output path to exist but it doesn't:\n\n{output_path}"
+        )
         return output_path
 
     return materialize
