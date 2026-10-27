@@ -12,7 +12,6 @@ rule emm_inputs:
 
 pudl_tables = [
   "out_eia930__hourly_operations",
-  "core_eia__codes_balancing_authorities",
   "core_eia861__yearly_balancing_authority",
   "out_eia861__yearly_balancing_authority_service_territory",
   "out_eia__yearly_generators",
@@ -27,7 +26,6 @@ for pudl_table in pudl_tables:
 rule core__base_load__county:
   input:
     out_eia930__hourly_operations_path=r2("raw/pudl/out_eia930__hourly_operations.parquet"),
-    core_eia__codes_balancing_authorities_path=r2("raw/pudl/core_eia__codes_balancing_authorities.parquet"),
     core_eia861__yearly_balancing_authority_path=r2("raw/pudl/core_eia861__yearly_balancing_authority.parquet"),
     out_eia861__yearly_balancing_authority_service_territory_path=r2("raw/pudl/out_eia861__yearly_balancing_authority_service_territory.parquet"),
   output: r2("core/base_load__county.csv"),
@@ -40,6 +38,7 @@ rule out__base_load__region:
   input:
     core__base_load_county_path=r2("core/base_load__county.csv"),
     crosswalk_region_path=r2("raw/bluesky/crosswalk_region.csv"),
+    datapackage_path="datapackage.json",
   output: r2("out/base_load.csv")
   script:
     "src/cnems_inputs/out__base_load__region.py"

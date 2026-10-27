@@ -71,8 +71,10 @@ def aggregate_base_load_region(
         )
         .pipe(fill_in_missing_regions_with_most_frequent_state_region, crosswalk_region)
         .group_by(["region", "hour"])
-        .agg(pl.col("demand_mwh").sum())
+        .agg(pl.col("base_load_mwh").sum())
         .sort(["region", "hour"])
+        # TODO: Remove when we merge in #92
+        .rename({"base_load_mwh": "Load"})
     )
     return frame.to_pandas()
 
@@ -88,6 +90,7 @@ def transform_base_load_region(
 def run_base_load__region(
     core__base_load_county_path: str,
     crosswalk_region_path: str,
+    datapackage_path: Path,
     region_output_path: Path,
 ):
     """E, T, L.
@@ -99,7 +102,12 @@ def run_base_load__region(
         crosswalk_region=pl.read_csv(crosswalk_region_path),
     )
 
-    load(base_load_region, region_output_path)
+    load(
+        base_load_region,
+        region_output_path,
+        datapackage_path=datapackage_path,
+        resource_name="base_load",
+    )
 
 
 if __name__ == "__main__":
@@ -114,5 +122,6 @@ if __name__ == "__main__":
     run_base_load__region(
         core__base_load_county_path=snakemake.input["core__base_load_county_path"],
         crosswalk_region_path=snakemake.input["crosswalk_region_path"],
+        datapackage_path=Path(snakemake.input["datapackage_path"]),
         region_output_path=Path(snakemake.output[0]),
     )
