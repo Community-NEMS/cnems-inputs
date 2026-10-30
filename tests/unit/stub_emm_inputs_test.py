@@ -31,16 +31,16 @@ def test_extract_emm_inputs(tmp_path: Path) -> None:
     assert output_path.read_bytes() == content
 
 
-@pytest.fixture
-def toy_datapackage(tmpdir):
-    """A datapackage with one resource, test."""
-    datapackage_path = Path(tmpdir) / "datapackage.json"
+@pytest.fixture(scope="module")
+def toy_datapackage(tmp_path_factory):
+    """A datapackage with one resource, tech."""
+    datapackage_path = tmp_path_factory.mktemp(__name__) / "datapackage.json"
     datapackage_path.write_text(
         json.dumps(
             {
                 "resources": [
                     {
-                        "name": "test",
+                        "name": "tech",  # remap_stubs will only do R-style boolean parsing for the tech resource
                         "schema": {
                             "fields": [
                                 {
@@ -70,13 +70,20 @@ def toy_datapackage(tmpdir):
 
 
 def test_remap_stubs(mocker, toy_datapackage):
-    """Ensure column names are getting remapped properly in the stub pipeline."""
+    """Ensure column names are getting remapped properly in the stub pipeline.
+
+    Covers:
+    - Rename
+    - Type coercion
+    - Column order
+    - Missing columns
+    """
     mocker.patch(
         # replace mapping file with a stub for testing
         "cnems_inputs.out__emm_inputs.pd.read_csv",
         return_value=pd.DataFrame(
             {
-                "resource_name": ["test"],
+                "resource_name": ["tech"],
                 "column_raw": ["raw"],
                 "column_out": ["out"],
                 "unit_factor": 2,
@@ -85,7 +92,7 @@ def test_remap_stubs(mocker, toy_datapackage):
     )
     actual = remap_stubs(
         pd.DataFrame({"raw": [1], "untouched": [3], "flag": ["T_flag"]}),
-        "test",
+        "tech",  # remap_stubs will only do R-style boolean parsing for the tech resource
         toy_datapackage,
     )
     pd.testing.assert_frame_equal(
@@ -93,7 +100,9 @@ def test_remap_stubs(mocker, toy_datapackage):
         pd.DataFrame(
             {
                 "out": [2],
-                "flag": [True],
+                "flag": pd.Series(
+                    [True], dtype="boolean"
+                ),  # default is bool but bool is not nullable
                 "missing": pd.Series([None], dtype="str"),
                 "untouched": [3],
             }

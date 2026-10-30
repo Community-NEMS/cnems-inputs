@@ -37,14 +37,16 @@ def remap_stubs(
     missing_columns = [c for c in schema.columns if c not in out_df.columns]
     out_df[missing_columns] = pd.NA
 
-    # TODO: False is really not a good boolean default but it'll do for now
-    missing_bools = [c for c in missing_columns if schema.dtypes[c].type == "bool"]
-    out_df[missing_bools] = False
-
     # coerce types
     for c, dtype in schema.dtypes.items():
-        if dtype.type == "bool" and out_df.dtypes[c] != "bool":
-            # R(?) reads T_* as TRUE and empty as FALSE, but dtype.coerce reads empty as TRUE
+        if (
+            resource_name == "tech"
+            and dtype.type == "boolean"
+            and out_df.dtypes[c] != "boolean"
+        ):
+            # the reference file for tech.csv uses R-style boolean encoding, which counts any
+            # string starting T_ as TRUE and empty as FALSE. dtype.coerce() needs a boolean-
+            # like, not a string, so we have to manually convert it here.
             out_df[c] = out_df[c].str.startswith("T_")
         out_df[c] = dtype.coerce(out_df[c])
 

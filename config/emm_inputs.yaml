@@ -1,34 +1,34 @@
 core_snapshots: # this is the list we iterate over for the "snapshot" approach
-  - base_load: parameters # ok grab raw/bluesky/base_load.csv
-  - storage_efficiency: parameters
-  - capital_cost: parameters
-  - capital_cost_initial: parameters
-  - capacity_factor_vre: parameters
-  - enduse_base_share: parameters
-  - enduse_scalar: parameters
-  - enduse_shape: parameters
-  - fom_cost: parameters
-  - storage_duration: parameters
-  - hydro_capacity_factor: parameters
-  - learning_rate: parameters
-  - load_scalar: parameters
-  - ramp_down_cost: parameters
-  - ramp_rate: parameters
-  - ramp_up_cost: parameters
-  - reserve_cost: parameters
-  - planning_reserve_margin: parameters
-  - reserve_tech_limit: parameters
-  - supply_curve_learning: parameters
-  - generation_cost: parameters
-  - tech_build: properties
-  - tech_retire: properties
-  - tech: properties
-  - test_prices: unk
-  - tran_cost: parameters
-  - tran_cost_intl: parameters
-  - tran_limit: parameters
-  - tran_limit_cap_intl: parameters
-  - supply_limit_intl: parameters
+  - base_load
+  - storage_efficiency
+  - capital_cost
+  - capital_cost_initial
+  - capacity_factor_vre
+  - enduse_base_share
+  - enduse_scalar
+  - enduse_shape
+  - fom_cost
+  - storage_duration
+  - hydro_capacity_factor
+  - learning_rate
+  - load_scalar
+  - ramp_down_cost
+  - ramp_rate
+  - ramp_up_cost
+  - reserve_cost
+  - planning_reserve_margin
+  - reserve_tech_limit
+  - supply_curve_learning
+  - generation_cost
+  - tech_build
+  - tech_retire
+  - tech
+  - test_prices
+  - tran_cost
+  - tran_cost_intl
+  - tran_limit
+  - tran_limit_cap_intl
+  - supply_limit_intl
 
 raw_bluesky: # this is the list we iterate over for extraction from bluesky zip
   base_load: input/residential/BaseLoad.csv

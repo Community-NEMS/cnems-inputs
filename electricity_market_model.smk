@@ -56,7 +56,7 @@ rule datapackage:
   shell: "cp {input} {output}"
 
 # this iterator is super gross but it gives us much more readable yaml for storing a pair of values
-for resource_name, subtype in (next(iter(resource.items())) for resource in config["core_snapshots"]):
+for resource_name in config["core_snapshots"]:
     rule:
         name: f"out__{resource_name}"
         input:
@@ -65,7 +65,7 @@ for resource_name, subtype in (next(iter(resource.items())) for resource in conf
             r2(f"raw/bluesky/{resource_name}.csv"),
             "datapackage.json"
         output:
-            r2(f"out/{subtype}/{resource_name}.csv")
+            r2(get_published_path_for_resource("datapackage.json", resource_name))
         params:
             resource_name=resource_name
         script:
@@ -85,4 +85,4 @@ for resource_name, resource_path in config["raw_bluesky"].items():
         params:
             resource_path=resource_path
         script:
-          "src/cnems_inputs/raw__emm_inputs.py"
+            "src/cnems_inputs/raw__emm_inputs.py"
