@@ -12,6 +12,7 @@ from pathlib import Path
 import pytest
 
 from cnems_inputs.dataset_cache import DatasetCache
+from cnems_inputs.helpers import get_published_path_for_resource
 
 
 @pytest.fixture(scope="session")
@@ -98,13 +99,16 @@ def materialize_input(
             check=True,
         )
 
+        resource_name = rule_name.split("__")[1]
         output_path = (
             fake_r2_root
             / r2_config["bucket"]
             / "nightly"
-            / f"{rule_name.replace('__', '/')}.csv"
+            / get_published_path_for_resource("datapackage.json", resource_name)
         )
-        assert output_path.exists()
+        assert output_path.exists(), (
+            f"Expected {rule_name} output at {output_path} but it is not there"
+        )
         return output_path
 
     return materialize
