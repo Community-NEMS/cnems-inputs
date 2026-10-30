@@ -108,11 +108,16 @@ def materialize_input(
             check=True,
         )
 
+        # this requires all rules to take the form:
+        #  - [stage]__[resource_name]
+        #  - [stage]__[resource_name]__whatever
         resource_name = rule_name.split("__")[1]
         output_path = (
             fake_r2_root
             / r2_config["bucket"]
             / "nightly"
+            # if we ever need to materialize something in integrations that is
+            # not a published resource we'll need to revisit this
             / get_published_path_for_resource("datapackage.json", resource_name)
         )
         assert output_path.exists(), (

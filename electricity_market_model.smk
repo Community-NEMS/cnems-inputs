@@ -83,7 +83,7 @@ rule out__base_load:
     core__base_load_county_path=r2("core/base_load__county.csv"),
     crosswalk_region_path=r2("raw/bluesky/crosswalk_region.csv"),
     datapackage_path="datapackage.json",
-  output: r2("out/base_load.csv")
+  output: r2(get_published_path_for_resource("datapackage.json", "base_load"))
   script:
     "src/cnems_inputs/out__base_load__region.py"
 
