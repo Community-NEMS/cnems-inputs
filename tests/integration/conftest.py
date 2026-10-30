@@ -72,6 +72,8 @@ def fake_r2(
 def materialize_input(
     fake_r2: tuple[Path, dict[str, str]],
     dataset_cache: DatasetCache,
+    test_dir,
+    config_dir,
 ) -> Callable[[str], Path]:
     """Return a helper that runs Snakemake for one input and returns its CSV.
 
@@ -91,6 +93,13 @@ def materialize_input(
                 "--cores",
                 "1",
                 rule_name,
+                # snakemake converts lists of int's to str's (wat, mad)
+                # in nested dict's passed in with --config. So we need to
+                # pass in the whole config inputs plus an override file.
+                # https://github.com/snakemake/snakemake/issues/2374
+                "--configfiles",
+                Path(config_dir, "emm_inputs.yaml"),
+                Path(test_dir, "integration", "integration_overrides.yaml"),
                 "--config",
                 f"dataset_cache_dir={dataset_cache.cache_dir.as_posix()}",
                 f"r2={json.dumps(r2_config)}",
@@ -102,9 +111,16 @@ def materialize_input(
             fake_r2_root
             / r2_config["bucket"]
             / "nightly"
+            # TODO: This assumes all rules are {stage}__{output_name}.csv
+            # which isn't how the multi-stage rules have been working.
+            # Either accept this naming convention or make this into a
+            # split that takes the second element using the convention of:
+            # {stage}__{output_name}(|__{aggregation}).csv
             / f"{rule_name.replace('__', '/')}.csv"
         )
-        assert output_path.exists()
+        assert output_path.exists(), (
+            f"We expected the output path to exist but it doesn't:\n\n{output_path}"
+        )
         return output_path
 
     return materialize
