@@ -99,7 +99,7 @@ def materialize_input(
                 # https://github.com/snakemake/snakemake/issues/2374
                 "--configfiles",
                 Path(config_dir, "emm_inputs.yaml"),
-                Path(test_dir, "integration_overrides.yaml"),
+                Path(test_dir, "integration", "integration_overrides.yaml"),
                 "--config",
                 f"dataset_cache_dir={dataset_cache.cache_dir.as_posix()}",
                 f"r2={json.dumps(r2_config)}",
