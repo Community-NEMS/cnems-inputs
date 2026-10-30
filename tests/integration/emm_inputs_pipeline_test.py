@@ -5,6 +5,7 @@ from pathlib import Path
 from zipfile import ZipFile
 
 import polars as pl
+import pytest
 from polars.testing import assert_frame_equal
 
 from cnems_inputs.dataset_cache import DatasetCache
@@ -26,15 +27,15 @@ def test_enduse_base_share_matches_archived_source(
     assert_frame_equal(actual, expected)
 
 
+@pytest.mark.parametrize("rule_name", ["out__available_capacity", "out__base_load"])
 def test_built_pipelines(
+    rule_name: str,
     materialize_input: Callable[[str], Path],
     dataset_cache: DatasetCache,
 ) -> None:
-    """The available capacity pipeline should build the output."""
-    pipelines = ["available_capacity", "base_load"]
-    for pipeline in pipelines:
-        df = pl.read_csv(materialize_input(f"out__{pipeline}"))
-        assert not df.is_empty(), f"{pipeline} should have made something"
+    """Run the rules for the rebuilt pipelines and ensure there is a non-empty output."""
+    df = pl.read_csv(materialize_input(rule_name))
+    assert not df.is_empty(), f"{rule_name} should have made something"
 
 
 # NOTE (2026-09-15) we could probably add a "supply curve schema
