@@ -45,8 +45,9 @@ would when cutting an actual release. -->
 - Now we use real live input data in our integration tests, and don't need to
     vendor input data; this necessitated replacing `cached_http` with our own
     bespoke `dataset_cache` module. See issue #20 and PR !79.
-- Applied schema changes requested by modelers, including: resource names, units. See
-    issues #86, #88 and PRs !87, !90.
+- Applied schema changes requested by modelers, including: resource names, units,
+    column names, and added/dropped resources. See
+    issues #86, #88, #85 and PRs !87, !90, !92.
 - Added pipeline for `base_load.csv` based on pipeline from `BlueSky` samples.
     Updated using pre-processed EIA data from PUDL and removed weather normalization.
     See issue #50 and PR !12.

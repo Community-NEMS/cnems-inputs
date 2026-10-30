@@ -54,3 +54,16 @@ def get_published_paths(datapackage_path: str) -> list[str]:
     with Path(datapackage_path).open() as dp:
         datapackage = json.load(dp)
     return [r["path"] for r in datapackage["resources"]]
+
+
+def get_published_path_for_resource(datapackage_path: str, resource_name: str) -> str:
+    """Get resource path specified by a datapackage."""
+    with Path(datapackage_path).open() as dp:
+        datapackage = json.load(dp)
+    # there are <100 of these so we can worst case examine all of them
+    for resource in datapackage["resources"]:
+        if resource["name"] == resource_name:
+            return resource["path"]
+    raise ValueError(
+        f"No resource called {resource_name} found in datapackage at {datapackage_path}"
+    )

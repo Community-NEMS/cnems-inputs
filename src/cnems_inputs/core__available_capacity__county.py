@@ -344,14 +344,14 @@ def transform_available_capacity_county(
     ].cumsum()
     frame = frame.reset_index()
     frame = frame[frame["Cap_Cum"] != 0]
-    frame["SupplyCurve"] = frame["Cap_Cum"] - frame["Ret_Cap_Cum"]
+    frame["available_capacity_mw"] = frame["Cap_Cum"] - frame["Ret_Cap_Cum"]
     frame = frame.drop(columns=["Capacity", "Ret_Capacity", "Cap_Cum", "Ret_Cap_Cum"])
 
     frame = pd.merge(frame, crosswalk_steps, how="right", on=["tech"]).fillna(0)
-    frame["SupplyCurve"] = (frame["SupplyCurve"] / frame["count"]).apply(
-        lambda x: round(x, 2)
-    )
-    frame = frame[["FIPS_cnty", "tech", "step", "year", "SupplyCurve"]]
+    frame["available_capacity_mw"] = (
+        frame["available_capacity_mw"] / frame["count"]
+    ).apply(lambda x: round(x, 2))
+    frame = frame[["FIPS_cnty", "tech", "step", "year", "available_capacity_mw"]]
     frame = frame[frame["year"] > 0]
 
     # create_supplycurve_cnty -- add DGPV capacity
@@ -364,7 +364,7 @@ def transform_available_capacity_county(
             "tech": pd.Int64Dtype(),
             "step": pd.Int64Dtype(),
             "year": pd.Int64Dtype(),
-            "SupplyCurve": pd.Float64Dtype(),
+            "available_capacity_mw": pd.Float64Dtype(),
         }
     )
     return frame
