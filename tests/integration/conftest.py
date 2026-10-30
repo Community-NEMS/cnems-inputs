@@ -72,6 +72,8 @@ def fake_r2(
 def materialize_input(
     fake_r2: tuple[Path, dict[str, str]],
     dataset_cache: DatasetCache,
+    test_dir,
+    config_dir,
 ) -> Callable[[str], Path]:
     """Return a helper that runs Snakemake for one input and returns its CSV.
 
@@ -91,6 +93,13 @@ def materialize_input(
                 "--cores",
                 "1",
                 rule_name,
+                # snakemake converts lists of int's to str's (wat, mad)
+                # in nested dict's passed in with --config. So we need to
+                # pass in the whole config inputs plus an override file.
+                # https://github.com/snakemake/snakemake/issues/2374
+                "--configfiles",
+                Path(config_dir, "emm_inputs.yaml"),
+                Path(test_dir, "integration_overrides.yaml"),
                 "--config",
                 f"dataset_cache_dir={dataset_cache.cache_dir.as_posix()}",
                 f"r2={json.dumps(r2_config)}",

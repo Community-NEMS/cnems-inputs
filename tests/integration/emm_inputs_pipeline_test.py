@@ -12,8 +12,7 @@ from cnems_inputs.dataset_cache import DatasetCache
 
 
 def test_enduse_base_share_matches_archived_source(
-    materialize_input: Callable[[str], Path],
-    dataset_cache: DatasetCache,
+    materialize_input: Callable[[str], Path], dataset_cache: DatasetCache
 ) -> None:
     """The enduse_base_share pipeline should publish the source data unchanged."""
     actual = pl.read_csv(materialize_input("out__enduse_base_share"))
