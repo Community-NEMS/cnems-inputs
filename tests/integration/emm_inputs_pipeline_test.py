@@ -33,8 +33,10 @@ def test_built_pipelines(
     dataset_cache: DatasetCache,
 ) -> None:
     """Run the rules for the rebuilt pipelines and ensure there is a non-empty output."""
-    df = pl.read_csv(materialize_input(rule_name))
-    assert not df.is_empty(), f"{rule_name} should have made something"
+    df = pl.scan_csv(materialize_input(rule_name))
+    assert not df.limit(1).collect().is_empty(), (
+        f"{rule_name} should have made something"
+    )
 
 
 # NOTE (2026-09-15) we could probably add a "supply curve schema
