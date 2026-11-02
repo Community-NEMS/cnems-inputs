@@ -63,29 +63,23 @@ def transform_capital_cost(
 
     validate_atb_settings(capital_costs, settings)  # Check ATB settings are valid
     capital_costs = (
-        (
-            capital_costs.loc[
-                (capital_costs.model_case_nrelatb == settings["model"])
-                & (capital_costs.scenario_atb == settings["scenario"])
-                & (capital_costs.report_year == settings["atb_year"])
-                & (
-                    capital_costs.cost_recovery_period_years
-                    == settings["cost_recovery_period"]
-                ),
-                [
-                    "projection_year",
-                    "technology_description",
-                    "technology_description_detail_1",
-                    "technology_description_detail_2",
-                    "capex_overnight_per_kw",
-                ],
-            ]
-        )
-        .drop_duplicates()
-        .rename(
-            {"projection_year": "year", "capex_overnight_per_kw": "capital_cost_per_kw"}
-        )
-    )
+        capital_costs.loc[
+            (capital_costs.model_case_nrelatb == settings["model"])
+            & (capital_costs.scenario_atb == settings["scenario"])
+            & (capital_costs.report_year == settings["atb_year"])
+            & (
+                capital_costs.cost_recovery_period_years
+                == settings["cost_recovery_period"]
+            ),
+            [
+                "projection_year",
+                "technology_description",
+                "technology_description_detail_1",
+                "technology_description_detail_2",
+                "capex_overnight_per_kw",
+            ],
+        ]
+    ).drop_duplicates()
     # Filter year to start at model start year and end at model end year
     capital_costs = capital_costs.loc[
         (capital_costs.projection_year >= settings["first_year"])
@@ -96,7 +90,7 @@ def transform_capital_cost(
         capital_costs.projection_year.max() == settings["last_year"]
     )
     # Convert $/kw to $/mw
-    capital_costs["capex_overnight_usd_per_mw"] = (
+    capital_costs["capital_cost_usd_per_mw"] = (
         capital_costs["capex_overnight_per_kw"] * 1000
     )
     capital_costs = capital_costs.drop(columns="capex_overnight_per_kw")
@@ -146,7 +140,14 @@ def transform_capital_cost(
     return (
         capital_df.rename(columns={"projection_year": "year"})
         .reindex(
-            columns=["region", "tech", "step", "year", "capex_overnight_usd_per_mw"]
+            columns=[
+                "region",
+                "tech",
+                "step",
+                "year",
+                "capital_cost_usd_per_mw",
+                "notes",
+            ]
         )
         .sort_values(["tech", "region"])
     )
@@ -154,8 +155,10 @@ def transform_capital_cost(
 
 def transform_capital_cost_initial(capital_cost_df):
     """Create capital cost initial table from full DF by filtering to first year."""
-    return capital_cost_df.loc[capital_cost_df.year == capital_cost_df.year.min()].drop(
-        columns="year"
+    return (
+        capital_cost_df.loc[capital_cost_df.year == capital_cost_df.year.min()]
+        .drop(columns="year")
+        .rename(columns={"capital_cost_usd_per_mw": "capital_cost_initial_usd_per_mw"})
     )
 
 
@@ -168,6 +171,7 @@ def run_capital_cost(
     settings: dict,
     capital_cost_output_path: Path,
     capital_cost_initial_output_path: Path,
+    datapackage_path: Path,
 ):
     """E, T, L."""
     capital_cost = transform_capital_cost(
@@ -182,10 +186,20 @@ def run_capital_cost(
         ),
         settings=settings,
     )
-    load(capital_cost, capital_cost_output_path)
+    load(
+        capital_cost,
+        capital_cost_output_path,
+        datapackage_path=datapackage_path,
+        resource_name="capital_cost",
+    )
 
     capital_cost_initial = transform_capital_cost_initial(capital_cost)
-    load(capital_cost_initial, capital_cost_initial_output_path)
+    load(
+        capital_cost_initial,
+        capital_cost_initial_output_path,
+        datapackage_path=datapackage_path,
+        resource_name="capital_cost_initial",
+    )
 
 
 if __name__ == "__main__":
@@ -210,4 +224,5 @@ if __name__ == "__main__":
         settings=snakemake.params["settings"],
         capital_cost_output_path=Path(snakemake.output[0]),
         capital_cost_initial_output_path=Path(snakemake.output[1]),
+        datapackage_path=Path(snakemake.input["datapackage_path"]),
     )

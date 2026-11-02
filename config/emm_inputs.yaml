@@ -5,8 +5,6 @@ general: # high-level parameters for generating all tables
 
 core_snapshots: # this is the list we iterate over for the "snapshot" approach
   - storage_efficiency
-  - capital_cost
-  - capital_cost_initial
   - capacity_factor_vre
   - enduse_base_share
   - enduse_scalar

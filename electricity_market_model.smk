@@ -8,8 +8,7 @@ rule emm_inputs:
     [r2(p) for p in get_published_paths("datapackage.json")],
     r2("datapackage.json"),
     # For validation purposes!
-    r2(f"raw/bluesky/available_capacity.csv"),
-    r2("core/capital_cost.csv") # TODO: TEMP!
+    r2(f"raw/bluesky/available_capacity.csv")
 
 #####################################################################################
 ################### Rules for raw assets ############################################
@@ -25,7 +24,7 @@ pudl_tables = [
 for pudl_table in pudl_tables:
   rule:
     name: f"raw__pudl__{pudl_table}"
-    input: pudl(config["core_available_capacity"]["pudl_version"], pudl_table)
+    input: pudl(config["general"]["pudl_version"], pudl_table)
     output: r2(f"raw/pudl/{pudl_table}.parquet")
     shell: "cp {input} {output}"
 
@@ -59,21 +58,6 @@ rule core__available_capacity__county:
   script:
     "src/cnems_inputs/core__available_capacity__county.py"
 
-rule core__capital_cost:
-  input:
-    core_nrelatb__yearly_projected_cost_performance_path=r2("raw/pudl/core_nrelatb__yearly_projected_cost_performance.parquet"),
-    crosswalk_tech_path=r2(f"raw/bluesky/crosswalk_tech.csv"),
-    crosswalk_region_path=r2(f"raw/bluesky/crosswalk_region.csv"),
-    crosswalk_steps_path=r2(f"raw/bluesky/crosswalk_steps.csv"),
-    crosswalk_eia_nrel_tech_types_path="src/cnems_inputs/eia_nrelatb_tech_type_crosswalk.csv",
-  output:
-    r2("core/capital_cost.csv"),
-    r2("core/capital_cost_initial.csv")
-  params:
-    settings = config["core_capital_cost"] | config["general"]
-  script:
-    "src/cnems_inputs/core__capital_cost.py"
-
 #####################################################################################
 ################### Rules for out assets ############################################
 #####################################################################################
@@ -103,6 +87,22 @@ rule out__base_load:
   output: r2(get_published_path_for_resource("datapackage.json", "base_load"))
   script:
     "src/cnems_inputs/out__base_load__region.py"
+
+rule out__capital_cost:
+  input:
+    core_nrelatb__yearly_projected_cost_performance_path=r2("raw/pudl/core_nrelatb__yearly_projected_cost_performance.parquet"),
+    crosswalk_tech_path=r2(f"raw/bluesky/crosswalk_tech.csv"),
+    crosswalk_region_path=r2(f"raw/bluesky/crosswalk_region.csv"),
+    crosswalk_steps_path=r2(f"raw/bluesky/crosswalk_steps.csv"),
+    crosswalk_eia_nrel_tech_types_path="src/cnems_inputs/eia_nrelatb_tech_type_crosswalk.csv",
+    datapackage_path="datapackage.json"
+  output:
+    r2(get_published_path_for_resource("datapackage.json", "capital_cost")),
+    r2(get_published_path_for_resource("datapackage.json", "capital_cost_initial"))
+  params:
+    settings = config["core_capital_cost"] | config["general"]
+  script:
+    "src/cnems_inputs/out__capital_cost.py"
 
 rule datapackage:
   input: "datapackage.json"
