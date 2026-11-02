@@ -1,4 +1,4 @@
-"""Transformation pipeline for supply_curve_county.csv.
+"""Transformation pipeline for available_capacity_county.csv.
 
 Build county-level capacity projections based on EIA-860 data.
 This module is a re-implementation of a portion of code from
@@ -200,7 +200,7 @@ def prep_eia860m(
     return eia860m
 
 
-def transform_supply_curve_county(
+def transform_available_capacity_county(
     out_eia__yearly_generators: pl.DataFrame,
     crosswalk_tech_lf: pl.LazyFrame,
     crosswalk_status_lf: pl.LazyFrame,
@@ -210,7 +210,7 @@ def transform_supply_curve_county(
     pop_lf: pl.LazyFrame,
     settings: dict,
 ) -> pd.DataFrame:
-    """Build the supply curve output.
+    """Build the available capacity output.
 
     Built mostly from:
     BlueSky/sample/electricity_data_pipeline/src/runner.py::create_supplycurve_cnty
@@ -305,7 +305,6 @@ def transform_supply_curve_county(
     # create_supplycurve_cnty -- remove rows with missing capacity data
     df.loc[df["Capacity"] == " ", "Capacity"] = 0
     df.loc[df["Capacity"].isna(), "Capacity"] = 0
-    df["Capacity"] = df["Capacity"].astype(float) / 1000  # fix units
 
     # create_supplycurve_cnty -- group data by technology/county/year/retirement year
     df = df.drop(columns=["ID"])
@@ -345,14 +344,14 @@ def transform_supply_curve_county(
     ].cumsum()
     frame = frame.reset_index()
     frame = frame[frame["Cap_Cum"] != 0]
-    frame["SupplyCurve"] = frame["Cap_Cum"] - frame["Ret_Cap_Cum"]
+    frame["available_capacity_mw"] = frame["Cap_Cum"] - frame["Ret_Cap_Cum"]
     frame = frame.drop(columns=["Capacity", "Ret_Capacity", "Cap_Cum", "Ret_Cap_Cum"])
 
     frame = pd.merge(frame, crosswalk_steps, how="right", on=["tech"]).fillna(0)
-    frame["SupplyCurve"] = (frame["SupplyCurve"] / frame["count"]).apply(
-        lambda x: round(x, 2)
-    )
-    frame = frame[["FIPS_cnty", "tech", "step", "year", "SupplyCurve"]]
+    frame["available_capacity_mw"] = (
+        frame["available_capacity_mw"] / frame["count"]
+    ).apply(lambda x: round(x, 2))
+    frame = frame[["FIPS_cnty", "tech", "step", "year", "available_capacity_mw"]]
     frame = frame[frame["year"] > 0]
 
     # create_supplycurve_cnty -- add DGPV capacity
@@ -365,13 +364,13 @@ def transform_supply_curve_county(
             "tech": pd.Int64Dtype(),
             "step": pd.Int64Dtype(),
             "year": pd.Int64Dtype(),
-            "SupplyCurve": pd.Float64Dtype(),
+            "available_capacity_mw": pd.Float64Dtype(),
         }
     )
     return frame
 
 
-def run_supply_curve_county(
+def run_available_capacity_county(
     crosswalk_tech_path: str,
     crosswalk_status_path: str,
     crosswalk_steps_path: str,
@@ -383,7 +382,7 @@ def run_supply_curve_county(
     county_output_path: Path,
 ):
     """E, T, L."""
-    supply_curve_county = transform_supply_curve_county(
+    available_capacity_county = transform_available_capacity_county(
         out_eia__yearly_generators=pl.read_parquet(out_eia__yearly_generators_path),
         crosswalk_tech_lf=pl.scan_csv(crosswalk_tech_path),
         crosswalk_status_lf=pl.scan_csv(crosswalk_status_path),
@@ -393,7 +392,7 @@ def run_supply_curve_county(
         pop_lf=pl.scan_csv(pop_path),
         settings=settings,
     )
-    load(supply_curve_county, county_output_path)
+    load(available_capacity_county, county_output_path)
 
 
 if __name__ == "__main__":
@@ -405,7 +404,7 @@ if __name__ == "__main__":
         # so it complains about this import
         from snakemake.iocontainers import snakemake  # noqa: TC004
 
-    run_supply_curve_county(
+    run_available_capacity_county(
         out_eia__yearly_generators_path=snakemake.input[
             "out_eia__yearly_generators_path"
         ],

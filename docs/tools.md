@@ -81,7 +81,7 @@ pixi run snakemake emm_inputs --cores 1
 To run the pipeline for one specific input, just run its rule instead:
 
 ```bash
-pixi run snakemake core_supply_curve --cores 1
+pixi run snakemake core__available_capacity__county --cores 1
 ```
 
 Many of our datasets are pinned to Zenodo DOIs. Unfortunately, Zenodo has reliability issues.

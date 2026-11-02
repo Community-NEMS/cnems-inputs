@@ -12,6 +12,7 @@ from pathlib import Path
 import pytest
 
 from cnems_inputs.dataset_cache import DatasetCache
+from cnems_inputs.helpers import get_published_path_for_resource
 
 
 @pytest.fixture(scope="session")
@@ -72,6 +73,8 @@ def fake_r2(
 def materialize_input(
     fake_r2: tuple[Path, dict[str, str]],
     dataset_cache: DatasetCache,
+    test_dir,
+    config_dir,
 ) -> Callable[[str], Path]:
     """Return a helper that runs Snakemake for one input and returns its CSV.
 
@@ -91,6 +94,13 @@ def materialize_input(
                 "--cores",
                 "1",
                 rule_name,
+                # snakemake converts lists of int's to str's (wat, mad)
+                # in nested dict's passed in with --config. So we need to
+                # pass in the whole config inputs plus an override file.
+                # https://github.com/snakemake/snakemake/issues/2374
+                "--configfiles",
+                Path(config_dir, "emm_inputs.yaml"),
+                Path(test_dir, "integration", "integration_overrides.yaml"),
                 "--config",
                 f"dataset_cache_dir={dataset_cache.cache_dir.as_posix()}",
                 f"r2={json.dumps(r2_config)}",
@@ -98,13 +108,21 @@ def materialize_input(
             check=True,
         )
 
+        # this requires all rules to take the form:
+        #  - [stage]__[resource_name]
+        #  - [stage]__[resource_name]__whatever
+        resource_name = rule_name.split("__")[1]
         output_path = (
             fake_r2_root
             / r2_config["bucket"]
             / "nightly"
-            / f"{rule_name.replace('__', '/')}.csv"
+            # if we ever need to materialize something in integrations that is
+            # not a published resource we'll need to revisit this
+            / get_published_path_for_resource("datapackage.json", resource_name)
         )
-        assert output_path.exists()
+        assert output_path.exists(), (
+            f"Expected {rule_name} output at {output_path} but it is not there"
+        )
         return output_path
 
     return materialize

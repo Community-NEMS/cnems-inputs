@@ -18,3 +18,9 @@ def test_dir() -> Path:
     Mostly this is meant as an example of a fixture.
     """
     return Path(__file__).parent
+
+
+@pytest.fixture(scope="session")
+def config_dir() -> Path:
+    """Return the path to the directory configurations for this pipeline."""
+    return Path(__file__).parent.parent / "config"

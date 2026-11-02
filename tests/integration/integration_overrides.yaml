@@ -1,0 +1,4 @@
+# Overrides for any of the configs in emm_inputs.yaml meant for integration testing
+base_load:
+  eia930_years: [2023]
+  use_pudl_imputed_demand: True
