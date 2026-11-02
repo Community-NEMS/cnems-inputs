@@ -14,14 +14,15 @@ from cnems_inputs.dataset_cache import DatasetCache
 def test_enduse_base_share_matches_archived_source(
     materialize_input: Callable[[str], Path], dataset_cache: DatasetCache
 ) -> None:
-    """The enduse_base_share pipeline should publish the source data unchanged."""
+    """The enduse_base_share pipeline should publish the source data with only the header changed."""
     actual = pl.read_csv(materialize_input("out__enduse_base_share"))
     archive_path = dataset_cache.ensure_local("eiabluesky", "eiabluesky-v1-1.zip")
     with (
         ZipFile(archive_path) as archive,
         archive.open("input/residential/EnduseBaseShares.csv") as source,
     ):
-        expected = pl.read_csv(source)
+        # ignore the old column headers
+        expected = pl.read_csv(source, new_columns=actual.columns)
 
     assert_frame_equal(actual, expected)
 

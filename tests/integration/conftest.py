@@ -12,6 +12,7 @@ from pathlib import Path
 import pytest
 
 from cnems_inputs.dataset_cache import DatasetCache
+from cnems_inputs.helpers import get_published_path_for_resource
 
 
 @pytest.fixture(scope="session")
@@ -107,19 +108,20 @@ def materialize_input(
             check=True,
         )
 
+        # this requires all rules to take the form:
+        #  - [stage]__[resource_name]
+        #  - [stage]__[resource_name]__whatever
+        resource_name = rule_name.split("__")[1]
         output_path = (
             fake_r2_root
             / r2_config["bucket"]
             / "nightly"
-            # TODO: This assumes all rules are {stage}__{output_name}.csv
-            # which isn't how the multi-stage rules have been working.
-            # Either accept this naming convention or make this into a
-            # split that takes the second element using the convention of:
-            # {stage}__{output_name}(|__{aggregation}).csv
-            / f"{rule_name.replace('__', '/')}.csv"
+            # if we ever need to materialize something in integrations that is
+            # not a published resource we'll need to revisit this
+            / get_published_path_for_resource("datapackage.json", resource_name)
         )
         assert output_path.exists(), (
-            f"We expected the output path to exist but it doesn't:\n\n{output_path}"
+            f"Expected {rule_name} output at {output_path} but it is not there"
         )
         return output_path
 

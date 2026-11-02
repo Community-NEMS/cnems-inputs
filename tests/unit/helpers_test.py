@@ -7,7 +7,7 @@ import pandas as pd
 import pandera.pandas as pa
 import pytest
 
-from cnems_inputs.helpers import load, versioned_r2_uri
+from cnems_inputs.helpers import get_published_path_for_resource, load, versioned_r2_uri
 
 
 @pytest.fixture
@@ -20,6 +20,7 @@ def toy_datapackage(tmpdir):
                 "resources": [
                     {
                         "name": "test",
+                        "path": "test_path",
                         "schema": {
                             "fields": [
                                 {
@@ -91,3 +92,12 @@ def test_load_check_schema_invalid(
     with pytest.raises(pa.errors.SchemaErrors) as excinfo:
         load(noncompliant_df, out_path, toy_datapackage, "test")
     assert seek_text in str(excinfo.value)
+
+
+def test_get_published_path_for_resource(toy_datapackage):
+    actual = get_published_path_for_resource(toy_datapackage, "test")
+    assert actual == "test_path"
+
+    with pytest.raises(ValueError) as excinfo:
+        get_published_path_for_resource(toy_datapackage, "nonexistent_resource")
+    assert "No resource called nonexistent_resource" in str(excinfo.value)

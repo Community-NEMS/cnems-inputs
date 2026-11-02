@@ -1,5 +1,4 @@
 core_snapshots: # this is the list we iterate over for the "snapshot" approach
-  - base_elec_price # ok grab raw/bluesky/base_elec_price.csv
   - storage_efficiency
   - capital_cost
   - capital_cost_initial
@@ -8,7 +7,6 @@ core_snapshots: # this is the list we iterate over for the "snapshot" approach
   - enduse_scalar
   - enduse_shape
   - fom_cost
-  - h2_price
   - storage_duration
   - hydro_capacity_factor
   - learning_rate
@@ -21,9 +19,9 @@ core_snapshots: # this is the list we iterate over for the "snapshot" approach
   - reserve_tech_limit
   - supply_curve_learning
   - generation_cost
-  - sw_builds
-  - sw_retires
-  - tech_subsets
+  - tech_build
+  - tech_retire
+  - tech
   - test_prices
   - tran_cost
   - tran_cost_intl
@@ -32,7 +30,6 @@ core_snapshots: # this is the list we iterate over for the "snapshot" approach
   - supply_limit_intl
 
 raw_bluesky: # this is the list we iterate over for extraction from bluesky zip
-  base_elec_price: input/residential/BaseElecPrice.csv
   base_load: input/residential/BaseLoad.csv
   storage_efficiency: input/electricity/cem_inputs/BatteryEfficiency.csv
   capital_cost: input/electricity/cem_inputs/CapCost.csv
@@ -42,7 +39,6 @@ raw_bluesky: # this is the list we iterate over for extraction from bluesky zip
   enduse_scalar: input/residential/EnduseScalar.csv
   enduse_shape: input/residential/EnduseShapes.csv
   fom_cost: input/electricity/cem_inputs/FOMCost.csv
-  h2_price: input/electricity/cem_inputs/H2Price.csv
   storage_duration: input/electricity/cem_inputs/HourstoBuy.csv
   hydro_capacity_factor: input/electricity/cem_inputs/HydroCapFactor.csv
   learning_rate: input/electricity/cem_inputs/LearningRate.csv
@@ -56,9 +52,9 @@ raw_bluesky: # this is the list we iterate over for extraction from bluesky zip
   available_capacity: input/electricity/cem_inputs/SupplyCurve.csv
   supply_curve_learning: input/electricity/cem_inputs/SupplyCurveLearning.csv
   generation_cost: input/electricity/cem_inputs/SupplyPrice.csv
-  sw_builds: input/electricity/sw_builds.csv
-  sw_retires: input/electricity/sw_retires.csv
-  tech_subsets: input/electricity/tech_subsets.csv
+  tech_build: input/electricity/sw_builds.csv
+  tech_retire: input/electricity/sw_retires.csv
+  tech: input/electricity/tech_subsets.csv
   test_prices: input/residential/testPrices.csv
   tran_cost: input/electricity/cem_inputs/TranCost.csv
   tran_cost_intl: input/electricity/cem_inputs/TranCostInt.csv
