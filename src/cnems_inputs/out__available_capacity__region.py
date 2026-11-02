@@ -72,6 +72,7 @@ def run_available_capacity_region(
     crosswalk_region_path: str,
     settings: dict,
     regional_output_path: Path,
+    datapackage_path: Path,
 ):
     """E, T, L."""
     available_capacity_regional = aggregate_available_capacity_region(
@@ -79,8 +80,13 @@ def run_available_capacity_region(
         crosswalk_region_lf=pl.scan_csv(crosswalk_region_path),
         crosswalk_steps_lf=pl.scan_csv(crosswalk_steps_path),
         settings=settings,
+    ).assign(notes=None)
+    load(
+        available_capacity_regional,
+        regional_output_path,
+        datapackage_path,
+        "available_capacity",
     )
-    load(available_capacity_regional, regional_output_path)
 
 
 if __name__ == "__main__":
@@ -100,4 +106,5 @@ if __name__ == "__main__":
         crosswalk_region_path=snakemake.input["crosswalk_region_path"],
         settings=snakemake.params["settings"],
         regional_output_path=Path(snakemake.output[0]),
+        datapackage_path=Path(snakemake.input["datapackage_path"]),
     )
