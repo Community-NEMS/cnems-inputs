@@ -14,4 +14,10 @@ def schema_for(datapackage_path: Path, resource_name: str) -> DataFrameSchema:
     matching = [r for r in dpkg["resources"] if r["name"] == resource_name]
     if not matching:
         raise ValueError(f"No resource with name '{resource_name}'")
-    return from_frictionless_schema(matching[0]["schema"])
+    schema = from_frictionless_schema(matching[0]["schema"])
+    for col in schema.columns.values():
+        # the default boolean dtype ('bool') is not nullable;
+        # rewrite to the nullable one ('boolean')
+        if schema.dtypes[col.name].type == "bool":
+            col.dtype = "boolean"
+    return schema

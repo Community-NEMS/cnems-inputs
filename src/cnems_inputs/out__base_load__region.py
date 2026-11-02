@@ -73,8 +73,6 @@ def aggregate_base_load_region(
         .group_by(["region", "hour"])
         .agg(pl.col("base_load_mwh").sum())
         .sort(["region", "hour"])
-        # TODO: Remove when we merge in #92
-        .rename({"base_load_mwh": "Load"})
     )
     return frame.to_pandas()
 
