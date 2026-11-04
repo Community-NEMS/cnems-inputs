@@ -1,7 +1,10 @@
+general: # high-level parameters for generating all tables
+  pudl_version: nightly
+  first_year: 2023
+  last_year: 2050
+
 core_snapshots: # this is the list we iterate over for the "snapshot" approach
   - storage_efficiency
-  - capital_cost
-  - capital_cost_initial
   - capacity_factor_vre
   - enduse_base_share
   - enduse_scalar
@@ -74,9 +77,12 @@ core_available_capacity:
   first_year: 2023
   last_year: 2050
   population_year: 2022
-  # when pudl inputs are used in more than one pipeline, we should probably move this
-  pudl_version: nightly
   eia860m_month: 2024-01-01
+core_capital_cost:
+  model: Market
+  scenario: Moderate
+  atb_year: 2024 # TODO: generalize if using for more than one table
+  cost_recovery_period: 30
 base_load:
   # based on sm_years in create_inputs.py
   eia930_years: [2018, 2019, 2020, 2021, 2022, 2023]
