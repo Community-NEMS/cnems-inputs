@@ -66,6 +66,7 @@ rule out__available_capacity:
     available_capacity_county_path=r2("core/available_capacity__county.csv"),
     crosswalk_steps_path=r2(f"raw/bluesky/crosswalk_steps.csv"),
     crosswalk_region_path=r2(f"raw/bluesky/crosswalk_region.csv"),
+    datapackage_path="datapackage.json"
   output:
     r2(get_published_path_for_resource("datapackage.json", "available_capacity"))
   params:
