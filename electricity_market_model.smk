@@ -19,11 +19,12 @@ pudl_tables = [
   "core_eia861__yearly_balancing_authority",
   "out_eia861__yearly_balancing_authority_service_territory",
   "out_eia__yearly_generators",
+  "core_nrelatb__yearly_projected_cost_performance",
 ]
 for pudl_table in pudl_tables:
   rule:
     name: f"raw__pudl__{pudl_table}"
-    input: pudl(config["core_available_capacity"]["pudl_version"], pudl_table)
+    input: pudl(config["general"]["pudl_version"], pudl_table)
     output: r2(f"raw/pudl/{pudl_table}.parquet")
     shell: "cp {input} {output}"
 
@@ -53,7 +54,7 @@ rule core__available_capacity__county:
     pop_path=r2(f"raw/bluesky/population.csv"),
   output: r2("core/available_capacity__county.csv"),
   params:
-    settings = config["core_available_capacity"]
+    settings = config["core_available_capacity"] | config["general"]
   script:
     "src/cnems_inputs/core__available_capacity__county.py"
 
@@ -69,7 +70,7 @@ rule out__available_capacity:
   output:
     r2(get_published_path_for_resource("datapackage.json", "available_capacity"))
   params:
-    settings = config["core_available_capacity"]
+    settings = config["core_available_capacity"] | config["general"]
   script:
     "src/cnems_inputs/out__available_capacity__region.py"
 
@@ -86,6 +87,22 @@ rule out__base_load:
   output: r2(get_published_path_for_resource("datapackage.json", "base_load"))
   script:
     "src/cnems_inputs/out__base_load__region.py"
+
+rule out__capital_cost:
+  input:
+    core_nrelatb__yearly_projected_cost_performance_path=r2("raw/pudl/core_nrelatb__yearly_projected_cost_performance.parquet"),
+    crosswalk_tech_path=r2(f"raw/bluesky/crosswalk_tech.csv"),
+    crosswalk_region_path=r2(f"raw/bluesky/crosswalk_region.csv"),
+    crosswalk_steps_path=r2(f"raw/bluesky/crosswalk_steps.csv"),
+    crosswalk_eia_nlr_tech_types_path="src/cnems_inputs/eia_nlratb_tech_type_crosswalk.csv",
+    datapackage_path="datapackage.json"
+  output:
+    r2(get_published_path_for_resource("datapackage.json", "capital_cost")),
+    r2(get_published_path_for_resource("datapackage.json", "capital_cost_initial"))
+  params:
+    settings = config["core_capital_cost"] | config["general"]
+  script:
+    "src/cnems_inputs/out__capital_cost.py"
 
 rule datapackage:
   input: "datapackage.json"
