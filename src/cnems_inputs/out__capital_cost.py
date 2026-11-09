@@ -151,18 +151,27 @@ def transform_capital_cost(
     # Backfill nuclear costs.
     # NLR ATB doesn't provide nuclear costs until 2030, so where we have nuclear
     # technologies we backfill these values.
-    if "Nuclear" in cap_cost_df.nlr_atb_technology_type:
-        backfill_mask = (cap_cost_df.nlr_atb_technology_type == "Nuclear") & (
-            cap_cost_df.projection_year <= 2030
-        )
+    nuclear_mask = cap_cost_df["nlr_atb_technology_type"].eq("Nuclear")
+
+    if nuclear_mask.any():
+        backfill_mask = nuclear_mask & cap_cost_df["projection_year"].le(2030)
+
         assert (
-            cap_cost_df.loc[backfill_mask & (cap_cost_df.projection_year != 2030)]
-            .capital_cost_usd_per_mw.isna()
+            cap_cost_df.loc[
+                backfill_mask & cap_cost_df["projection_year"].ne(2030),
+                "capital_cost_usd_per_mw",
+            ]
+            .isna()
             .all()
-        )  # Expect all values are empty except 2030
-        cap_cost_df.loc[backfill_mask].capital_cost_usd_per_mw = cap_cost_df[
-            backfill_mask
-        ].capital_cost_usd_per_mw.backfill()
+        )
+
+        nuclear_costs = (
+            cap_cost_df.loc[backfill_mask]
+            .sort_values(["tech", "projection_year"])
+            .groupby("tech")["capital_cost_usd_per_mw"]
+            .bfill()
+        )
+        cap_cost_df.loc[nuclear_costs.index, "capital_cost_usd_per_mw"] = nuclear_costs
 
     # After backfill, expect all timestamps and technologies have an associated cost.
     assert cap_cost_df.capital_cost_usd_per_mw.notna().all()
