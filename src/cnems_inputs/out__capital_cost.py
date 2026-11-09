@@ -148,33 +148,10 @@ def transform_capital_cost(
         | (cap_cost_df.technology_description_detail_1.isna())
     ]
 
-    # Backfill nuclear costs.
-    # NLR ATB doesn't provide nuclear costs until 2030, so where we have nuclear
-    # technologies we backfill these values.
+    # Before we drop the technology fields, figure out which tech is mapped
+    # to nuclear to ensure we can backfill it and not any other techs.
     nuclear_mask = cap_cost_df["nlr_atb_technology_type"].eq("Nuclear")
-
-    if nuclear_mask.any():
-        backfill_mask = nuclear_mask & cap_cost_df["projection_year"].le(2030)
-
-        assert (
-            cap_cost_df.loc[
-                backfill_mask & cap_cost_df["projection_year"].ne(2030),
-                "capital_cost_usd_per_mw",
-            ]
-            .isna()
-            .all()
-        )
-
-        nuclear_costs = (
-            cap_cost_df.loc[backfill_mask]
-            .sort_values(["tech", "projection_year"])
-            .groupby("tech")["capital_cost_usd_per_mw"]
-            .bfill()
-        )
-        cap_cost_df.loc[nuclear_costs.index, "capital_cost_usd_per_mw"] = nuclear_costs
-
-    # After backfill, expect all timestamps and technologies have an associated cost.
-    assert cap_cost_df.capital_cost_usd_per_mw.notna().all()
+    nuclear_techs = cap_cost_df[nuclear_mask].tech.unique()
 
     cap_cost_df = cap_cost_df.drop(
         columns=[
@@ -193,6 +170,58 @@ def transform_capital_cost(
         .round(2)
         .reset_index()
     )
+
+    # Backfill nuclear costs.
+    # NLR ATB doesn't provide nuclear costs until 2030, so where we have nuclear
+    # technologies we backfill these values.
+
+    # First, make sure all years of data have a row for all technologies.
+    # Make sure all years of data have a row for all technologies.
+    expected_index = pd.MultiIndex.from_product(
+        [
+            capital_costs["tech"].unique(),
+            range(settings["first_year"], settings["last_year"] + 1),
+        ],
+        names=["tech", "projection_year"],
+    )
+    capital_costs = (
+        capital_costs.set_index(["tech", "projection_year"])
+        .reindex(expected_index)
+        .sort_index()
+        .reset_index()
+    )
+
+    if nuclear_mask.any():
+        backfill_mask = capital_costs["tech"].isin(nuclear_techs) & capital_costs[
+            "projection_year"
+        ].le(2030)
+
+        assert (
+            capital_costs.loc[
+                backfill_mask & capital_costs["projection_year"].ne(2030),
+                "capital_cost_usd_per_mw",
+            ]
+            .isna()
+            .all()
+        )
+
+        nuclear_costs = (
+            capital_costs.loc[backfill_mask]
+            .sort_values(["tech", "projection_year"])
+            .groupby("tech")["capital_cost_usd_per_mw"]
+            .bfill()
+        )
+        capital_costs.loc[nuclear_costs.index, "capital_cost_usd_per_mw"] = (
+            nuclear_costs
+        )
+        capital_costs.loc[nuclear_costs.index, "nlr_atb_year"] = (
+            capital_costs.nlr_atb_year.unique()[0]
+        )
+
+    # After backfill, expect all timestamps and technologies have an associated cost.
+    # Check that every value in the dataframe is non-null.
+    assert capital_costs.notna().all().all()
+
     # Double check we have the expected number of technologies in the end
     # These will be the ones where all detailed technologies attached to numbered inputs in the model are not mapped
     # to any NLR ATB capital costs.
