@@ -56,7 +56,7 @@ def transform_capital_cost(
     # TODO: Could eventually have multi-year crosswalk with one mapping per
     # year of ATB data, but this presumes one static map corresponding to one year.
     assert (
-        nlr_eia_tech_crosswalk.nrel_atb_year.unique() == settings["atb_year"]
+        nlr_eia_tech_crosswalk.nlr_atb_year.unique() == settings["atb_year"]
     ).all(), (
         "EIA-NLR ATB crosswalk mapped to years of ATB data not contained in the settings file."
     )
@@ -103,32 +103,56 @@ def transform_capital_cost(
 
     # Sanity check the crosswalk
     # Pairs of NLR tech and tech details should be in the tech crosswalk and in the NLR ATB data, to avoid accidental misentry.
-    # TODO!
+    assert (
+        full_tech_crosswalk["nlr_atb_technology_type"]
+        .dropna()
+        .isin(capital_costs["technology_description"])
+        .all()
+    ), (
+        "Technology descriptors in the EIA-NLR technology crosswalk don't exist in the observed NLR ATB data. Review the mapping spreadsheet."
+    )
+    assert (
+        pd.MultiIndex.from_frame(
+            full_tech_crosswalk[
+                ["nlr_atb_technology_type", "nlr_atb_technology_type_detailed"]
+            ].dropna(how="any")
+        )
+        .isin(
+            pd.MultiIndex.from_frame(
+                capital_costs[
+                    ["technology_description", "technology_description_detail_1"]
+                ]
+            )
+        )
+        .all()
+    ), (
+        "Detailed technology descriptors in the EIA-NLR technology crosswalk don't exist in the observed NLR ATB data. Review the mapping spreadsheet."
+    )
 
     # Map tech to existing technologies
     cap_cost_df = capital_costs.merge(
         full_tech_crosswalk,
         left_on="technology_description",
-        right_on="nrel_atb_technology_type",
-        how="right",  # Drop any technologies not mapped to an EIA type
-        validate="m:1",
+        right_on="nlr_atb_technology_type",
+        how="inner",  # Drop any technologies not mapped to an EIA type or in the crosswalk
+        validate="m:m",
     )
 
     # If sub-tech types are specified, they should match between the NLR ATB versions.
     cap_cost_df = cap_cost_df.loc[
         (
             cap_cost_df.technology_description_detail_1
-            == cap_cost_df.nrel_atb_technology_type_detailed
+            == cap_cost_df.nlr_atb_technology_type_detailed
         )
-        | (cap_cost_df.nrel_atb_technology_type_detailed.isna())
+        | (cap_cost_df.nlr_atb_technology_type_detailed.isna())
         | (cap_cost_df.technology_description_detail_1.isna())
     ]
 
     # Backfill nuclear costs.
     # NLR ATB doesn't provide nuclear costs until 2030, so where we have nuclear
     # technologies we backfill these values.
-    if "Nuclear" in cap_cost_df.nrel_atb_technology_type:
-        backfill_mask = (cap_cost_df.nrel_atb_technology_type == "Nuclear") & (
+    if "Nuclear" in cap_cost_df.nlr_atb_technology_type:
+        backfill_mask = (cap_cost_df.nlr_atb_technology_type == "Nuclear") & (
             cap_cost_df.projection_year <= 2030
         )
         assert (
@@ -139,8 +163,9 @@ def transform_capital_cost(
         cap_cost_df.loc[backfill_mask].capital_cost_usd_per_mw = cap_cost_df[
             backfill_mask
         ].capital_cost_usd_per_mw.backfill()
-        # After backfill, expect all timestamps and technologies have an associated cost.
-        assert cap_cost_df.capital_cost_usd_per_mw.notna().all()
+
+    # After backfill, expect all timestamps and technologies have an associated cost.
+    assert cap_cost_df.capital_cost_usd_per_mw.notna().all()
 
     cap_cost_df = cap_cost_df.drop(
         columns=[
@@ -148,8 +173,8 @@ def transform_capital_cost(
             "technology_description_detail_1",
             "technology_description_detail_2",
             "eia_technology_type",
-            "nrel_atb_technology_type",
-            "nrel_atb_technology_type_detailed",
+            "nlr_atb_technology_type",
+            "nlr_atb_technology_type_detailed",
         ]
     )
 
@@ -160,7 +185,20 @@ def transform_capital_cost(
         .reset_index()
     )
     # Double check we have the expected number of technologies in the end
-    assert capital_costs.tech.unique() == crosswalk_tech.tech.unique()
+    # These will be the ones where all detailed technologies attached to numbered inputs in the model are not mapped
+    # to any NLR ATB capital costs.
+    missing_techs = (
+        full_tech_crosswalk["nlr_atb_technology_type"]
+        .isna()
+        .groupby(full_tech_crosswalk["tech"])
+        .all()
+    )
+    missing_techs = missing_techs[missing_techs].index
+    assert set(crosswalk_tech.tech.unique()).difference(
+        set(capital_costs.tech.unique())
+    ) == set(missing_techs.values), (
+        f"Missing technologies that aren't expected to be missing: {set(missing_techs.values)}"
+    )
 
     # Add in region - for each set of capital costs and technologies, apply to every single region.
     capital_df = capital_costs.merge(
