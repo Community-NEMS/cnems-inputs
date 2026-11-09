@@ -94,7 +94,7 @@ rule out__capital_cost:
     crosswalk_tech_path=r2(f"raw/bluesky/crosswalk_tech.csv"),
     crosswalk_region_path=r2(f"raw/bluesky/crosswalk_region.csv"),
     crosswalk_steps_path=r2(f"raw/bluesky/crosswalk_steps.csv"),
-    crosswalk_eia_nrel_tech_types_path="src/cnems_inputs/eia_nrelatb_tech_type_crosswalk.csv",
+    crosswalk_eia_nlr_tech_types_path="src/cnems_inputs/eia_nlratb_tech_type_crosswalk.csv",
     datapackage_path="datapackage.json"
   output:
     r2(get_published_path_for_resource("datapackage.json", "capital_cost")),

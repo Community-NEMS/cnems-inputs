@@ -83,6 +83,7 @@ core_capital_cost:
   scenario: Moderate
   atb_year: 2024 # TODO: generalize if using for more than one table
   cost_recovery_period: 30
+  agg_method: min # min, max or mean.
 base_load:
   # based on sm_years in create_inputs.py
   eia930_years: [2018, 2019, 2020, 2021, 2022, 2023]

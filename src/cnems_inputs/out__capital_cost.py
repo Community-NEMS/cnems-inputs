@@ -1,6 +1,6 @@
 """Transformation pipeline for capital_cost.csv.
 
-Build overnight capital cost projection data from NREL ATB.
+Build overnight capital cost projection data from NLR ATB.
 """
 
 from logging import getLogger
@@ -22,41 +22,47 @@ def validate_atb_settings(capital_costs: pd.DataFrame, settings: dict):
         "model": "model_case_nrelatb",
         "scenario": "scenario_atb",
         "cost_recovery_period": "cost_recovery_period_years",
+        "atb_year": "report_year",
     }
 
     for parameter, column in parameter_to_col_map.items():
         if (param := settings[parameter]) not in capital_costs[column].unique():
             raise ValueError(
-                f"Selected {param} that isn't a valid NREL ATB model: specify from {capital_costs[column].unique()}"
+                f"Selected {param} that isn't a valid NLR ATB setting: specify from {capital_costs[column].unique()}"
             )
+
+    if agg_method := settings["agg_method"] not in ("min", "max", "mean"):
+        raise ValueError(
+            f"Selected aggregation method {agg_method} invalid: only min, max and mean are valid options."
+        )
 
 
 def transform_capital_cost(
-    core_nrelatb__yearly_projected_cost_performance: pl.DataFrame,
+    core_nlratb__yearly_projected_cost_performance: pl.DataFrame,
     crosswalk_tech_lf: pl.LazyFrame,
     crosswalk_steps_lf: pl.LazyFrame,
     crosswalk_region_lf: pl.LazyFrame,
-    crosswalk_eia_nrel_tech_types_lf: pl.LazyFrame,
+    crosswalk_eia_nlr_tech_types_lf: pl.LazyFrame,
     settings: dict,
 ) -> pd.DataFrame:
     """Build the capital cost output."""
     # Load data and convert to pandas
-    capital_costs = core_nrelatb__yearly_projected_cost_performance.to_pandas()
+    capital_costs = core_nlratb__yearly_projected_cost_performance.to_pandas()
     crosswalk_tech = crosswalk_tech_lf.collect().to_pandas()
 
     # Load crosswalks
-    nrel_eia_tech_crosswalk = crosswalk_eia_nrel_tech_types_lf.collect().to_pandas()
+    nlr_eia_tech_crosswalk = crosswalk_eia_nlr_tech_types_lf.collect().to_pandas()
     # Check year of crosswalk matches year of ATB data used
     # TODO: Could eventually have multi-year crosswalk with one mapping per
     # year of ATB data, but this presumes one static map corresponding to one year.
     assert (
-        nrel_eia_tech_crosswalk.nrel_atb_year.unique() == settings["atb_year"]
+        nlr_eia_tech_crosswalk.nrel_atb_year.unique() == settings["atb_year"]
     ).all(), (
-        "EIA-NREL ATB crosswalk mapped to years of ATB data not contained in the settings file."
+        "EIA-NLR ATB crosswalk mapped to years of ATB data not contained in the settings file."
     )
 
     full_tech_crosswalk = crosswalk_tech.merge(
-        nrel_eia_tech_crosswalk, left_on="Technology", right_on="eia_technology_type"
+        nlr_eia_tech_crosswalk, left_on="Technology", right_on="eia_technology_type"
     ).drop(columns="Technology")
     crosswalk_steps = crosswalk_steps_lf.collect().to_pandas()
     crosswalk_region = crosswalk_region_lf.collect().to_pandas()
@@ -95,13 +101,20 @@ def transform_capital_cost(
     )
     capital_costs = capital_costs.drop(columns="capex_overnight_per_kw")
 
+    # Sanity check the crosswalk
+    # Pairs of NLR tech and tech details should be in the tech crosswalk and in the NLR ATB data, to avoid accidental misentry.
+    # TODO!
+
     # Map tech to existing technologies
     cap_cost_df = capital_costs.merge(
         full_tech_crosswalk,
         left_on="technology_description",
         right_on="nrel_atb_technology_type",
+        how="right",  # Drop any technologies not mapped to an EIA type
+        validate="m:1",
     )
-    # If sub-tech types are specified, they should match between the NREL ATB versions.
+
+    # If sub-tech types are specified, they should match between the NLR ATB versions.
     cap_cost_df = cap_cost_df.loc[
         (
             cap_cost_df.technology_description_detail_1
@@ -110,6 +123,25 @@ def transform_capital_cost(
         | (cap_cost_df.nrel_atb_technology_type_detailed.isna())
         | (cap_cost_df.technology_description_detail_1.isna())
     ]
+
+    # Backfill nuclear costs.
+    # NLR ATB doesn't provide nuclear costs until 2030, so where we have nuclear
+    # technologies we backfill these values.
+    if "Nuclear" in cap_cost_df.nrel_atb_technology_type:
+        backfill_mask = (cap_cost_df.nrel_atb_technology_type == "Nuclear") & (
+            cap_cost_df.projection_year <= 2030
+        )
+        assert (
+            cap_cost_df.loc[backfill_mask & (cap_cost_df.projection_year != 2030)]
+            .capital_cost_usd_per_mw.isna()
+            .all()
+        )  # Expect all values are empty except 2030
+        cap_cost_df.loc[backfill_mask].capital_cost_usd_per_mw = cap_cost_df[
+            backfill_mask
+        ].capital_cost_usd_per_mw.backfill()
+        # After backfill, expect all timestamps and technologies have an associated cost.
+        assert cap_cost_df.capital_cost_usd_per_mw.notna().all()
+
     cap_cost_df = cap_cost_df.drop(
         columns=[
             "technology_description",
@@ -122,15 +154,20 @@ def transform_capital_cost(
     )
 
     capital_costs = (
-        cap_cost_df.groupby(["projection_year", "tech"]).min().round(2).reset_index()
-    )  # Compared to mean and max, min reduces variation from original numbers the most.
+        cap_cost_df.groupby(["projection_year", "tech"])
+        .agg(settings["agg_method"])
+        .round(2)
+        .reset_index()
+    )
+    # Double check we have the expected number of technologies in the end
+    assert capital_costs.tech.unique() == crosswalk_tech.tech.unique()
 
     # Add in region - for each set of capital costs and technologies, apply to every single region.
     capital_df = capital_costs.merge(
         pd.DataFrame({"region": sorted(crosswalk_region.region.unique())}), how="cross"
     )
 
-    # Add in steps - run once tech sorted
+    # Add in steps. Each technology takes the highest step from the crosswalk.
     step_df = (
         crosswalk_steps.groupby("tech")["step"].max().reset_index()
     )  # Take the last step of each technology
@@ -166,8 +203,8 @@ def run_capital_cost(
     crosswalk_tech_path: str,
     crosswalk_steps_path: str,
     crosswalk_region_path: str,
-    core_nrelatb__yearly_projected_cost_performance_path: str,
-    crosswalk_eia_nrel_tech_types_path: str,
+    core_nlratb__yearly_projected_cost_performance_path: str,
+    crosswalk_eia_nlr_tech_types_path: str,
     settings: dict,
     capital_cost_output_path: Path,
     capital_cost_initial_output_path: Path,
@@ -175,15 +212,13 @@ def run_capital_cost(
 ):
     """E, T, L."""
     capital_cost = transform_capital_cost(
-        core_nrelatb__yearly_projected_cost_performance=pl.read_parquet(
-            core_nrelatb__yearly_projected_cost_performance_path
+        core_nlratb__yearly_projected_cost_performance=pl.read_parquet(
+            core_nlratb__yearly_projected_cost_performance_path
         ),
         crosswalk_tech_lf=pl.scan_csv(crosswalk_tech_path),
         crosswalk_steps_lf=pl.scan_csv(crosswalk_steps_path),
         crosswalk_region_lf=pl.scan_csv(crosswalk_region_path),
-        crosswalk_eia_nrel_tech_types_lf=pl.scan_csv(
-            crosswalk_eia_nrel_tech_types_path
-        ),
+        crosswalk_eia_nlr_tech_types_lf=pl.scan_csv(crosswalk_eia_nlr_tech_types_path),
         settings=settings,
     )
     load(
@@ -212,14 +247,14 @@ if __name__ == "__main__":
         from snakemake.iocontainers import snakemake  # noqa: TC004
 
     run_capital_cost(
-        core_nrelatb__yearly_projected_cost_performance_path=snakemake.input[
+        core_nlratb__yearly_projected_cost_performance_path=snakemake.input[
             "core_nrelatb__yearly_projected_cost_performance_path"
         ],
         crosswalk_tech_path=snakemake.input["crosswalk_tech_path"],
         crosswalk_steps_path=snakemake.input["crosswalk_steps_path"],
         crosswalk_region_path=snakemake.input["crosswalk_region_path"],
-        crosswalk_eia_nrel_tech_types_path=snakemake.input[
-            "crosswalk_eia_nrel_tech_types_path"
+        crosswalk_eia_nlr_tech_types_path=snakemake.input[
+            "crosswalk_eia_nlr_tech_types_path"
         ],
         settings=snakemake.params["settings"],
         capital_cost_output_path=Path(snakemake.output[0]),
