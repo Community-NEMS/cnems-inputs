@@ -5,32 +5,40 @@ Conventional Steam Coal,Coal_FE,Coal-new,2024
 Coal Integrated Gasification Combined Cycle,Coal_FE,Coal-IGCC,2024
 Coal Integrated Gasification Combined Cycle,Coal_FE,Coal-IGCC-90%-CCS,2024
 Petroleum Liquids,,,2024
-Natural Gas Steam Turbine,NaturalGas_FE,,2024
+Natural Gas Steam Turbine,,,2024
 Petroleum Coke,,,2024
 All Other,,,2024
-Natural Gas Fired Combustion Turbine,NaturalGas_FE,,2024
-Natural Gas Internal Combustion Engine,NaturalGas_FE,,2024
+Natural Gas Fired Combustion Turbine,NaturalGas_FE,NG Combustion Turbine (F-Frame),2024
+Natural Gas Internal Combustion Engine,NaturalGas_FE,NG Combustion Turbine (F-Frame),2024
 Other Natural Gas,NaturalGas_FE,,2024
 Other Gases,NaturalGas_FE,,2024
-Natural Gas Fired Combined Cycle,NaturalGas_FE,,2024
+Natural Gas Fired Combined Cycle,NaturalGas_FE,NG 1-on-1 Combined Cycle (H-Frame),2024
+Natural Gas Fired Combined Cycle,NaturalGas_FE,NG 1-on-1 Combined Cycle (H-Frame) 95% CCS,2024
+Natural Gas Fired Combined Cycle,NaturalGas_FE,NG 1-on-1 Combined Cycle (H-Frame) 97% CCS,2024
+Natural Gas Fired Combined Cycle,NaturalGas_FE,NG 2-on-1 Combined Cycle (F-Frame),2024
+Natural Gas Fired Combined Cycle,NaturalGas_FE,NG 2-on-1 Combined Cycle (F-Frame) 95% CCS,2024
+Natural Gas Fired Combined Cycle,NaturalGas_FE,NG 2-on-1 Combined Cycle (F-Frame) 97% CCS,2024
+Natural Gas Fired Combined Cycle,NaturalGas_FE,NG 2-on-1 Combined Cycle (H-Frame),2024
+Natural Gas Fired Combined Cycle,NaturalGas_FE,NG 2-on-1 Combined Cycle (H-Frame) 95% CCS,2024
+Natural Gas Fired Combined Cycle,NaturalGas_FE,NG 2-on-1 Combined Cycle (H-Frame) 97% CCS,2024
 Hydrogen Generator,,,2024
 Nuclear,Nuclear,,2024
 Wood/Wood Waste Biomass,Biopower,,2024
-Other Waste Biomass,Biopower,,2024
+Other Waste Biomass,,,2024
 Geothermal,Geothermal,,2024
-Municipal Solid Waste,Biopower,,2024
-Landfill Gas,Biopower,,2024
+Municipal Solid Waste,,,2024
+Landfill Gas,,,2024
 Conventional Hydroelectric,Hydropower,,2024
 Hydroelectric Pumped Storage,Pumped Storage Hydropower,,2024
 Batteries,Commercial Battery Storage,,2024
 Batteries,Residential Battery Storage,,2024
 Batteries,Utility-Scale Battery Storage,,2024
-Natural Gas with Compressed Air Storage,NaturalGas_FE,,2024
+Natural Gas with Compressed Air Storage,,,2024
 Flywheels,,,2024
 Offshore Wind Turbine,OffShoreWind,,2024
 Onshore Wind Turbine,LandbasedWind,,2024
 Solar Photovoltaic,ResPV,,2024
 Solar Photovoltaic,UtilityPV,,2024
 Solar Photovoltaic,CommPV,,2024
-Solar Thermal without Energy Storage,,,2024
+Solar Thermal without Energy Storage,CSP,,2024
 Solar Thermal with Energy Storage,,,2024
