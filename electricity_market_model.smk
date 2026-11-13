@@ -92,11 +92,12 @@ rule out__heat_rates:
   input:
     out_eia__yearly_generators_path=r2("raw/pudl/out_eia__yearly_generators.parquet"),
     crosswalk_tech_path=r2(f"raw/bluesky/crosswalk_tech.csv"),
+    datapackage_path="datapackage.json",
   output: r2(get_published_path_for_resource("datapackage.json", "heat_rates"))
   params:
     settings = config["pudl_inputs"]
   script:
-    "src/cnems_inputs/core__heat_rates.py"
+    "src/cnems_inputs/out__heat_rates.py"
 
 
 rule datapackage:

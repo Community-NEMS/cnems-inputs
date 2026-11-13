@@ -57,6 +57,7 @@ def run_heat_rates(
     crosswalk_tech_path: str,
     settings: dict,
     output_path: Path,
+    datapackage_path: Path,
 ):
     """E, T, L."""
     heat_rates = transform_heat_rates(
@@ -64,7 +65,12 @@ def run_heat_rates(
         crosswalk_tech=pl.read_csv(crosswalk_tech_path),
         settings=settings,
     )
-    load(heat_rates, output_path)
+    load(
+        heat_rates,
+        output_path,
+        datapackage_path=datapackage_path,
+        resource_name="heat_rates",
+    )
 
 
 if __name__ == "__main__":
@@ -81,6 +87,7 @@ if __name__ == "__main__":
             "out_eia__yearly_generators_path"
         ],
         crosswalk_tech_path=snakemake.input["crosswalk_tech_path"],
+        datapackage_path=snakemake.input["datapackage_path"],
         settings=snakemake.params["settings"],
         output_path=Path(snakemake.output[0]),
     )
