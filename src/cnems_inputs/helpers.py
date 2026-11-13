@@ -1,10 +1,12 @@
 """Assorted helper functions that shouldn't live in Snakefile."""
 
+import datetime as dt
 import json
 import os
 from pathlib import Path
 
 import pandas as pd
+import polars as pl
 
 from cnems_inputs.schema import schema_for
 
@@ -67,3 +69,40 @@ def get_published_path_for_resource(datapackage_path: str, resource_name: str) -
     raise ValueError(
         f"No resource called {resource_name} found in datapackage at {datapackage_path}"
     )
+
+
+def filter_eia_by_report_date(df_eia: pl.DataFrame, eia_month) -> pl.DataFrame:
+    """Filter a monthly reported EIA table on a given month or 'max'."""
+    if eia_month == "max":
+        month_filter = pl.col("report_date") == pl.col("report_date").max()
+    else:
+        eia_month = (
+            dt.datetime.strptime(str(eia_month), "%Y-%m-%d").astimezone(dt.UTC).date()
+        )
+        month_filter = pl.col("report_date") == eia_month
+
+    return df_eia.filter(month_filter)
+
+
+def merge_tech_label_on_technology_description(
+    df: pl.DataFrame, crosswalk_tech: pl.DataFrame
+) -> pl.DataFrame:
+    """Merge a table with an EIA technology_description with the tech crosswalk."""
+    # Rename the BlueSky EIA technology name to the PUDL name. This is used for
+    # merging in the
+    crosswalk_tech = crosswalk_tech.rename({"Technology": "technology_description"})
+    # ensure the crosswalk has at least the two columns we need.
+    assert set(crosswalk_tech.columns).issuperset({"tech", "technology_description"})
+
+    df = df.join(crosswalk_tech, on="technology_description", how="left")
+
+    # all of these do not have a Technology
+    missing_tech = df.filter(pl.col("tech").is_null())
+    assert (len(missing_tech) < 21) and missing_tech.filter(
+        pl.col("technology_description").is_not_null()
+    ).is_empty(), (
+        "We expect to have a small number of records with missing tech value "
+        f"and all of those should have a null technology but we found {len(missing_tech)}:"
+        f"\n\n {missing_tech.select(['plant_id_eia', 'generator_id', 'technology_description', 'report_date'])}"
+    )
+    return df

@@ -23,7 +23,7 @@ pudl_tables = [
 for pudl_table in pudl_tables:
   rule:
     name: f"raw__pudl__{pudl_table}"
-    input: pudl(config["core_available_capacity"]["pudl_version"], pudl_table)
+    input: pudl(config["pudl_inputs"]["pudl_version"], pudl_table)
     output: r2(f"raw/pudl/{pudl_table}.parquet")
     shell: "cp {input} {output}"
 
@@ -53,7 +53,7 @@ rule core__available_capacity__county:
     pop_path=r2(f"raw/bluesky/population.csv"),
   output: r2("core/available_capacity__county.csv"),
   params:
-    settings = config["core_available_capacity"]
+    settings = config["core_available_capacity"] | config["pudl_inputs"]
   script:
     "src/cnems_inputs/core__available_capacity__county.py"
 
@@ -87,6 +87,19 @@ rule out__base_load:
   output: r2(get_published_path_for_resource("datapackage.json", "base_load"))
   script:
     "src/cnems_inputs/out__base_load__region.py"
+
+
+rule out__heat_rates:
+  input:
+    out_eia__yearly_generators_path=r2("raw/pudl/out_eia__yearly_generators.parquet"),
+    crosswalk_tech_path=r2(f"raw/bluesky/crosswalk_tech.csv"),
+    datapackage_path="datapackage.json",
+  output: r2(get_published_path_for_resource("datapackage.json", "heat_rates"))
+  params:
+    settings = config["pudl_inputs"]
+  script:
+    "src/cnems_inputs/out__heat_rates.py"
+
 
 rule datapackage:
   input: "datapackage.json"
