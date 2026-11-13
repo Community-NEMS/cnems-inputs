@@ -28,6 +28,15 @@
               "minimum": 0
             },
             "description": "Load, MWh per hour."
+          },
+          {
+            "name": "weekday_num",
+            "type": "integer",
+            "constraints": {
+              "minimum": 1,
+              "maximum": 7
+            },
+            "description": "A numeric representation of the day of the week - 1 representing Monday through 7 representing Sunday."
           }
         ]
       }

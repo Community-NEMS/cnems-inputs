@@ -8,6 +8,39 @@ import polars as pl
 from cnems_inputs.helpers import load
 
 
+def validate_base_load_settings(
+    out_eia930__hourly_operations: pl.LazyFrame, settings: dict
+):
+    """Validate base load settings."""
+    if not isinstance(
+        use_pudl_imputed_demand := settings["use_pudl_imputed_demand"], bool
+    ):
+        raise TypeError(
+            "We expect the ``use_pudl_imputed_demand`` selected in the config file "
+            "``emm_inputs.yaml`` to be a boolean (True/False) value. "
+            f"We found {type(use_pudl_imputed_demand)}."
+        )
+
+    if not isinstance(eia930_year := settings["eia930_year"], int):
+        raise TypeError(
+            "We expect the ``eia930_year`` selected in the config file "
+            "``emm_inputs.yaml`` to be an integer value. "
+            f"We found {type(eia930_year)}."
+        )
+
+    if not (
+        out_eia930__hourly_operations.select(
+            pl.col("datetime_utc").dt.year().eq(settings["eia930_year"]).any()
+        )
+        .collect()
+        .item()
+    ):
+        raise AssertionError(
+            "The ``eia930_year`` selected in the config file ``emm_inputs.yaml`` "
+            "was not found in the EIA-930 data. Consider choosing a different year."
+        )
+
+
 def calculate_balancing_authority_population_share_per_county(
     service_territory: pl.LazyFrame,
 ) -> pl.LazyFrame:
@@ -53,6 +86,14 @@ def calculate_balancing_authority_population_share_per_county(
     return service_territory_w_balancing_authority_population
 
 
+def label_day_of_week(df: pl.LazyFrame, datetime_col_name: str):
+    """Label the weekday number using the datetime column.
+
+    A label of 1 indicates a Monday. 7 indicates Sunday.
+    """
+    return df.with_columns(weekday_num=(pl.col(datetime_col_name).dt.weekday()))
+
+
 def convert_datetime_to_hour_of_year(df: pl.LazyFrame, datetime_col_name: str):
     """Add an hour column representing the 8760-hour of the year."""
     return df.with_columns(
@@ -71,7 +112,8 @@ def transform_base_load_county(
     settings: dict,
 ) -> pd.DataFrame:
     """Transform EIA-930 hourly, balancing authority data into county, 8760-hours data."""
-    eia930_years = settings["eia930_years"]
+    validate_base_load_settings(out_eia930__hourly_operations, settings)
+    eia930_year = settings["eia930_year"]
     demand_column_name = (
         "demand_imputed_pudl_mwh"
         if settings["use_pudl_imputed_demand"]
@@ -87,7 +129,7 @@ def transform_base_load_county(
             on=["balancing_authority_id_eia", "report_date"],
             how="left",
         )
-        .filter(pl.col("report_date").dt.year().is_in(eia930_years))
+        .filter(pl.col("report_date").dt.year() == eia930_year)
         .pipe(calculate_balancing_authority_population_share_per_county)
     )
 
@@ -96,7 +138,7 @@ def transform_base_load_county(
         out_eia930__hourly_operations.select(
             ["datetime_utc", "balancing_authority_code_eia", demand_column_name]
         )
-        .filter(pl.col("datetime_utc").dt.year().is_in(eia930_years))
+        .filter(pl.col("datetime_utc").dt.year() == eia930_year)
         .join(
             service_territory_w_balancing_authority_population,
             left_on=[
@@ -111,8 +153,7 @@ def transform_base_load_county(
             )
         )
         .pipe(convert_datetime_to_hour_of_year, datetime_col_name="datetime_utc")
-        .group_by(["county_id_fips", "balancing_authority_code_eia", "hour"])
-        .agg(pl.col("base_load_mwh").mean())
+        .pipe(label_day_of_week, datetime_col_name="datetime_utc")
     )
     return base_load_county.collect().to_pandas()
 
