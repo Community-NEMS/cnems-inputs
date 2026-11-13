@@ -5,14 +5,17 @@ This module is a re-implementation of a portion of code from
 BlueSky/sample/electricity_data_pipeline/src/runner.py
 """
 
-import datetime as dt
 from logging import getLogger
 from pathlib import Path
 
 import pandas as pd
 import polars as pl
 
-from cnems_inputs.helpers import load
+from cnems_inputs.helpers import (
+    filter_eia_by_report_date,
+    load,
+    merge_tech_label_on_technology_description,
+)
 
 # TODO: really setup logging #73
 # Establish logger
@@ -146,25 +149,15 @@ def sum_data_cnty(df: pd.DataFrame, pop: pd.DataFrame) -> pd.DataFrame:
 
 def prep_eia860m(
     out_eia__yearly_generators: pl.DataFrame, eia860m_month
-) -> pd.DataFrame:
+) -> pl.DataFrame:
     """Prep the PUDL table for the C-NEMS.
 
     Args:
         eia860m_month: If month is max, this will default to grabbing the most recent
             month available.
     """
-    if eia860m_month == "max":
-        month_filter = pl.col("report_date") == pl.col("report_date").max()
-    else:
-        eia860m_month = (
-            dt.datetime.strptime(str(eia860m_month), "%Y-%m-%d")
-            .astimezone(dt.UTC)
-            .date()
-        )
-        month_filter = pl.col("report_date") == eia860m_month
-
     eia860m = (
-        out_eia__yearly_generators.filter(month_filter)
+        filter_eia_by_report_date(out_eia__yearly_generators, eia860m_month)
         .with_columns(
             pl.col("generator_operating_date").dt.year().alias("Operating Year"),
             pl.col("planned_generator_retirement_date")
@@ -178,7 +171,7 @@ def prep_eia860m(
                 "state": "Plant State",
                 "county": "County",
                 "summer_capacity_mw": "Net Summer Capacity (MW)",
-                "technology_description": "Technology",
+                "technology_description": "technology_description",
                 "operational_status_code": "Status Code",
                 "county_id_fips": "FIPS_cnty",
             }
@@ -190,14 +183,13 @@ def prep_eia860m(
         "Plant State",
         "County",
         "Net Summer Capacity (MW)",
-        "Technology",
+        "technology_description",
         "Status Code",
         "Operating Year",
         "Planned Retirement Year",
         "FIPS_cnty",
     ]
-    eia860m = eia860m.select(cols_to_keep).to_pandas().convert_dtypes()
-    return eia860m
+    return eia860m.select(cols_to_keep)
 
 
 def transform_available_capacity_county(
@@ -216,29 +208,21 @@ def transform_available_capacity_county(
     BlueSky/sample/electricity_data_pipeline/src/runner.py::create_supplycurve_cnty
     """
     eia860m = prep_eia860m(out_eia__yearly_generators, settings["eia860m_month"])
-    crosswalk_tech = crosswalk_tech_lf.collect().to_pandas()
+    crosswalk_tech = crosswalk_tech_lf.collect()
     crosswalk_status = crosswalk_status_lf.collect().to_pandas()
     crosswalk_steps = crosswalk_steps_lf.collect().to_pandas()
     crosswalk_region = crosswalk_region_lf.collect().to_pandas()
     dg = dg_lf.collect().to_pandas()
     pop = pop_lf.collect().to_pandas()
 
+    df = merge_tech_label_on_technology_description(eia860m, crosswalk_tech).to_pandas()
+
     # create_supplycurve_cnty -- create an ID column
-    df = eia860m.dropna(subset=["Plant ID"]).copy()
+    df = df.dropna(subset=["Plant ID"]).copy()
     df["Plant ID"] = df["Plant ID"].astype(pd.Int64Dtype())
     df["ID"] = df["Plant ID"].astype(str) + "_" + df["Generator ID"].astype(str)
 
-    df = pd.merge(df, crosswalk_tech, how="left", on=["Technology"])
-    # all of these do not have a Technology
-    assert (len(missing_tech := df[df.tech.isna()]) < 21) & missing_tech[
-        missing_tech.Technology.notna()
-    ].empty, (
-        "We expect to have a small number of records with missing tech value "
-        f"and all of those should have a null Technology but we found {len(missing_tech)}:"
-        f"\n\n {missing_tech[['Plant ID', 'Generator ID', 'Technology']]}"
-    )
     # Check if we are missing too many county fips ids before dropping nulls.
-
     missing_fips = df.loc[
         df.FIPS_cnty.isna()
         & df["Plant State"].notna()
@@ -266,7 +250,7 @@ def transform_available_capacity_county(
     drop = [
         "Plant ID",
         "Generator ID",
-        "Technology",
+        "technology_description",
         "Plant State",
         "County",
         "Status",

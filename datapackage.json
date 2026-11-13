@@ -355,9 +355,9 @@
       }
     },
     {
-      "name": "heat_rate",
+      "name": "heat_rates",
       "type": "table",
-      "path": "out/parameters/heat_rate.csv",
+      "path": "out/parameters/heat_rates.csv",
       "scheme": "file",
       "format": "csv",
       "mediatype": "text/csv",
