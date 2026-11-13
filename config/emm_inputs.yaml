@@ -71,13 +71,12 @@ raw_bluesky: # this is the list we iterate over for extraction from bluesky zip
   # Inputs for base load
   crosswalk_balancing_authority_subregion_to_county: sample/baseload_data_pipeline/inputs/shapefiles/EIA_BA-SubregionToCounty.csv
 core_available_capacity:
-  first_year: 2023
+  first_year: 2025
   last_year: 2050
   population_year: 2022
   # when pudl inputs are used in more than one pipeline, we should probably move this
   pudl_version: nightly
-  eia860m_month: 2024-01-01
+  eia860m_month: 2026-01-01
 base_load:
-  # based on sm_years in create_inputs.py
-  eia930_years: [2018, 2019, 2020, 2021, 2022, 2023]
+  eia930_year: 2025
   use_pudl_imputed_demand: True
