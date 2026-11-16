@@ -157,7 +157,9 @@ def prep_eia860m(
             month available.
     """
     eia860m = (
-        filter_eia_by_report_date(out_eia__yearly_generators, eia860m_month)
+        filter_eia_by_report_date(
+            out_eia__yearly_generators, eia860m_month, data_maturity=None
+        )
         .with_columns(
             pl.col("generator_operating_date").dt.year().alias("Operating Year"),
             pl.col("planned_generator_retirement_date")

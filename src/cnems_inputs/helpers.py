@@ -4,6 +4,7 @@ import datetime as dt
 import json
 import os
 from pathlib import Path
+from typing import Literal
 
 import pandas as pd
 import polars as pl
@@ -71,8 +72,21 @@ def get_published_path_for_resource(datapackage_path: str, resource_name: str) -
     )
 
 
-def filter_eia_by_report_date(df_eia: pl.DataFrame, eia_month) -> pl.DataFrame:
-    """Filter a monthly reported EIA table on a given month or 'max'."""
+def filter_eia_by_report_date(
+    df_eia: pl.DataFrame,
+    eia_month: Literal["max"] | dt.date,
+    data_maturity: Literal["monthly_update", "final"] | None,
+) -> pl.DataFrame:
+    """Filter a monthly reported EIA table on a given month or 'max'.
+
+    Using 'max' as the ``eia_month``is a nice shorthand for getting the most up-to-date
+    data. The most up-to-date data from the monthly EIA-860M releases do not contain all
+    of the values from EIA-923, so you can use the ``data_maturity`` argument to first
+    filter the data to the final data (aka the full annually reported EIA data).
+    """
+    if data_maturity:
+        df_eia = df_eia.filter(pl.col("data_maturity") == "final")
+
     if eia_month == "max":
         month_filter = pl.col("report_date") == pl.col("report_date").max()
     else:

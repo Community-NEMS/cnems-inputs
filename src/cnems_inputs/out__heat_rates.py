@@ -19,8 +19,14 @@ def transform_heat_rates(
 ) -> pd.DataFrame:
     """Grab heat rates from EIA-923 and EIA-860 derived values."""
     gens = filter_eia_by_report_date(
-        out_eia__yearly_generators, settings["eia860m_month"]
-    ).pipe(merge_tech_label_on_technology_description, crosswalk_tech)
+        out_eia__yearly_generators,
+        settings["eia860m_month"],
+        # only ever use final data here, bc we need the EIA-923 derived values
+        data_maturity="final",
+    ).pipe(
+        merge_tech_label_on_technology_description,
+        crosswalk_tech,
+    )
 
     heat_rates = (
         gens.select(
@@ -46,7 +52,7 @@ def transform_heat_rates(
             ).alias("heat_rate_mmbtu_per_mwh")
         )
         .sort("tech")
-        .with_columns(pl.lit(None).cast(pl.String).alias("notes"))
+        .with_columns(notes=pl.lit(None).cast(pl.String))
     )
 
     return heat_rates.to_pandas()
@@ -56,8 +62,8 @@ def run_heat_rates(
     out_eia__yearly_generators_path: str,
     crosswalk_tech_path: str,
     settings: dict,
-    output_path: Path,
     datapackage_path: Path,
+    output_path: Path,
 ):
     """E, T, L."""
     heat_rates = transform_heat_rates(
@@ -68,8 +74,8 @@ def run_heat_rates(
     load(
         heat_rates,
         output_path,
-        datapackage_path=datapackage_path,
-        resource_name="heat_rates",
+        # datapackage_path=datapackage_path,
+        # resource_name="heat_rates",
     )
 
 
@@ -87,7 +93,7 @@ if __name__ == "__main__":
             "out_eia__yearly_generators_path"
         ],
         crosswalk_tech_path=snakemake.input["crosswalk_tech_path"],
-        datapackage_path=snakemake.input["datapackage_path"],
         settings=snakemake.params["settings"],
+        datapackage_path=Path(snakemake.input["datapackage_path"]),
         output_path=Path(snakemake.output[0]),
     )

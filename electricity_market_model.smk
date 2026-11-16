@@ -101,6 +101,18 @@ rule out__heat_rates:
     "src/cnems_inputs/out__heat_rates.py"
 
 
+rule out__tech:
+  input:
+    tech_path=r2("raw/bluesky/tech.csv"),
+    crosswalk_tech_path=r2(f"raw/bluesky/crosswalk_tech.csv"),
+    datapackage_path="datapackage.json",
+  output: r2(get_published_path_for_resource("datapackage.json", "tech"))
+  params:
+    settings = config["pudl_inputs"]
+  script:
+    "src/cnems_inputs/out__tech.py"
+
+
 rule datapackage:
   input: "datapackage.json"
   output: r2("datapackage.json")

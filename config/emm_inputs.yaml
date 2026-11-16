@@ -21,7 +21,6 @@ core_snapshots: # this is the list we iterate over for the "snapshot" approach
   - generation_cost
   - tech_build
   - tech_retire
-  - tech
   - test_prices
   - tran_cost
   - tran_cost_intl
