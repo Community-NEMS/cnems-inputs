@@ -1,4 +1,4 @@
-"""unit_heat_rate_mmbtu_per_mwh from PUDL's out_eia__monthly_generators."""
+"""Build a table with heat rates (MMBtu / MWh)."""
 
 from pathlib import Path
 
@@ -22,6 +22,7 @@ def transform_heat_rates(
         out_eia__yearly_generators,
         settings["eia860m_month"],
         # only ever use final data here, bc we need the EIA-923 derived values
+        # and in PUDL, only the full yearly data has heat rate calculated.
         data_maturity="final",
     ).pipe(
         merge_tech_label_on_technology_description,
@@ -54,7 +55,8 @@ def transform_heat_rates(
         .sort("tech")
         .with_columns(notes=pl.lit(None).cast(pl.String))
     )
-
+    # TODO: should we add a check to make sure all of the tech's labeled as
+    # is_gas_fired actually have a heat rate?.. yes. yes we should.
     return heat_rates.to_pandas()
 
 
@@ -74,8 +76,8 @@ def run_heat_rates(
     load(
         heat_rates,
         output_path,
-        # datapackage_path=datapackage_path,
-        # resource_name="heat_rates",
+        datapackage_path=datapackage_path,
+        resource_name="heat_rates",
     )
 
 

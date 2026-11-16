@@ -24,7 +24,9 @@ def transform_tech(
         "Natural Gas Steam Turbine",
         "Natural Gas Internal Combustion Engine",
         "Other Natural GasOther Gases",
-        #  Didn't include this guy bc there are
+        # Didn't include this guy bc these barely have any data to
+        # derive heat rates from in EIA. Also they are by default lumped into
+        # the storage tech and therefore don't use or need a heat rate.
         # 'Natural Gas with Compressed Air Storage'
     ]
     gas_techs = (
