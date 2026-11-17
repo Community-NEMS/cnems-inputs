@@ -78,5 +78,5 @@ core_available_capacity:
   pudl_version: nightly
   eia860m_month: 2024-01-01
 base_load:
-  eia930_years: 2025
+  eia930_year: 2025
   use_pudl_imputed_demand: True

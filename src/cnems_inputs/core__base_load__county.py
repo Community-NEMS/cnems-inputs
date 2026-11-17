@@ -11,7 +11,14 @@ from cnems_inputs.helpers import load
 def validate_base_load_settings(
     out_eia930__hourly_operations: pl.LazyFrame, settings: dict
 ):
-    """Validate base load settings."""
+    """Validate base load settings from ``emm_inputs.yaml``.
+
+    Raises:
+        TypeError: If `use_pudl_imputed_demand` is not a boolean.
+        TypeError: If `eia930_year` is not an integer.
+        AssertionError: If `eia930_year` is not found in the
+            `out_eia930__hourly_operations` table.
+    """
     if not isinstance(
         use_pudl_imputed_demand := settings["use_pudl_imputed_demand"], bool
     ):
