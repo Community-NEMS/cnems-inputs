@@ -141,7 +141,7 @@ the `CNEMS_INPUT_VERSION_ID` to whatever prefix you'd like.
     [prek](https://prek.j178.dev/), a much faster, dependency-free tool that reads that
     same standard config format.
 - For them to run automatically when you try to make a commit, you **must** install
-    the hooks in your cloned repository first by running `pixi run prek install`. This
+    the hooks in your cloned repository first by running `pixi run prek-install`. This
     only has to be done once.
 - We also use the [pre-commit.ci](https://pre-commit.ci) service to run the same
     checks on any code that is pushed to GitHub, and to apply standard code formatting
@@ -219,6 +219,9 @@ look right so you can fix it.
     don't need their own CodeCov token minted and stored separately.
 - CodeCov also adds a couple of test coverage checks to any pull request, to alert us
     if a PR reduces overall test coverage (which we would like to avoid).
+- When snakemake runs a script, it instead runs a temporary copy within
+    `.snakemake/scripts`, and not the actual source file. This prevents CodeCov
+    information from being computed properly.
 
 ## Documentation Builds
 
