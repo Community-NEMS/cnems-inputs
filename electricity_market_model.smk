@@ -57,6 +57,18 @@ rule core__available_capacity__county:
   script:
     "src/cnems_inputs/core__available_capacity__county.py"
 
+
+
+rule core__hydro_capacity_factor__county:
+  input:
+    out_eia__yearly_generators_path=r2("raw/pudl/out_eia__yearly_generators.parquet")
+  output: r2("core/hydro_capacity_factor__county.csv"),
+  params:
+    settings = config["pudl_inputs"]
+  script:
+    "src/cnems_inputs/core__hydro_capacity_factor__county.py"
+
+
 #####################################################################################
 ################### Rules for out assets ############################################
 #####################################################################################
