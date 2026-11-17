@@ -219,7 +219,9 @@ look right so you can fix it.
     don't need their own CodeCov token minted and stored separately.
 - CodeCov also adds a couple of test coverage checks to any pull request, to alert us
     if a PR reduces overall test coverage (which we would like to avoid).
-- CodeCov and snakemake have
+- When snakemake runs a script, it instead runs a temporary copy within
+    `.snakemake/scripts`, and not the actual source file. This prevents CodeCov
+    information from being computed properly.
 
 ## Documentation Builds
 
