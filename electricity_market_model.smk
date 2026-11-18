@@ -18,6 +18,7 @@ pudl_tables = [
   "out_eia930__hourly_operations",
   "core_eia861__yearly_balancing_authority",
   "out_eia861__yearly_balancing_authority_service_territory",
+  "out_eia__monthly_generators",
   "out_eia__yearly_generators",
 ]
 for pudl_table in pudl_tables:
@@ -57,6 +58,18 @@ rule core__available_capacity__county:
   script:
     "src/cnems_inputs/core__available_capacity__county.py"
 
+
+
+rule core__hydro_capacity_factor__county:
+  input:
+    out_eia__monthly_generators_path=r2("raw/pudl/out_eia__monthly_generators.parquet")
+  output: r2("core/hydro_capacity_factor__county.csv"),
+  params:
+    settings = config["pudl_inputs"]
+  script:
+    "src/cnems_inputs/core__hydro_capacity_factor__county.py"
+
+
 #####################################################################################
 ################### Rules for out assets ############################################
 #####################################################################################
@@ -87,6 +100,16 @@ rule out__base_load:
   output: r2(get_published_path_for_resource("datapackage.json", "base_load"))
   script:
     "src/cnems_inputs/out__base_load__region.py"
+
+
+rule out__hydro_capacity_factor:
+  input:
+    core__hydro_capacity_factor__county_path=r2("core/hydro_capacity_factor__county.csv"),
+    crosswalk_region_path=r2("raw/bluesky/crosswalk_region.csv"),
+    datapackage_path="datapackage.json",
+  output: r2(get_published_path_for_resource("datapackage.json", "hydro_capacity_factor"))
+  script:
+    "src/cnems_inputs/out__hydro_capacity_factor__region.py"
 
 
 rule out__heat_rates:
