@@ -8,7 +8,6 @@ core_snapshots: # this is the list we iterate over for the "snapshot" approach
   - enduse_shape
   - fom_cost
   - storage_duration
-  - hydro_capacity_factor
   - learning_rate
   - load_scalar
   - ramp_down_cost
@@ -74,6 +73,8 @@ pudl_inputs:
   pudl_version: nightly
   # date or max
   eia860m_month: max
+  # int year or max
+  eia_year: max
 core_available_capacity:
   first_year: 2023
   last_year: 2050

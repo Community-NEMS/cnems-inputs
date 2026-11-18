@@ -20,7 +20,7 @@ def transform_heat_rates(
     """Grab heat rates from EIA-923 and EIA-860 derived values."""
     gens = filter_eia_by_report_date(
         out_eia__yearly_generators,
-        settings["eia860m_month"],
+        settings["eia_year"],
         # only ever use final data here, bc we need the EIA-923 derived values
         # and in PUDL, only the full yearly data has heat rate calculated.
         data_maturity="final",

@@ -5,34 +5,35 @@ from pathlib import Path
 import pandas as pd
 import polars as pl
 
-from cnems_inputs.helpers import filter_eia_by_report_date, load
+from cnems_inputs.helpers import filter_eia_by_report_year, load
 
 
 def transform_hydro_capacity_factor_county(
-    out_eia__yearly_generators: pl.DataFrame, settings: dict
+    out_eia__monthly_generators: pl.DataFrame, settings: dict
 ) -> pd.DataFrame:
     """Build a county level hydro capacity factor."""
-    gens = filter_eia_by_report_date(
-        out_eia__yearly_generators,
-        settings["eia860m_month"],
+    month_to_season = {
+        1: "winter",
+        2: "winter",
+        3: "spring",
+        4: "spring",
+        5: "spring",
+        6: "summer",
+        7: "summer",
+        8: "summer",
+        9: "autumn",
+        10: "autumn",
+        11: "autumn",
+        12: "winter",
+    }
+
+    gens = filter_eia_by_report_year(
+        out_eia__monthly_generators,
+        eia_year=settings["eia_year"],
         # only ever use final data here, bc we need the EIA-923 derived values
         # and in PUDL, only the full yearly data has heat rate calculated.
         data_maturity="final",
     )
-    month_to_season = {
-        1: "Winter",
-        2: "Winter",
-        3: "Spring",
-        4: "Spring",
-        5: "Spring",
-        6: "Summer",
-        7: "Summer",
-        8: "Summer",
-        9: "Autumn",
-        10: "Autumn",
-        11: "Autumn",
-        12: "Winter",
-    }
 
     gens = (
         gens
@@ -43,7 +44,13 @@ def transform_hydro_capacity_factor_county(
             .replace_strict(month_to_season)
             .alias("season")
         )
-        .filter(pl.col("technology_description").str.contains("Hydroelectric"))
+        .filter(
+            # TODO: should we include the pumped hydro for this or no?
+            # including pumped hydro drags the total cap factor down
+            # pl.col("technology_description").str.contains("Hydroelectric")
+            (pl.col("technology_description") == "Conventional Hydroelectric")
+            & (pl.col("operational_status") == "existing")
+        )
         # actually calculate the cap factor? or use pudl?
         .group_by(["season", "county_id_fips"])
         .agg(
@@ -51,14 +58,15 @@ def transform_hydro_capacity_factor_county(
             (
                 pl.col("capacity_factor").dot(pl.col("capacity_mw"))
                 / pl.col("capacity_mw").sum()
-            ).alias("capacity_factor")
+            ).alias("hydro_capacity_factor_frac"),
+            pl.col("capacity_mw").sum(),
         )
     )
-    return gens.to_pandas()
+    return gens.to_pandas(use_pyarrow_extension_array=True)
 
 
 def run_hydro_capacity_factor__county(
-    out_eia__yearly_generators_path: str, settings: dict, county_output_path: Path
+    out_eia__monthly_generators_path: str, settings: dict, county_output_path: Path
 ):
     """E, T, L.
 
@@ -67,7 +75,7 @@ def run_hydro_capacity_factor__county(
     balancing authority subregions.
     """
     hydro_capacity_factor_county = transform_hydro_capacity_factor_county(
-        out_eia__yearly_generators=pl.read_parquet(out_eia__yearly_generators_path),
+        out_eia__monthly_generators=pl.read_parquet(out_eia__monthly_generators_path),
         settings=settings,
     )
 
@@ -84,8 +92,8 @@ if __name__ == "__main__":
         from snakemake.iocontainers import snakemake  # noqa: TC004
 
     run_hydro_capacity_factor__county(
-        out_eia__yearly_generators_path=snakemake.input[
-            "out_eia__yearly_generators_path"
+        out_eia__monthly_generators_path=snakemake.input[
+            "out_eia__monthly_generators_path"
         ],
         settings=snakemake.params["settings"],
         county_output_path=Path(snakemake.output[0]),
