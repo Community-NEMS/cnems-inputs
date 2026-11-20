@@ -79,6 +79,5 @@ core_available_capacity:
   last_year: 2050
   population_year: 2022
 base_load:
-  # based on sm_years in create_inputs.py
-  eia930_years: [2018, 2019, 2020, 2021, 2022, 2023]
+  eia930_year: 2025
   use_pudl_imputed_demand: True
