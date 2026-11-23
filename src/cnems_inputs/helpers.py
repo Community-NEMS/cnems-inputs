@@ -85,7 +85,7 @@ def filter_eia_by_report_date(
     filter the data to the final data (aka the full annually reported EIA data).
     """
     if data_maturity:
-        df_eia = df_eia.filter(pl.col("data_maturity") == "final")
+        df_eia = df_eia.filter(pl.col("data_maturity") == data_maturity)
 
     if eia_month == "max":
         month_filter = pl.col("report_date") == pl.col("report_date").max()
