@@ -12,7 +12,6 @@ core_snapshots: # this is the list we iterate over for the "snapshot" approach
   - learning_rate
   - load_scalar
   - ramp_down_cost
-  - ramp_rate
   - ramp_up_cost
   - reserve_cost
   - planning_reserve_margin
@@ -81,3 +80,5 @@ core_available_capacity:
 base_load:
   eia930_year: 2025
   use_pudl_imputed_demand: True
+ramp_rate:
+  exclude_techs: [3, 4]

@@ -19,6 +19,8 @@ pudl_tables = [
   "core_eia861__yearly_balancing_authority",
   "out_eia861__yearly_balancing_authority_service_territory",
   "out_eia__yearly_generators",
+  "out_epacems__yearly_operational_characteristics",
+  "core_epa__assn_eia_epacamd"
 ]
 for pudl_table in pudl_tables:
   rule:
@@ -57,6 +59,16 @@ rule core__available_capacity__county:
   script:
     "src/cnems_inputs/core__available_capacity__county.py"
 
+rule core__ramp_rate__eia:
+  input:
+    out_epacems__yearly_operational_characteristics_path=r2("raw/pudl/out_epacems__yearly_operational_characteristics.parquet"),
+    core_epa__assn_eia_epacamd_path=r2("raw/pudl/core_epa__assn_eia_epacamd.parquet"),
+    out_eia__yearly_generators_path=r2("raw/pudl/out_eia__yearly_generators.parquet"),
+  output: r2("core/ramp_rate__eia.csv"),
+  script:
+    "src/cnems_inputs/core__ramp_rate__eia.py"
+
+
 #####################################################################################
 ################### Rules for out assets ############################################
 #####################################################################################
@@ -73,6 +85,18 @@ rule out__available_capacity:
     settings = config["core_available_capacity"]
   script:
     "src/cnems_inputs/out__available_capacity__region.py"
+
+rule out__ramp_rate:
+  input:
+    core__ramp_rate__eia_path=r2("core/ramp_rate__eia.csv"),
+    crosswalk_tech_path=r2(f"raw/bluesky/crosswalk_tech.csv"),
+    datapackage_path="datapackage.json",
+  output:
+    r2(get_published_path_for_resource("datapackage.json", "ramp_rate"))
+  params:
+    settings = config["ramp_rate"]
+  script:
+    "src/cnems_inputs/out__ramp_rate.py"
 
 rule out__region:
   input: "src/cnems_inputs/properties/region.csv"
