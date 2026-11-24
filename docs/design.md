@@ -34,3 +34,59 @@ Wherever possible, make the script name match the rule name, or use the rule nam
 This naming convention helps quickly move between the Snakemake file and the `src/` directory,
 when you need to know the rule definition for a script, or the script details for a rule.
 It also helps make it more obvious when a script file is no longer needed.
+
+### Script template
+
+The following is a general-purpose template which includes all of our script conventions.
+Start with this and replace `x`, inputs, outputs, settings, etc to suit the pipeline
+you are writing.
+
+```python
+"""Transformation pipeline for x."""
+
+import polars as pl
+
+from pathlib import Path
+
+from cnems_inputs.helpers import load
+
+
+def transform_x(
+    x_input_df: pl.LazyFrame,
+    settings: dict,
+) -> pl.LazyFrame:
+    """Compute [x] from [inputs]."""
+    return x_input_df
+
+
+def run_x(
+    settings: dict,
+    x_input_path: str,
+    x_output_path: Path,
+    datapackage_path: str,  # needed for out resources
+):
+    """E, T, L."""
+    x = transform_x(x_input_df=pl.scan_parquet(x_input_path), settings=settings)
+
+    # pick one
+    load(x.collect().to_pandas(), x_output_path)  # for core resources
+    load(
+        x.collect().to_pandas(), x_output_path, Path(datapackage_path), "x"
+    )  # for out resources -- activates validation
+
+
+if __name__ == "__main__":
+    from typing import TYPE_CHECKING
+
+    if TYPE_CHECKING:
+        # NOTE (2026-08-20): outside of type checking context, the Snakemake
+        # runtime injects the `snakemake` object, but ruff doesn't know that
+        # so it complains about this import
+        from snakemake.iocontainers import snakemake  # noqa: TC004
+
+    run_x(
+        settings=snakemake.params["settings"],
+        x_output_path=Path(snakemake.output[0]),
+        **snakemake.input,
+    )
+```
