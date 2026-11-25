@@ -9,7 +9,7 @@ from pathlib import Path
 import pandas as pd
 import polars as pl
 
-from cnems_inputs.helpers import load
+from cnems_inputs.helpers import adjust_dollars_for_inflation, load
 
 # TODO: really setup logging #73
 # Establish logger
@@ -39,6 +39,7 @@ def validate_atb_settings(capital_costs: pd.DataFrame, settings: dict):
 
 def transform_capital_cost(
     core_nlratb__yearly_projected_cost_performance: pl.DataFrame,
+    core_consumer_price_index: pl.LazyFrame,
     crosswalk_tech_lf: pl.LazyFrame,
     crosswalk_steps_lf: pl.LazyFrame,
     crosswalk_region_lf: pl.LazyFrame,
@@ -222,6 +223,14 @@ def transform_capital_cost(
     # Check that every value in the dataframe is non-null.
     assert capital_costs.notna().all().all()
 
+    # Adjust dollars for inflation
+    capital_costs.loc[:, "capital_cost_usd_per_mw"] = adjust_dollars_for_inflation(
+        dollar_data=capital_costs["capital_cost_usd_per_mw"],
+        cpi_data_lf=core_consumer_price_index,
+        current_dollar_year=settings["nominal_dollar_year"],
+        past_dollar_year=settings["atb_dollar_year"],
+    )
+
     # Double check we have the expected number of technologies in the end
     # These will be the ones where all detailed technologies attached to numbered inputs in the model are not mapped
     # to any NLR ATB capital costs.
@@ -280,6 +289,7 @@ def run_capital_cost(
     crosswalk_steps_path: str,
     crosswalk_region_path: str,
     core_nlratb__yearly_projected_cost_performance_path: str,
+    core_consumer_price_index_path: str,
     crosswalk_eia_nlr_tech_types_path: str,
     settings: dict,
     capital_cost_output_path: Path,
@@ -291,6 +301,7 @@ def run_capital_cost(
         core_nlratb__yearly_projected_cost_performance=pl.read_parquet(
             core_nlratb__yearly_projected_cost_performance_path
         ),
+        core_consumer_price_index=pl.scan_csv(core_consumer_price_index_path),
         crosswalk_tech_lf=pl.scan_csv(crosswalk_tech_path),
         crosswalk_steps_lf=pl.scan_csv(crosswalk_steps_path),
         crosswalk_region_lf=pl.scan_csv(crosswalk_region_path),
@@ -325,6 +336,9 @@ if __name__ == "__main__":
     run_capital_cost(
         core_nlratb__yearly_projected_cost_performance_path=snakemake.input[
             "core_nrelatb__yearly_projected_cost_performance_path"
+        ],
+        core_consumer_price_index_path=snakemake.input[
+            "core_consumer_price_index_path"
         ],
         crosswalk_tech_path=snakemake.input["crosswalk_tech_path"],
         crosswalk_steps_path=snakemake.input["crosswalk_steps_path"],

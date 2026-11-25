@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 
 import pandas as pd
+import polars as pl
 
 from cnems_inputs.schema import schema_for
 
@@ -67,3 +68,27 @@ def get_published_path_for_resource(datapackage_path: str, resource_name: str) -
     raise ValueError(
         f"No resource called {resource_name} found in datapackage at {datapackage_path}"
     )
+
+
+def adjust_dollars_for_inflation(
+    dollar_data: pl.Series | pd.Series,
+    cpi_data_lf: pl.LazyFrame,
+    current_dollar_year: int,
+    past_dollar_year: int,
+) -> pl.Series | pd.Series:
+    """Adjust nominal dollar data from one historical year to a desired one.
+
+    Using BLS CPI data, do this by multiplying the original
+    value x the CPI for the current year and dividing by the CPI for
+    the past dollar year.
+    """
+    cpi_data = cpi_data_lf.collect()
+    current_cpi = (
+        cpi_data.filter(cpi_data["year"] == current_dollar_year).select("value").item()
+    )
+    former_cpi = (
+        cpi_data.filter(cpi_data["year"] == past_dollar_year).select("value").item()
+    )
+
+    dollar_data = dollar_data * (current_cpi / former_cpi)
+    return dollar_data
