@@ -224,7 +224,6 @@ def transform_capital_cost(
     capital_costs = (
         cap_cost_df.groupby(["projection_year", "tech"])
         .agg(settings["agg_method"])
-        .round(2)
         .reset_index()
     )
 
@@ -240,13 +239,13 @@ def transform_capital_cost(
     # Check that every value in the dataframe is non-null.
     assert capital_costs.notna().all().all()
 
-    # Adjust dollars for inflation
+    # Adjust dollars for inflation and round to nearest cent
     capital_costs["capital_cost_usd_per_mw"] = adjust_dollars_for_inflation(
         dollar_data=capital_costs["capital_cost_usd_per_mw"],
         cpi_data_lf=core_consumer_price_index,
         current_dollar_year=settings["nominal_dollar_year"],
         past_dollar_year=settings["atb_dollar_year"],
-    )
+    ).round(2)
 
     # Double check we have the expected number of technologies in the end
     # These will be the ones where all detailed technologies attached to numbered inputs in the model are not mapped
