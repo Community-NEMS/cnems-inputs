@@ -71,11 +71,11 @@ def get_published_path_for_resource(datapackage_path: str, resource_name: str) -
 
 
 def adjust_dollars_for_inflation(
-    dollar_data: pl.Series | pd.Series,
+    dollar_data: pd.Series,
     cpi_data_lf: pl.LazyFrame,
     current_dollar_year: int,
     past_dollar_year: int,
-) -> pl.Series | pd.Series:
+) -> pd.Series:
     """Adjust nominal dollar data from one historical year to a desired one.
 
     Using BLS CPI data, do this by multiplying the original

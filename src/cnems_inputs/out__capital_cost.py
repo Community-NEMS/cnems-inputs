@@ -52,7 +52,7 @@ def backfill_nuclear(
     # Make sure all years of data have a row for all technologies.
     expected_index = pd.MultiIndex.from_product(
         [
-            capital_cost_df["tech"].unique(),
+            capital_cost_df["tech"].unique().tolist(),
             range(settings["first_year"], settings["last_year"] + 1),
         ],
         names=["tech", "projection_year"],
