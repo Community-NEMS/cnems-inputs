@@ -37,6 +37,62 @@ def validate_atb_settings(capital_costs: pd.DataFrame, settings: dict):
         )
 
 
+def backfill_nuclear(
+    capital_cost_df: pd.DataFrame,
+    settings: dict,
+    nuclear_mask: pd.Series,
+    nuclear_techs: list[str],
+) -> pd.DataFrame:
+    """Backfill nuclear costs.
+
+    NLR ATB doesn't provide nuclear costs until 2030, so where we have nuclear
+    technologies we backfill these values.
+    """
+    # First, make sure all years of data have a row for all technologies.
+    # Make sure all years of data have a row for all technologies.
+    expected_index = pd.MultiIndex.from_product(
+        [
+            capital_cost_df["tech"].unique(),
+            range(settings["first_year"], settings["last_year"] + 1),
+        ],
+        names=["tech", "projection_year"],
+    )
+    capital_cost_df = (
+        capital_cost_df.set_index(["tech", "projection_year"])
+        .reindex(expected_index)
+        .sort_index()
+        .reset_index()
+    )
+
+    if nuclear_mask.any():
+        backfill_mask = capital_cost_df["tech"].isin(nuclear_techs) & capital_cost_df[
+            "projection_year"
+        ].le(2030)
+
+        assert (
+            capital_cost_df.loc[
+                backfill_mask & capital_cost_df["projection_year"].ne(2030),
+                "capital_cost_usd_per_mw",
+            ]
+            .isna()
+            .all()
+        )
+
+        nuclear_costs = (
+            capital_cost_df.loc[backfill_mask]
+            .sort_values(["tech", "projection_year"])
+            .groupby("tech")["capital_cost_usd_per_mw"]
+            .bfill()
+        )
+        capital_cost_df.loc[nuclear_costs.index, "capital_cost_usd_per_mw"] = (
+            nuclear_costs
+        )
+        capital_cost_df.loc[nuclear_costs.index, "nlr_atb_year"] = (
+            capital_cost_df.nlr_atb_year.unique()[0]
+        )
+    return capital_cost_df
+
+
 def transform_capital_cost(
     core_nlratb__yearly_projected_cost_performance: pl.DataFrame,
     core_consumer_price_index: pl.LazyFrame,
@@ -172,59 +228,20 @@ def transform_capital_cost(
         .reset_index()
     )
 
-    # Backfill nuclear costs.
-    # NLR ATB doesn't provide nuclear costs until 2030, so where we have nuclear
-    # technologies we backfill these values.
-
-    # First, make sure all years of data have a row for all technologies.
-    # Make sure all years of data have a row for all technologies.
-    expected_index = pd.MultiIndex.from_product(
-        [
-            capital_costs["tech"].unique(),
-            range(settings["first_year"], settings["last_year"] + 1),
-        ],
-        names=["tech", "projection_year"],
+    # Backfill nuclear costs from 2030
+    capital_costs = backfill_nuclear(
+        capital_cost_df=capital_costs,
+        settings=settings,
+        nuclear_mask=nuclear_mask,
+        nuclear_techs=nuclear_techs,
     )
-    capital_costs = (
-        capital_costs.set_index(["tech", "projection_year"])
-        .reindex(expected_index)
-        .sort_index()
-        .reset_index()
-    )
-
-    if nuclear_mask.any():
-        backfill_mask = capital_costs["tech"].isin(nuclear_techs) & capital_costs[
-            "projection_year"
-        ].le(2030)
-
-        assert (
-            capital_costs.loc[
-                backfill_mask & capital_costs["projection_year"].ne(2030),
-                "capital_cost_usd_per_mw",
-            ]
-            .isna()
-            .all()
-        )
-
-        nuclear_costs = (
-            capital_costs.loc[backfill_mask]
-            .sort_values(["tech", "projection_year"])
-            .groupby("tech")["capital_cost_usd_per_mw"]
-            .bfill()
-        )
-        capital_costs.loc[nuclear_costs.index, "capital_cost_usd_per_mw"] = (
-            nuclear_costs
-        )
-        capital_costs.loc[nuclear_costs.index, "nlr_atb_year"] = (
-            capital_costs.nlr_atb_year.unique()[0]
-        )
 
     # After backfill, expect all timestamps and technologies have an associated cost.
     # Check that every value in the dataframe is non-null.
     assert capital_costs.notna().all().all()
 
     # Adjust dollars for inflation
-    capital_costs.loc[:, "capital_cost_usd_per_mw"] = adjust_dollars_for_inflation(
+    capital_costs["capital_cost_usd_per_mw"] = adjust_dollars_for_inflation(
         dollar_data=capital_costs["capital_cost_usd_per_mw"],
         cpi_data_lf=core_consumer_price_index,
         current_dollar_year=settings["nominal_dollar_year"],
