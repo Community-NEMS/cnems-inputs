@@ -70,7 +70,7 @@ def aggregate_base_load_region(
             crosswalk_region, how="left", on=["county_id_fips"]
         )
         .pipe(fill_in_missing_regions_with_most_frequent_state_region, crosswalk_region)
-        .group_by(["region", "hour"])
+        .group_by(["region", "hour", "weekday_num"])
         .agg(pl.col("base_load_mwh").sum())
         .sort(["region", "hour"])
     )

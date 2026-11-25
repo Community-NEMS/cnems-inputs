@@ -305,6 +305,11 @@ description = "Build the documentation with Zensical into site/."
 cmd = "zensical serve"
 description = "Serve the documentation locally, rebuilding on changes."
 
+[tool.pixi.tasks.prek-install]
+cmd = "prek install --hook-type pre-commit --hook-type post-merge --hook-type post-rewrite --hook-type pre-push && git config --local merge.ours.driver true"
+description = "Install git hooks, and register the 'ours' merge driver for generated files"
+
+
 # Pre-commit hook configuration
 [tool.pixi.tasks.prek-update]
 cmd = "prek update"
