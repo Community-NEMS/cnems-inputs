@@ -51,6 +51,8 @@ would when cutting an actual release. -->
 - Added pipeline for `base_load.csv` based on pipeline from `BlueSky` samples.
     Updated using pre-processed EIA data from PUDL and removed weather normalization.
     See issue #50 and PR !12.
+- Added pipeline for `capital_cost.csv` and `capital_cost_initial.csv` using NLR ATB
+    projected cost performance data. See issue #80 and PR !81.
 
 ### Bug Fixes
 

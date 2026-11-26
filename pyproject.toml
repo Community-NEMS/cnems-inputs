@@ -140,6 +140,8 @@ mkdocstrings-python = ">=2.0.5"     # Renders API docs from docstrings, used by 
 zensical = ">=0.0.51"               # Markdown-based static site generator for docs
 universal-pathlib = ">=0.3.10,<0.4"
 pytest-mock = ">=3.16.0,<4"
+jupyterlab = ">=4.6.6,<5"
+seaborn = ">=0.13.2,<0.14"
 
 [tool.ruff]
 # Configurations that apply to both the `format` and `lint` subcommands.

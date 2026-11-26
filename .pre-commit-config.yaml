@@ -110,6 +110,7 @@ repos:
     hooks:
       - id: detect-secrets
         args: ["--baseline", ".secrets.baseline"]
+        exclude: devenv/capital_cost_comparison.ipynb
 
   ########################################################################################
   # Custom local hooks

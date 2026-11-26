@@ -1,7 +1,11 @@
+general: # high-level parameters for generating all tables
+  pudl_version: nightly
+  first_year: 2023
+  last_year: 2050
+  nominal_dollar_year: 2025
+
 core_snapshots: # this is the list we iterate over for the "snapshot" approach
   - storage_efficiency
-  - capital_cost
-  - capital_cost_initial
   - capacity_factor_vre
   - enduse_base_share
   - enduse_scalar
@@ -74,9 +78,16 @@ core_available_capacity:
   first_year: 2023
   last_year: 2050
   population_year: 2022
-  # when pudl inputs are used in more than one pipeline, we should probably move this
-  pudl_version: nightly
   eia860m_month: 2024-01-01
+core_capital_cost:
+  model: Market
+  scenario: Moderate
+  atb_year: 2024 # TODO: generalize if using for more than one table
+  atb_dollar_year: 2022 # Should change when ATB year changes.
+  cost_recovery_period: 30
+  agg_method: min # min, max or mean.
+core_consumer_price_index:
+  series_id: "CUUR0000SA0" # Seasonally unadjusted
 base_load:
   eia930_year: 2025
   use_pudl_imputed_demand: True
