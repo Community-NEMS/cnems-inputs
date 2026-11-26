@@ -30,6 +30,7 @@ def capital_cost_inputs():
     ]
     return {
         "atb": pl.DataFrame(atb_rows),
+        "cpi": pl.DataFrame({"year": [2022, 2025], "value": [100.0, 100.0]}).lazy(),
         "tech": pl.DataFrame({"Technology": ["Solar PV"], "tech": ["solar"]}).lazy(),
         "steps": pl.DataFrame({"tech": ["solar", "solar"], "step": [1, 3]}).lazy(),
         "regions": pl.DataFrame({"region": ["Z", "A"]}).lazy(),
@@ -48,6 +49,8 @@ def capital_cost_inputs():
             "atb_year": 2024,
             "first_year": 2023,
             "last_year": 2024,
+            "atb_dollar_year": 2022,
+            "nominal_dollar_year": 2025,
             "agg_method": "mean",
         },
     }
@@ -57,6 +60,7 @@ def transform(inputs, *, settings=None):
     """Call the transformer with the fixture inputs."""
     return transform_capital_cost(
         core_nlratb__yearly_projected_cost_performance=inputs["atb"],
+        core_consumer_price_index=inputs["cpi"],
         crosswalk_tech_lf=inputs["tech"],
         crosswalk_steps_lf=inputs["steps"],
         crosswalk_region_lf=inputs["regions"],
@@ -158,3 +162,14 @@ def test_transform_capital_cost_backfills_nuclear_costs(capital_cost_inputs):
     assert set(result.year) == set(range(2023, 2031))
     assert set(result.capital_cost_usd_per_mw) == {500_000}
     assert result.capital_cost_usd_per_mw.notna().all()
+
+
+def test_transform_capital_cost_adjusts_for_inflation(capital_cost_inputs):
+    """Convert ATB-dollar costs to the configured nominal dollar year."""
+    inputs = capital_cost_inputs.copy()
+    inputs["cpi"] = pl.DataFrame({"year": [2022, 2025], "value": [100.0, 125.0]}).lazy()
+
+    result = transform(inputs)
+
+    # 150,000 * (CPI 2025 / CPI 2022) = 187,500
+    assert result.capital_cost_usd_per_mw.tolist() == [187_500] * 4
